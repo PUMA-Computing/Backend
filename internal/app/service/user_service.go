@@ -14,8 +14,7 @@ type AuthResponse struct {
 
 type UserServices interface {
 	RegisterUser(user *domain.User) error
-	AuthenticateUser(email, password string) (*domain.User, error)
-	GenerateJWTToken(userID string, Role domain.Role) (string, error)
+	AuthenticateUser(email, password string) (*AuthResponse, error)
 }
 
 type UserService struct {

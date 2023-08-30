@@ -3,7 +3,7 @@ package repository
 import "github.com/gocql/gocql"
 
 type CassandraRepository struct {
-	session *gocql.Session
+	Session *gocql.Session
 }
 
 func NewCassandraRepository() (*CassandraRepository, error) {
@@ -14,9 +14,9 @@ func NewCassandraRepository() (*CassandraRepository, error) {
 		return nil, err
 	}
 
-	return &CassandraRepository{session: session}, nil
+	return &CassandraRepository{Session: session}, nil
 }
 
 func (r *CassandraRepository) Close() {
-	r.session.Close()
+	r.Session.Close()
 }

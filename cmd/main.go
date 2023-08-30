@@ -1,6 +1,7 @@
 package main
 
 import (
+	v1 "Backend/api/v1"
 	"Backend/internal/app/handlers"
 	"Backend/internal/app/repository"
 	"Backend/internal/app/service"
@@ -8,13 +9,20 @@ import (
 )
 
 func main() {
-	userRepository := repository.NewCassandraUserRepository(session)
+	cassandraRepo, err := repository.NewCassandraRepository()
+	if err != nil {
+		panic(err)
+	}
+	defer cassandraRepo.Close()
+
+	userRepository := repository.NewCassandraUserRepository(cassandraRepo.Session)
 	userService := service.NewUserService(userRepository)
 	userHandlers := handlers.NewUserHandlers(userService)
 
 	app := fiber.New()
-	v1 := app.Group("/api/v1")
-	v1users := v1.Group("/users")
-	v1users.Post("/register", userHandlers.CreateUser())
-	v1users.Post("/login", userHandlers.Login())
+	v1.SetupUserRoutes(app, userHandlers)
+	err = app.Listen(":3000")
+	if err != nil {
+		return
+	}
 }
