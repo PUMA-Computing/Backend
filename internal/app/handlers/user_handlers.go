@@ -5,6 +5,7 @@ import (
 	"Backend/internal/app/service"
 	"Backend/internal/utils"
 	"github.com/gofiber/fiber/v2"
+	"time"
 )
 
 type UserHandlers struct {
@@ -52,6 +53,14 @@ func (h *UserHandlers) Login() fiber.Handler {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error generating JWT tokens"})
 		}
+
+		c.Cookie(&fiber.Cookie{
+			Name:     "auth_token",
+			Value:    token,
+			Expires:  time.Now().Add(time.Hour * 24),
+			HTTPOnly: true,
+			Secure:   true,
+		})
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"token": token})
 	}

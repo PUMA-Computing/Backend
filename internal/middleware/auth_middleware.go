@@ -9,6 +9,11 @@ import (
 
 func AuthMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		authCookie := c.Cookies("auth_token")
+		if authCookie == "" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
+		}
+
 		userRole := utils.GetUserRoleFromContext(c)
 
 		if userRole != domain.RoleUser && userRole != domain.RolePUMA {

@@ -9,14 +9,15 @@ func GetUserRoleFromContext(c *fiber.Ctx) string {
 	token := c.Get("Authorization")
 
 	claims := jwt.MapClaims{}
-	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte("pumacomputing"), nil
-	})
-
+	_, _, err := new(jwt.Parser).ParseUnverified(token, claims)
 	if err != nil {
 		return ""
 	}
 
-	userRole := claims["role"].(string)
+	userRole, ok := claims["role"].(string)
+	if !ok {
+		return ""
+	}
+
 	return userRole
 }
