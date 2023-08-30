@@ -10,12 +10,12 @@ import (
 
 func AuthMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		authCookie := c.Cookies("session_token")
-		if authCookie == "" {
+		sessionToken := c.Cookies("session_token")
+		if sessionToken == "" {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
 		}
 
-		userID, userRole, err := utils.ValidateJWTToken(authCookie)
+		userID, userRole, err := utils.ValidateSessionToken(sessionToken)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
 		}
@@ -24,7 +24,12 @@ func AuthMiddleware() fiber.Handler {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "Access Denied"})
 		}
 
-		if utils.IsTokenAboutToExpire(authCookie, 5*time.Minute) {
+		isValidSession, _ := utils.IsValidSessionToken(userID, sessionToken)
+		if !isValidSession {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
+		}
+
+		if utils.IsTokenAboutToExpire(sessionToken, 5*time.Minute) {
 			newToken, _ := utils.GenerateJWTToken(userID, domain.Role(userRole))
 			c.Cookie(&fiber.Cookie{
 				Name:     "session_token",

@@ -5,6 +5,12 @@ import (
 	"time"
 )
 
+type SessionData struct {
+	UserID       gocql.UUID
+	SessionToken string
+	ExpiredAt    time.Time
+}
+
 type CassandraRepository struct {
 	Session *gocql.Session
 }
@@ -33,4 +39,18 @@ func (r *CassandraRepository) StoreSessionData(userID gocql.UUID, sessionToken s
 		return err
 	}
 	return nil
+}
+
+func (r *CassandraRepository) GetSessionData(userID gocql.UUID) (*SessionData, error) {
+	query := `
+		SELECT user_id, session_token, expired_at
+		FROM sessions
+		WHERE user_id = ?
+		LIMIT 1
+	`
+	var sessionData SessionData
+	if err := r.Session.Query(query, userID).Scan(&sessionData.UserID, &sessionData.SessionToken, &sessionData.ExpiredAt); err != nil {
+		return nil, err
+	}
+	return &sessionData, nil
 }

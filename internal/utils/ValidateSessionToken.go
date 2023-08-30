@@ -5,9 +5,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func ValidateJWTToken(tokenString string) (string, string, error) {
+func ValidateSessionToken(tokenString string) (string, string, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return []byte("pumacomputing"), nil
+		return []byte(jwtSecretKey), nil
 	})
 	if err != nil {
 		return "", "", err
