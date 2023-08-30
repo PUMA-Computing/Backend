@@ -28,7 +28,7 @@ func (r *CassandraUserRepository) RegisterUser(user *domain.User) error {
 }
 
 func (r *CassandraUserRepository) GetUserByEmail(email string) (*domain.User, error) {
-	query := `SELECT id, first_name, last_name, email, password, nim, year, role FROM users WHERE email = ?`
+	query := `SELECT id, first_name, last_name, email, password, nim, year, role FROM users WHERE email = ? ALLOW FILTERING`
 	var user domain.User
 	if err := r.session.Query(query, email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.NIM, &user.Year, &user.Role); err != nil {
 		return nil, err

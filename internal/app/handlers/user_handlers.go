@@ -45,7 +45,7 @@ func (h *UserHandlers) Login() fiber.Handler {
 
 		user, err := h.userService.AuthenticateUser(loginData.Email, loginData.Password)
 		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid email or password"})
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid email or password", "error": err.Error()})
 		}
 
 		token, err := utils.GenerateJWTToken(user.User.ID.String(), domain.Role(user.User.Role))
