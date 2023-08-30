@@ -5,6 +5,7 @@ import (
 	"Backend/internal/utils"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"time"
 )
 
 func AuthMiddleware() fiber.Handler {
@@ -14,11 +15,27 @@ func AuthMiddleware() fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
 		}
 
-		userRole := utils.GetUserRoleFromContext(c)
+		userID, userRole, err := utils.ValidateJWTToken(authCookie)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
+		}
 
 		if userRole != domain.RoleUser && userRole != domain.RolePUMA {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "Access Denied"})
 		}
+
+		if utils.IsTokenAboutToExpire(authCookie, 5*time.Minute) {
+			newToken, _ := utils.GenerateJWTToken(userID, domain.Role(userRole))
+			c.Cookie(&fiber.Cookie{
+				Name:     "auth_token",
+				Value:    newToken,
+				Expires:  time.Now().Add(time.Hour * 24),
+				Path:     "/",
+				Secure:   true,
+				HTTPOnly: true,
+			})
+		}
+
 		return c.Next()
 	}
 }
