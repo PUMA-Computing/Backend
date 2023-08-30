@@ -1,14 +1,13 @@
 package utils
 
 import (
-	"Backend/internal/app/domain"
 	"Backend/internal/app/repository"
 	"github.com/gocql/gocql"
 	"time"
 )
 
 func IsValidSessionToken(sessionUserID, sessionToken string) (bool, error) {
-	userID, userRole, err := ValidateSessionToken(sessionToken)
+	userID, _, err := ValidateSessionToken(sessionToken)
 	if err != nil {
 		return false, err
 	}
@@ -37,10 +36,5 @@ func IsValidSessionToken(sessionUserID, sessionToken string) (bool, error) {
 		return false, nil
 	}
 
-	newToken, _ := GenerateJWTToken(userID, domain.Role(userRole))
-	if newToken != sessionToken {
-		return false, nil
-	}
-
-	return newToken == sessionToken, nil
+	return true, nil
 }
