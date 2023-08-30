@@ -8,6 +8,6 @@ import (
 func SetupUserRoutes(app *fiber.App, userHandlers *handlers.UserHandlers) {
 	api := app.Group("/api/v1")
 
-	api.Post("/register", userHandlers.RegisterUser())
-	api.Post("/login", userHandlers.Login())
+	api.Post("/users/register", userHandlers.RegisterUser())
+	api.Post("/users/login", userHandlers.Login())
 }

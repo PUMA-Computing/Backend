@@ -5,7 +5,6 @@ import (
 	"Backend/internal/app/service"
 	"Backend/internal/utils"
 	"github.com/gofiber/fiber/v2"
-	"strconv"
 )
 
 type UserHandlers struct {
@@ -26,7 +25,7 @@ func (h *UserHandlers) RegisterUser() fiber.Handler {
 		user.Role = domain.RoleUser
 
 		if err := h.userService.RegisterUser(&user); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error creating user"})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error creating user", "error": err.Error()})
 		}
 
 		return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "User created successfully"})
@@ -49,7 +48,7 @@ func (h *UserHandlers) Login() fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid email or password"})
 		}
 
-		token, err := utils.GenerateJWTToken(strconv.FormatInt(user.ID, 10), domain.Role(user.Role))
+		token, err := utils.GenerateJWTToken(user.User.ID.String(), domain.Role(user.User.Role))
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error generating JWT tokens"})
 		}

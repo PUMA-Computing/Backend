@@ -4,7 +4,7 @@ import (
 	"Backend/internal/app/domain"
 	"Backend/internal/app/repository"
 	"Backend/internal/utils"
-	"strconv"
+	"github.com/gocql/gocql"
 )
 
 type AuthResponse struct {
@@ -31,6 +31,7 @@ func (s *UserService) RegisterUser(user *domain.User) error {
 		return err
 	}
 	user.Password = hashedPassword
+	user.ID = gocql.TimeUUID()
 	return s.userRepository.RegisterUser(user)
 }
 
@@ -44,7 +45,7 @@ func (s *UserService) AuthenticateUser(email, password string) (*AuthResponse, e
 		return nil, err
 	}
 
-	token, err := utils.GenerateJWTToken(strconv.FormatInt(user.ID, 10), domain.Role(user.Role))
+	token, err := utils.GenerateJWTToken(user.ID.String(), domain.Role(user.Role))
 	if err != nil {
 		return nil, err
 	}
