@@ -49,7 +49,7 @@ func (h *UserHandlers) Login() fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid email or password", "error": err.Error()})
 		}
 
-		sessionToken, err := utils.GenerateJWTToken(user.User.ID.String(), domain.Role(user.User.Role))
+		sessionToken, err := utils.GenerateJWTToken(user.User.ID, user.User.Role)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error generating session token"})
 		}

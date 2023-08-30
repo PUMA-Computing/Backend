@@ -45,7 +45,7 @@ func (s *UserService) AuthenticateUser(email, password string) (*AuthResponse, e
 		return nil, err
 	}
 
-	token, err := utils.GenerateJWTToken(user.ID.String(), domain.Role(user.Role))
+	token, err := utils.GenerateJWTToken(user.ID, user.Role)
 	if err != nil {
 		return nil, err
 	}

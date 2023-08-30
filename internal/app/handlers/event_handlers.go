@@ -5,7 +5,6 @@ import (
 	"Backend/internal/app/service"
 	"Backend/internal/utils"
 	"github.com/gofiber/fiber/v2"
-	"strconv"
 )
 
 type EventHandlers struct {
@@ -99,7 +98,7 @@ func (h *EventHandlers) RegisterUserForEvent() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		eventID := c.Params("eventID")
 		userID := utils.GetUserIDFromContext(c)
-		if err := h.eventService.RegisterUserForEvent(strconv.Itoa(int(userID)), eventID); err != nil {
+		if err := h.eventService.RegisterUserForEvent(userID.String(), eventID); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error registering user for event"})
 		}
 		return c.JSON(fiber.Map{"message": "User registered for event"})
