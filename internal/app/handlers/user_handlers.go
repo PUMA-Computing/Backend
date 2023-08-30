@@ -49,27 +49,34 @@ func (h *UserHandlers) Login() fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid email or password", "error": err.Error()})
 		}
 
-		token, err := utils.GenerateJWTToken(user.User.ID.String(), domain.Role(user.User.Role))
+		sessionToken, err := utils.GenerateJWTToken(user.User.ID.String(), domain.Role(user.User.Role))
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error generating JWT tokens"})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error generating session token"})
+		}
+
+		expirationTime := time.Now().Add(utils.SessionDuration)
+		if err := utils.StoreSessionData(user.User.ID, sessionToken, expirationTime); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error storing session data", "error": err.Error()})
 		}
 
 		c.Cookie(&fiber.Cookie{
-			Name:     "auth_token",
-			Value:    token,
-			Expires:  time.Now().Add(time.Hour * 24),
+			Name:     "session_token",
+			Value:    sessionToken,
+			Expires:  expirationTime,
+			Path:     "/",
 			HTTPOnly: true,
 			Secure:   true,
+			SameSite: "Strict",
 		})
 
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{"token": token})
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Login successful", "session_token": sessionToken})
 	}
 }
 
 func (h *UserHandlers) Logout() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		c.Cookie(&fiber.Cookie{
-			Name:     "auth_token",
+			Name:     "session_token",
 			Value:    "",
 			Expires:  time.Now().Add(-time.Hour),
 			HTTPOnly: true,

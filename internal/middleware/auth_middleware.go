@@ -10,7 +10,7 @@ import (
 
 func AuthMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		authCookie := c.Cookies("auth_token")
+		authCookie := c.Cookies("session_token")
 		if authCookie == "" {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
 		}
@@ -27,7 +27,7 @@ func AuthMiddleware() fiber.Handler {
 		if utils.IsTokenAboutToExpire(authCookie, 5*time.Minute) {
 			newToken, _ := utils.GenerateJWTToken(userID, domain.Role(userRole))
 			c.Cookie(&fiber.Cookie{
-				Name:     "auth_token",
+				Name:     "session_token",
 				Value:    newToken,
 				Expires:  time.Now().Add(time.Hour * 24),
 				Path:     "/",
