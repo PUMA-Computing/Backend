@@ -6,7 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func SetupEventRoutes(app *fiber.App, eventHandlers *handlers.UserHandlers) {
+func SetupEventRoutes(app *fiber.App, eventHandlers *handlers.EventHandlers) {
 	api := app.Group("/api/v1")
 
 	api.Use(middleware.AuthMiddleware())
