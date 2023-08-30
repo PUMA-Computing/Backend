@@ -65,3 +65,17 @@ func (h *UserHandlers) Login() fiber.Handler {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"token": token})
 	}
 }
+
+func (h *UserHandlers) Logout() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		c.Cookie(&fiber.Cookie{
+			Name:     "auth_token",
+			Value:    "",
+			Expires:  time.Now().Add(-time.Hour),
+			HTTPOnly: true,
+			Secure:   true,
+		})
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Logout successful"})
+	}
+}
