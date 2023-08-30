@@ -4,11 +4,18 @@ import (
 	"Backend/internal/app/domain"
 	"Backend/internal/app/repository"
 	"Backend/internal/utils"
+	"strconv"
 )
 
+type AuthResponse struct {
+	User  *domain.User `json:"user"`
+	Token string       `json:"token"`
+}
+
 type UserServices interface {
-	CreateUser(user *domain.User) error
+	RegisterUser(user *domain.User) error
 	AuthenticateUser(email, password string) (*domain.User, error)
+	GenerateJWTToken(userID string, Role domain.Role) (string, error)
 }
 
 type UserService struct {
@@ -19,16 +26,16 @@ func NewUserService(userRepository repository.UserRepository) *UserService {
 	return &UserService{userRepository: userRepository}
 }
 
-func (s *UserService) CreateUser(user *domain.User) error {
+func (s *UserService) RegisterUser(user *domain.User) error {
 	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
 		return err
 	}
 	user.Password = hashedPassword
-	return s.userRepository.CreateUser(user)
+	return s.userRepository.RegisterUser(user)
 }
 
-func (s *UserService) AuthenticateUser(email, password string) (*domain.User, error) {
+func (s *UserService) AuthenticateUser(email, password string) (*AuthResponse, error) {
 	user, err := s.userRepository.GetUserByEmail(email)
 	if err != nil {
 		return nil, err
@@ -38,5 +45,15 @@ func (s *UserService) AuthenticateUser(email, password string) (*domain.User, er
 		return nil, err
 	}
 
-	return user, nil
+	token, err := utils.GenerateJWTToken(strconv.FormatInt(user.ID, 10), domain.Role(user.Role))
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AuthResponse{
+		User:  user,
+		Token: token,
+	}
+
+	return response, nil
 }

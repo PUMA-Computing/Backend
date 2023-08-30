@@ -3,7 +3,9 @@ package handlers
 import (
 	"Backend/internal/app/domain"
 	"Backend/internal/app/service"
+	"Backend/internal/utils"
 	"github.com/gofiber/fiber/v2"
+	"strconv"
 )
 
 type UserHandlers struct {
@@ -14,14 +16,16 @@ func NewUserHandlers(userService service.UserServices) *UserHandlers {
 	return &UserHandlers{userService: userService}
 }
 
-func (h *UserHandlers) CreateUser() fiber.Handler {
+func (h *UserHandlers) RegisterUser() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var user domain.User
 		if err := c.BodyParser(&user); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing user"})
 		}
 
-		if err := h.userService.CreateUser(&user); err != nil {
+		user.Role = domain.RoleUser
+
+		if err := h.userService.RegisterUser(&user); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error creating user"})
 		}
 
@@ -45,6 +49,11 @@ func (h *UserHandlers) Login() fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid email or password"})
 		}
 
-		return c.Status(fiber.StatusOK).JSON(user)
+		token, err := utils.GenerateJWTToken(strconv.FormatInt(user.ID, 10), domain.Role(user.Role))
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error generating JWT tokens"})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"token": token})
 	}
 }
