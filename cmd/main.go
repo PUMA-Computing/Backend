@@ -20,7 +20,7 @@ func main() {
 	userHandlers := handlers.NewUserHandlers(userService)
 
 	app := fiber.New()
-	v1.SetupUserRoutes(app, userHandlers)
+	v1.AuthRoutes(app, userHandlers)
 	err = app.Listen(":3000")
 	if err != nil {
 		return

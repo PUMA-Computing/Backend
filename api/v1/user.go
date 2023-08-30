@@ -5,9 +5,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func SetupUserRoutes(app *fiber.App, userHandlers *handlers.UserHandlers) {
+func AuthRoutes(app *fiber.App, userHandlers *handlers.UserHandlers) {
 	api := app.Group("/api/v1")
 
-	api.Post("/users/register", userHandlers.RegisterUser())
-	api.Post("/users/login", userHandlers.Login())
+	api.Post("/auth/register", userHandlers.RegisterUser())
+	api.Post("/auth/login", userHandlers.Login())
+	api.Post("/auth/logout", userHandlers.Logout())
 }
