@@ -1,4 +1,4 @@
-package user
+package userRepository
 
 import (
 	"Backend/internal/app/domain/user"

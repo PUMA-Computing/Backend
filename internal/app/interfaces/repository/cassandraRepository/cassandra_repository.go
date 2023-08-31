@@ -1,4 +1,4 @@
-package cassandra
+package cassandraRepository
 
 import (
 	"github.com/gocql/gocql"

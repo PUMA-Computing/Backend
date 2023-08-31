@@ -1,8 +1,8 @@
-package mock
+package mockRepository
 
 import (
 	"Backend/internal/app/domain/user"
-	user2 "Backend/internal/app/interfaces/service/user"
+	user2 "Backend/internal/app/interfaces/service/userService"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -15,16 +15,8 @@ func NewMockUserService() *MockUserService {
 }
 
 func (m *MockUserService) RegisterUser(user *user.User) error {
-	ret := m.Called(user)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(*user.User) error); ok {
-		r0 = rf(user)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
+	args := m.Called(user)
+	return args.Error(0)
 }
 
 func (m *MockUserService) AuthenticateUser(email, password string) (*user2.AuthResponse, error) {

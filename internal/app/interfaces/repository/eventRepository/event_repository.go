@@ -1,4 +1,4 @@
-package event
+package eventRepository
 
 import (
 	"Backend/internal/app/domain/event"

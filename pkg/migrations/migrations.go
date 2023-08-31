@@ -8,7 +8,7 @@ import (
 )
 
 func ExecuteMigrations(session *gocql.Session) error {
-	migrationsDir := "./migrations"
+	migrationsDir := "./internal/migrations"
 	files, err := os.ReadDir(migrationsDir)
 	if err != nil {
 		return err

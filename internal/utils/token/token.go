@@ -1,7 +1,7 @@
 package token
 
 import (
-	"Backend/internal/app/interfaces/repository/cassandra"
+	"Backend/internal/app/interfaces/repository/cassandraRepository"
 	"errors"
 	"github.com/gocql/gocql"
 	"github.com/golang-jwt/jwt/v5"
@@ -41,7 +41,7 @@ func IsValidSessionToken(sessionUserID, sessionToken string) (bool, error) {
 		return false, err
 	}
 
-	repo, err := cassandra.NewCassandraRepository()
+	repo, err := cassandraRepository.NewCassandraRepository()
 	if err != nil {
 		return false, err
 	}
@@ -112,7 +112,7 @@ func ValidateSessionToken(tokenString string) (string, string, error) {
 }
 
 func StoreSessionData(userID gocql.UUID, sessionToken string, expirationTime time.Time) error {
-	cassandraRepository, err := cassandra.NewCassandraRepository()
+	cassandraRepository, err := cassandraRepository.NewCassandraRepository()
 	if err != nil {
 		return err
 	}

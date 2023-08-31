@@ -1,9 +1,9 @@
-package user
+package userHandlers
 
 import (
 	"Backend/internal/app/domain/roles"
 	"Backend/internal/app/domain/user"
-	user2 "Backend/internal/app/interfaces/service/user"
+	user2 "Backend/internal/app/interfaces/service/userService"
 	"Backend/internal/utils/token"
 	"github.com/gofiber/fiber/v2"
 	"time"
@@ -21,13 +21,13 @@ func (h *UserHandlers) RegisterUser() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var user user.User
 		if err := c.BodyParser(&user); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing user"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing userService"})
 		}
 
 		user.Role = roles.RoleUser
 
 		if err := h.userService.RegisterUser(&user); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error creating user", "error": err.Error()})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error creating userService", "error": err.Error()})
 		}
 
 		return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "User created successfully"})
