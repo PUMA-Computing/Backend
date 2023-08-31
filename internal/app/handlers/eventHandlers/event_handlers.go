@@ -20,19 +20,19 @@ func (h *EventHandlers) CreateEvent() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var event event.Event
 		if err := c.BodyParser(&event); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error Parsing eventService"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error Parsing event"})
 		}
 
 		/*
 			Validate eventService data
 		*/
 		if err := validation.ValidateEvent(&event); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error validating eventService"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error validating event"})
 		}
 
 		err := h.eventService.CreateEvent(&event)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error creating eventService"})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error creating event"})
 		}
 
 		return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "Event created Successfully"})
@@ -44,12 +44,12 @@ func (h *EventHandlers) EditEvent() fiber.Handler {
 		eventID := c.Params("id")
 		var UpdatedEvent event.Event
 		if err := c.BodyParser(&UpdatedEvent); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error Parsing Updated eventService"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error Parsing Updated event"})
 		}
 
 		err := h.eventService.UpdateEvent(eventID, &UpdatedEvent)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error updating eventService"})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error updating event"})
 		}
 
 		return c.JSON(fiber.Map{"message": "Event updated Successfully"})
@@ -62,7 +62,7 @@ func (h *EventHandlers) DeleteEvent() fiber.Handler {
 
 		err := h.eventService.DeleteEvent(eventID)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error deleting eventService"})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error deleting event"})
 		}
 
 		return c.JSON(fiber.Map{"message": "Event deleted Successfully"})

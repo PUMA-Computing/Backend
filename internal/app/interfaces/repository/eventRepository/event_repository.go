@@ -41,7 +41,7 @@ func (r *CassandraEventRepository) IsRegisteredForEvent(userID, eventID string) 
 
 func (r *CassandraEventRepository) GetEvent() ([]*event.Event, error) {
 	query := r.session.Query(
-		"SELECT id, name, description, date, registered_users FROM events ",
+		"SELECT id, image, name, description, date, registered_users FROM events ",
 	)
 	iter := query.Iter()
 	defer iter.Close()
@@ -50,7 +50,7 @@ func (r *CassandraEventRepository) GetEvent() ([]*event.Event, error) {
 
 	for {
 		var event event.Event
-		if !iter.Scan(&event.ID, &event.Name, &event.Description, &event.Date, &event.RegisteredUsers) {
+		if !iter.Scan(&event.ID, &event.Image, &event.Name, &event.Description, &event.Date, &event.RegisteredUsers) {
 			break
 		}
 		events = append(events, &event)
@@ -67,11 +67,11 @@ func (r *CassandraEventRepository) GetEventByID(eventID string) (*event.Event, e
 	var event event.Event
 
 	query := r.session.Query(
-		"SELECT id, name, description, date, registered_users FROM events WHERE id = ?",
+		"SELECT id, image, name, description, date, registered_users FROM events WHERE id = ?",
 		eventID,
 	)
 
-	if err := query.Scan(&event.ID, &event.Name, &event.Description, &event.Date, &event.RegisteredUsers); err != nil {
+	if err := query.Scan(&event.ID, &event.Image, &event.Name, &event.Description, &event.Date, &event.RegisteredUsers); err != nil {
 		return nil, err
 	}
 
@@ -119,8 +119,8 @@ func (r *CassandraEventRepository) GetUserByID(userID string) (*user.User, error
 
 func (r *CassandraEventRepository) CreateEvent(event *event.Event) error {
 	query := r.session.Query(
-		"INSERT INTO events (id, name, description, date, registered_users) VALUES (?, ?, ?, ?, ?)",
-		event.ID, event.Name, event.Description, event.Date, event.RegisteredUsers,
+		"INSERT INTO events (id, image, name, description, date, registered_users) VALUES (?, ?, ?, ?, ?)",
+		event.ID, event.Image, event.Name, event.Description, event.Date, event.RegisteredUsers,
 	)
 
 	return query.Exec()
@@ -128,8 +128,8 @@ func (r *CassandraEventRepository) CreateEvent(event *event.Event) error {
 
 func (r *CassandraEventRepository) UpdateEvent(event *event.Event) error {
 	query := r.session.Query(
-		"UPDATE events SET name = ?, description = ?, date = ?, registered_users = ? WHERE id = ?",
-		event.Name, event.Description, event.Date, event.RegisteredUsers, event.ID,
+		"UPDATE events SET image = ?, name = ?, description = ?, date = ?, registered_users = ? WHERE id = ?",
+		event.Image, event.Name, event.Description, event.Date, event.RegisteredUsers, event.ID,
 	)
 
 	return query.Exec()

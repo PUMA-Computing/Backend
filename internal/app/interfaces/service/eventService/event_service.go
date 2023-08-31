@@ -80,7 +80,7 @@ func (s *EventServiceImpl) RegisterUserForEvent(UserID, eventID string) error {
 	}
 
 	if isRegistered {
-		return errors.New("userService already registered for eventService")
+		return errors.New("user already registered for event")
 	}
 
 	event, err := s.eventRepository.GetEventByID(eventID)
