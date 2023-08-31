@@ -6,6 +6,7 @@ import (
 	"Backend/internal/utils/getUserContext"
 	"Backend/internal/utils/validation"
 	"github.com/gofiber/fiber/v2"
+	"strconv"
 )
 
 type EventHandlers struct {
@@ -42,12 +43,13 @@ func (h *EventHandlers) CreateEvent() fiber.Handler {
 func (h *EventHandlers) EditEvent() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		eventID := c.Params("id")
+		eventIDInt, err := strconv.ParseInt(eventID, 10, 64)
 		var UpdatedEvent event.Event
 		if err := c.BodyParser(&UpdatedEvent); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error Parsing Updated event"})
 		}
 
-		err := h.eventService.UpdateEvent(eventID, &UpdatedEvent)
+		err = h.eventService.UpdateEvent(eventIDInt, &UpdatedEvent)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error updating event"})
 		}
@@ -59,8 +61,9 @@ func (h *EventHandlers) EditEvent() fiber.Handler {
 func (h *EventHandlers) DeleteEvent() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		eventID := c.Params("id")
+		eventIDInt, err := strconv.ParseInt(eventID, 10, 64)
 
-		err := h.eventService.DeleteEvent(eventID)
+		err = h.eventService.DeleteEvent(eventIDInt)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error deleting event"})
 		}
@@ -82,8 +85,9 @@ func (h *EventHandlers) GetEvent() fiber.Handler {
 func (h *EventHandlers) GetEventUsers() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		eventID := c.Params("id")
+		eventIDInt, err := strconv.ParseInt(eventID, 10, 64)
 
-		users, err := h.eventService.GetEventUsers(eventID)
+		users, err := h.eventService.GetEventUsers(eventIDInt)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error retrieving event users"})
 		}
@@ -95,8 +99,9 @@ func (h *EventHandlers) GetEventUsers() fiber.Handler {
 func (h *EventHandlers) GetEventByID() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		eventID := c.Params("id")
+		eventIDInt, err := strconv.ParseInt(eventID, 10, 64)
 
-		event, err := h.eventService.GetEventByID(eventID)
+		event, err := h.eventService.GetEventByID(eventIDInt)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error retrieving event"})
 		}
@@ -109,7 +114,11 @@ func (h *EventHandlers) RegisterUserForEvent() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		eventID := c.Params("eventID")
 		userID, _ := getUserContext.GetUserIDFromContext(c)
-		if err := h.eventService.RegisterUserForEvent(userID.String(), eventID); err != nil {
+		eventIDInt, err := strconv.ParseInt(eventID, 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing eventID"})
+		}
+		if err := h.eventService.RegisterUserForEvent(userID, eventIDInt); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error registering user for event"})
 		}
 		return c.JSON(fiber.Map{"message": "User registered for event"})

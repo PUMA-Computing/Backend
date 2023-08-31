@@ -1,5 +1,5 @@
-CREATE TABLE IF NOT EXISTS event (
-                                     id INT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS events (
+                                     id BIGINT PRIMARY KEY,
                                      image TEXT,
                                      name TEXT,
                                      description TEXT,
