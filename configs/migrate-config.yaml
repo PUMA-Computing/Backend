@@ -1,0 +1,3 @@
+driver: "cql"
+connection: "139.59.116.226:9042"
+keyspace: "puma"

@@ -1,11 +1,11 @@
 package v1
 
 import (
-	"Backend/internal/app/handlers"
+	"Backend/internal/app/handlers/user"
 	"github.com/gofiber/fiber/v2"
 )
 
-func SetupNewsRoutes(app *fiber.App, newsHandlers *handlers.UserHandlers) {
+func SetupNewsRoutes(app *fiber.App, newsHandlers *user.UserHandlers) {
 	//api := app.Group("/api/v1")
 	//
 	////api.Use(middleware.AuthMiddleware())

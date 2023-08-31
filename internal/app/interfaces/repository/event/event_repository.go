@@ -1,18 +1,19 @@
-package repository
+package event
 
 import (
-	"Backend/internal/app/domain"
+	"Backend/internal/app/domain/event"
+	"Backend/internal/app/domain/user"
 	"github.com/gocql/gocql"
 )
 
 type EventRepository interface {
 	IsRegisteredForEvent(userID, eventID string) (bool, error)
-	GetEvent() ([]*domain.Event, error)
-	GetEventByID(eventID string) (*domain.Event, error)
-	GetEventUser(eventID string) ([]*domain.User, error)
-	GetUserByID(userID string) (*domain.User, error)
-	CreateEvent(event *domain.Event) error
-	UpdateEvent(event *domain.Event) error
+	GetEvent() ([]*event.Event, error)
+	GetEventByID(eventID string) (*event.Event, error)
+	GetEventUser(eventID string) ([]*user.User, error)
+	GetUserByID(userID string) (*user.User, error)
+	CreateEvent(event *event.Event) error
+	UpdateEvent(event *event.Event) error
 	DeleteEvent(eventID string) error
 	RegisterUserForEvent(userID, eventID string) error
 }
@@ -38,17 +39,17 @@ func (r *CassandraEventRepository) IsRegisteredForEvent(userID, eventID string) 
 	return count > 0, nil
 }
 
-func (r *CassandraEventRepository) GetEvent() ([]*domain.Event, error) {
+func (r *CassandraEventRepository) GetEvent() ([]*event.Event, error) {
 	query := r.session.Query(
 		"SELECT id, name, description, date, registered_users FROM events ",
 	)
 	iter := query.Iter()
 	defer iter.Close()
 
-	var events []*domain.Event
+	var events []*event.Event
 
 	for {
-		var event domain.Event
+		var event event.Event
 		if !iter.Scan(&event.ID, &event.Name, &event.Description, &event.Date, &event.RegisteredUsers) {
 			break
 		}
@@ -62,8 +63,8 @@ func (r *CassandraEventRepository) GetEvent() ([]*domain.Event, error) {
 	return events, nil
 }
 
-func (r *CassandraEventRepository) GetEventByID(eventID string) (*domain.Event, error) {
-	var event domain.Event
+func (r *CassandraEventRepository) GetEventByID(eventID string) (*event.Event, error) {
+	var event event.Event
 
 	query := r.session.Query(
 		"SELECT id, name, description, date, registered_users FROM events WHERE id = ?",
@@ -77,7 +78,7 @@ func (r *CassandraEventRepository) GetEventByID(eventID string) (*domain.Event, 
 	return &event, nil
 }
 
-func (r *CassandraEventRepository) GetEventUser(eventID string) ([]*domain.User, error) {
+func (r *CassandraEventRepository) GetEventUser(eventID string) ([]*user.User, error) {
 	query := r.session.Query(
 		"SELECT id, first_name, last_name, email, nim, year, role FROM users WHERE id = ?",
 		eventID,
@@ -88,7 +89,7 @@ func (r *CassandraEventRepository) GetEventUser(eventID string) ([]*domain.User,
 		return nil, err
 	}
 
-	users := make([]*domain.User, 0)
+	users := make([]*user.User, 0)
 	for _, UserID := range registeredUsers {
 		user, err := r.GetUserByID(UserID)
 		if err != nil {
@@ -100,8 +101,8 @@ func (r *CassandraEventRepository) GetEventUser(eventID string) ([]*domain.User,
 	return users, nil
 }
 
-func (r *CassandraEventRepository) GetUserByID(userID string) (*domain.User, error) {
-	var user domain.User
+func (r *CassandraEventRepository) GetUserByID(userID string) (*user.User, error) {
+	var user user.User
 
 	query := r.session.Query(
 		"SELECT id, first_name, last_name, nim, email, year, role FROM users WHERE id = ?",
@@ -116,7 +117,7 @@ func (r *CassandraEventRepository) GetUserByID(userID string) (*domain.User, err
 
 }
 
-func (r *CassandraEventRepository) CreateEvent(event *domain.Event) error {
+func (r *CassandraEventRepository) CreateEvent(event *event.Event) error {
 	query := r.session.Query(
 		"INSERT INTO events (id, name, description, date, registered_users) VALUES (?, ?, ?, ?, ?)",
 		event.ID, event.Name, event.Description, event.Date, event.RegisteredUsers,
@@ -125,7 +126,7 @@ func (r *CassandraEventRepository) CreateEvent(event *domain.Event) error {
 	return query.Exec()
 }
 
-func (r *CassandraEventRepository) UpdateEvent(event *domain.Event) error {
+func (r *CassandraEventRepository) UpdateEvent(event *event.Event) error {
 	query := r.session.Query(
 		"UPDATE events SET name = ?, description = ?, date = ?, registered_users = ? WHERE id = ?",
 		event.Name, event.Description, event.Date, event.RegisteredUsers, event.ID,

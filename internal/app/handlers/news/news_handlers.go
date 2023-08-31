@@ -1,4 +1,4 @@
-package handlers
+package news
 
 //func (h *NewsHandlers) GetNews() func(c *fiber.Ctx) error {
 //	//return func(c *fiber.Ctx) error {

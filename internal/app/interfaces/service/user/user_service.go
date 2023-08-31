@@ -1,32 +1,33 @@
-package service
+package user
 
 import (
-	"Backend/internal/app/domain"
-	"Backend/internal/app/repository"
-	"Backend/internal/utils"
+	"Backend/internal/app/domain/user"
+	user2 "Backend/internal/app/interfaces/repository/user"
+	"Backend/internal/utils/token"
+	"Backend/pkg/bcrypt"
 	"github.com/gocql/gocql"
 )
 
 type AuthResponse struct {
-	User  *domain.User `json:"user"`
-	Token string       `json:"token"`
+	User  *user.User `json:"user"`
+	Token string     `json:"token"`
 }
 
 type UserServices interface {
-	RegisterUser(user *domain.User) error
+	RegisterUser(user *user.User) error
 	AuthenticateUser(email, password string) (*AuthResponse, error)
 }
 
 type UserService struct {
-	userRepository repository.UserRepository
+	userRepository user2.UserRepository
 }
 
-func NewUserService(userRepository repository.UserRepository) *UserService {
+func NewUserService(userRepository user2.UserRepository) *UserService {
 	return &UserService{userRepository: userRepository}
 }
 
-func (s *UserService) RegisterUser(user *domain.User) error {
-	hashedPassword, err := utils.HashPassword(user.Password)
+func (s *UserService) RegisterUser(user *user.User) error {
+	hashedPassword, err := bcrypt.HashPassword(user.Password)
 	if err != nil {
 		return err
 	}
@@ -41,11 +42,11 @@ func (s *UserService) AuthenticateUser(email, password string) (*AuthResponse, e
 		return nil, err
 	}
 
-	if err := utils.ComparePassword(user.Password, password); err != nil {
+	if err := bcrypt.ComparePassword(user.Password, password); err != nil {
 		return nil, err
 	}
 
-	token, err := utils.GenerateJWTToken(user.ID, user.Role)
+	token, err := token.GenerateJWTToken(user.ID, user.Role)
 	if err != nil {
 		return nil, err
 	}

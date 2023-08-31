@@ -2,22 +2,30 @@ package main
 
 import (
 	v1 "Backend/api/v1"
-	"Backend/internal/app/handlers"
-	"Backend/internal/app/repository"
-	"Backend/internal/app/service"
+	user3 "Backend/internal/app/handlers/user"
+	repository2 "Backend/internal/app/interfaces/repository/cassandra"
+	"Backend/internal/app/interfaces/repository/user"
+	user2 "Backend/internal/app/interfaces/service/user"
+	"Backend/pkg/migrations"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 )
 
 func main() {
-	cassandraRepo, err := repository.NewCassandraRepository()
+	cassandraRepo, err := repository2.NewCassandraRepository()
 	if err != nil {
 		panic(err)
 	}
 	defer cassandraRepo.Close()
 
-	userRepository := repository.NewCassandraUserRepository(cassandraRepo.Session)
-	userService := service.NewUserService(userRepository)
-	userHandlers := handlers.NewUserHandlers(userService)
+	userRepository := user.NewCassandraUserRepository(cassandraRepo.Session)
+	userService := user2.NewUserService(userRepository)
+	userHandlers := user3.NewUserHandlers(userService)
+
+	err = migrations.ExecuteMigrations(cassandraRepo.Session)
+	if err != nil {
+		log.Fatalf("Error executing migrations: %s", err.Error())
+	}
 
 	app := fiber.New()
 	v1.AuthRoutes(app, userHandlers)

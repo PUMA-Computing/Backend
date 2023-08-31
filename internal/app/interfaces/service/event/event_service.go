@@ -1,30 +1,31 @@
-package service
+package event
 
 import (
-	"Backend/internal/app/domain"
-	"Backend/internal/app/repository"
+	"Backend/internal/app/domain/event"
+	"Backend/internal/app/domain/user"
+	event2 "Backend/internal/app/interfaces/repository/event"
 	"errors"
 )
 
 type EventsService interface {
 	RegisterUserForEvent(UserID, eventID string) error
-	GetEvent() ([]*domain.Event, error)
-	GetEventByID(eventID string) (*domain.Event, error)
+	GetEvent() ([]*event.Event, error)
+	GetEventByID(eventID string) (*event.Event, error)
 }
 
 type EventService struct {
-	eventRepository repository.EventRepository
+	eventRepository event2.EventRepository
 }
 
-func NewEventService(eventRepository repository.EventRepository) *EventService {
+func NewEventService(eventRepository event2.EventRepository) *EventService {
 	return &EventService{eventRepository: eventRepository}
 }
 
-func (s *EventService) CreateEvent(event *domain.Event) error {
+func (s *EventService) CreateEvent(event *event.Event) error {
 	return s.eventRepository.CreateEvent(event)
 }
 
-func (s *EventService) UpdateEvent(eventID string, updatedEvent *domain.Event) error {
+func (s *EventService) UpdateEvent(eventID string, updatedEvent *event.Event) error {
 	existingEvent, err := s.eventRepository.GetEventByID(eventID)
 	if err != nil {
 		return err
@@ -41,7 +42,7 @@ func (s *EventService) DeleteEvent(eventID string) error {
 	return s.eventRepository.DeleteEvent(eventID)
 }
 
-func (s *EventService) GetEvent() ([]*domain.Event, error) {
+func (s *EventService) GetEvent() ([]*event.Event, error) {
 	events, err := s.eventRepository.GetEvent()
 	if err != nil {
 		return nil, err
@@ -50,7 +51,7 @@ func (s *EventService) GetEvent() ([]*domain.Event, error) {
 	return events, nil
 }
 
-func (s *EventService) GetEventUsers(EventID string) ([]*domain.User, error) {
+func (s *EventService) GetEventUsers(EventID string) ([]*user.User, error) {
 	users, err := s.eventRepository.GetEventUser(EventID)
 	if err != nil {
 		return nil, err

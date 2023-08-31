@@ -1,8 +1,8 @@
-package middleware
+package admin
 
 import (
-	"Backend/internal/app/domain"
-	"Backend/internal/utils"
+	"Backend/internal/app/domain/roles"
+	"Backend/internal/utils/token"
 	"github.com/gocql/gocql"
 	"github.com/gofiber/fiber/v2"
 	"time"
@@ -15,7 +15,7 @@ func AdminMiddleware() fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
 		}
 
-		userID, userRole, err := utils.ValidateSessionToken(sessionToken)
+		userID, userRole, err := token.ValidateSessionToken(sessionToken)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
 		}
@@ -25,17 +25,17 @@ func AdminMiddleware() fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
 		}
 
-		if userRole != domain.RolePUMA {
+		if userRole != roles.RolePUMA {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "Access Denied"})
 		}
 
-		isValidSession, _ := utils.IsValidSessionToken(userID, sessionToken)
+		isValidSession, _ := token.IsValidSessionToken(userID, sessionToken)
 		if !isValidSession {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
 		}
 
-		if utils.IsTokenAboutToExpire(sessionToken, 5*time.Minute) {
-			newToken, _ := utils.GenerateJWTToken(userUUID, userRole)
+		if token.IsTokenAboutToExpire(sessionToken, 5*time.Minute) {
+			newToken, _ := token.GenerateJWTToken(userUUID, userRole)
 			c.Cookie(&fiber.Cookie{
 				Name:     "session_token",
 				Value:    newToken,

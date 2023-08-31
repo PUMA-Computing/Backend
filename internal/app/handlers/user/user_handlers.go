@@ -1,29 +1,30 @@
-package handlers
+package user
 
 import (
-	"Backend/internal/app/domain"
-	"Backend/internal/app/service"
-	"Backend/internal/utils"
+	"Backend/internal/app/domain/roles"
+	"Backend/internal/app/domain/user"
+	user2 "Backend/internal/app/interfaces/service/user"
+	"Backend/internal/utils/token"
 	"github.com/gofiber/fiber/v2"
 	"time"
 )
 
 type UserHandlers struct {
-	userService service.UserServices
+	userService user2.UserServices
 }
 
-func NewUserHandlers(userService service.UserServices) *UserHandlers {
+func NewUserHandlers(userService user2.UserServices) *UserHandlers {
 	return &UserHandlers{userService: userService}
 }
 
 func (h *UserHandlers) RegisterUser() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var user domain.User
+		var user user.User
 		if err := c.BodyParser(&user); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing user"})
 		}
 
-		user.Role = domain.RoleUser
+		user.Role = roles.RoleUser
 
 		if err := h.userService.RegisterUser(&user); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error creating user", "error": err.Error()})
@@ -49,13 +50,13 @@ func (h *UserHandlers) Login() fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid email or password", "error": err.Error()})
 		}
 
-		sessionToken, err := utils.GenerateJWTToken(user.User.ID, user.User.Role)
+		sessionToken, err := token.GenerateJWTToken(user.User.ID, user.User.Role)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error generating session token"})
 		}
 
-		expirationTime := time.Now().Add(utils.SessionDuration)
-		if err := utils.StoreSessionData(user.User.ID, sessionToken, expirationTime); err != nil {
+		expirationTime := time.Now().Add(token.SessionDuration)
+		if err := token.StoreSessionData(user.User.ID, sessionToken, expirationTime); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error storing session data", "error": err.Error()})
 		}
 

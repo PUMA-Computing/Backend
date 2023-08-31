@@ -1,21 +1,22 @@
 package v1
 
 import (
-	"Backend/internal/app/handlers"
-	"Backend/internal/middleware"
+	"Backend/internal/app/handlers/event"
+	"Backend/internal/middleware/admin"
+	"Backend/internal/middleware/auth"
 	"github.com/gofiber/fiber/v2"
 )
 
-func EventRoutes(app *fiber.App, eventHandlers *handlers.EventHandlers) {
+func EventRoutes(app *fiber.App, eventHandlers *event.EventHandlers) {
 	api := app.Group("/api/v1")
 
-	api.Use(middleware.AuthMiddleware())
+	api.Use(auth.AuthMiddleware())
 
-	api.Post("/event/create", middleware.AdminMiddleware(), eventHandlers.CreateEvent())
-	api.Put("/event/:id/edit", middleware.AdminMiddleware(), eventHandlers.EditEvent())
-	api.Delete("/event/:id/delete", middleware.AdminMiddleware(), eventHandlers.DeleteEvent())
-	api.Get("/event/:id/users", middleware.AdminMiddleware(), eventHandlers.GetEventUsers())
-	api.Post("/event/:id/register", middleware.AuthMiddleware(), eventHandlers.RegisterUserForEvent())
+	api.Post("/event/create", admin.AdminMiddleware(), eventHandlers.CreateEvent())
+	api.Put("/event/:id/edit", admin.AdminMiddleware(), eventHandlers.EditEvent())
+	api.Delete("/event/:id/delete", admin.AdminMiddleware(), eventHandlers.DeleteEvent())
+	api.Get("/event/:id/users", admin.AdminMiddleware(), eventHandlers.GetEventUsers())
+	api.Post("/event/:id/register", auth.AuthMiddleware(), eventHandlers.RegisterUserForEvent())
 
 	api.Get("/event", eventHandlers.GetEvent())
 	api.Get("/event/:id", eventHandlers.GetEventByID())
