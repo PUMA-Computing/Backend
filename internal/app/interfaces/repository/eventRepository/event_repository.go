@@ -119,7 +119,7 @@ func (r *CassandraEventRepository) GetUserByID(userID gocql.UUID) (*user.User, e
 
 func (r *CassandraEventRepository) CreateEvent(event *event.Event) error {
 	query := r.session.Query(
-		"INSERT INTO events (id, image, name, description, date, registered_users) VALUES (?, ?, ?, ?, ?)",
+		"INSERT INTO events (id, image, name, description, date, registered_users) VALUES (?, ?, ?, ?, ?, ?)",
 		event.ID, event.Image, event.Name, event.Description, event.Date, event.RegisteredUsers,
 	)
 

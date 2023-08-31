@@ -33,7 +33,7 @@ func (h *EventHandlers) CreateEvent() fiber.Handler {
 
 		err := h.eventService.CreateEvent(&event)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error creating event"})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error creating event", "error": err.Error()})
 		}
 
 		return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "Event created Successfully"})
