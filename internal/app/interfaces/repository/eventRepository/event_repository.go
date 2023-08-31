@@ -15,7 +15,7 @@ type EventRepository interface {
 	CreateEvent(event *event.Event) error
 	UpdateEvent(event *event.Event) error
 	DeleteEvent(eventID int64) error
-	RegisterUserForEvent(userID, eventID int64) error
+	RegisterUserForEvent(userID gocql.UUID, eventID int64) error
 }
 type CassandraEventRepository struct {
 	session *gocql.Session

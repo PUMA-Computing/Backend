@@ -2,6 +2,7 @@ package validation
 
 import (
 	"Backend/internal/app/domain/event"
+	"Backend/internal/app/domain/news"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -13,4 +14,8 @@ func init() {
 
 func ValidateEvent(event *event.Event) error {
 	return validate.Struct(event)
+}
+
+func ValidateNews(news *news.News) error {
+	return validate.Struct(news)
 }
