@@ -7,15 +7,15 @@ import (
 )
 
 type EventRepository interface {
-	IsRegisteredForEvent(userID, eventID string) (bool, error)
+	IsRegisteredForEvent(userID gocql.UUID, eventID int64) (bool, error)
 	GetEvent() ([]*event.Event, error)
-	GetEventByID(eventID string) (*event.Event, error)
-	GetEventUser(eventID string) ([]*user.User, error)
-	GetUserByID(userID string) (*user.User, error)
+	GetEventByID(eventID int64) (*event.Event, error)
+	GetEventUser(eventID int64) ([]*user.User, error)
+	GetUserByID(userID gocql.UUID) (*user.User, error)
 	CreateEvent(event *event.Event) error
 	UpdateEvent(event *event.Event) error
-	DeleteEvent(eventID string) error
-	RegisterUserForEvent(userID, eventID string) error
+	DeleteEvent(eventID int64) error
+	RegisterUserForEvent(userID, eventID int64) error
 }
 type CassandraEventRepository struct {
 	session *gocql.Session
@@ -25,9 +25,9 @@ func NewCassandraForEventRepository(session *gocql.Session) *CassandraEventRepos
 	return &CassandraEventRepository{session: session}
 }
 
-func (r *CassandraEventRepository) IsRegisteredForEvent(userID, eventID string) (bool, error) {
+func (r *CassandraEventRepository) IsRegisteredForEvent(userID gocql.UUID, eventID int64) (bool, error) {
 	query := r.session.Query(
-		"SELECT COUNT(*) FROM user_id = ? AND event_id = ?",
+		"SELECT COUNT(*) FROM events WHERE registered_users = ? AND id = ?",
 		userID, eventID,
 	)
 
@@ -63,7 +63,7 @@ func (r *CassandraEventRepository) GetEvent() ([]*event.Event, error) {
 	return events, nil
 }
 
-func (r *CassandraEventRepository) GetEventByID(eventID string) (*event.Event, error) {
+func (r *CassandraEventRepository) GetEventByID(eventID int64) (*event.Event, error) {
 	var event event.Event
 
 	query := r.session.Query(
@@ -78,13 +78,13 @@ func (r *CassandraEventRepository) GetEventByID(eventID string) (*event.Event, e
 	return &event, nil
 }
 
-func (r *CassandraEventRepository) GetEventUser(eventID string) ([]*user.User, error) {
+func (r *CassandraEventRepository) GetEventUser(eventID int64) ([]*user.User, error) {
 	query := r.session.Query(
 		"SELECT id, first_name, last_name, email, nim, year, role FROM users WHERE id = ?",
 		eventID,
 	)
 
-	var registeredUsers []string
+	var registeredUsers []gocql.UUID
 	if err := query.Scan(&registeredUsers); err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (r *CassandraEventRepository) GetEventUser(eventID string) ([]*user.User, e
 	return users, nil
 }
 
-func (r *CassandraEventRepository) GetUserByID(userID string) (*user.User, error) {
+func (r *CassandraEventRepository) GetUserByID(userID gocql.UUID) (*user.User, error) {
 	var user user.User
 
 	query := r.session.Query(
@@ -135,7 +135,7 @@ func (r *CassandraEventRepository) UpdateEvent(event *event.Event) error {
 	return query.Exec()
 }
 
-func (r *CassandraEventRepository) DeleteEvent(eventID string) error {
+func (r *CassandraEventRepository) DeleteEvent(eventID int64) error {
 	query := r.session.Query(
 		"DELETE FROM events WHERE id = ?",
 		eventID,
@@ -144,9 +144,9 @@ func (r *CassandraEventRepository) DeleteEvent(eventID string) error {
 	return query.Exec()
 }
 
-func (r *CassandraEventRepository) RegisterUserForEvent(userID, eventID string) error {
+func (r *CassandraEventRepository) RegisterUserForEvent(userID gocql.UUID, eventID int64) error {
 	query := r.session.Query(
-		"INSERT INTO events (user_id, event_id) VALUES (?, ?)",
+		"INSERT INTO events (registered_users, id) VALUES (?, ?)",
 		userID, eventID,
 	)
 
