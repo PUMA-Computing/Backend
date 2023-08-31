@@ -54,7 +54,7 @@ func (h *EventHandlers) EditEvent() fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error updating event"})
 		}
 
-		return c.JSON(fiber.Map{"message": "Event updated Successfully"})
+		return c.JSON(fiber.Map{"message": "Event updated Successfully", "error": err.Error()})
 	}
 }
 

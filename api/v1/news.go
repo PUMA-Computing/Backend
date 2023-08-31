@@ -1,18 +1,22 @@
 package v1
 
 import (
-	"Backend/internal/app/handlers/userHandlers"
+	"Backend/internal/app/handlers/newsHandlers"
+	"Backend/internal/middleware/admin"
 	"github.com/gofiber/fiber/v2"
 )
 
-func SetupNewsRoutes(app *fiber.App, newsHandlers *userHandlers.UserHandlers) {
-	//api := app.Group("/api/v1")
-	//
-	////api.Use(middleware.AuthMiddleware())
-	////api.Post("/newsHandlers/create", middleware.AdminMiddleware(), newsHandlers.CreateNews())
-	////api.Put("/newsHandlers/:id/edit", middleware.AdminMiddleware(), newsHandlers.EditNews())
-	////api.Delete("/newsHandlers/:id/delete", middleware.AdminMiddleware(), newsHandlers.DeleteNews())
-	////
-	////api.Get("/newsHandlers", newsHandlers.GetNews())
-	////api.Get("/newsHandlers/:id", newsHandlers.GetNewsByID())
+func NewsRoutes(app *fiber.App, newsHandlers *newsHandlers.NewsHandlers) {
+	api := app.Group("/api/v1/news")
+
+	api.Get("/", newsHandlers.GetNews())
+	api.Get("/:id", newsHandlers.GetNewsByID())
+
+	//api.Use(auth.AuthMiddleware())
+	//api.Post("/:id/register", newsHandlers.LikeNews())
+
+	api.Use(admin.AdminMiddleware())
+	api.Post("/create", newsHandlers.CreateNews())
+	api.Put("/:id/edit", newsHandlers.EditNews())
+	api.Delete("/:id/delete", newsHandlers.DeleteNews())
 }
