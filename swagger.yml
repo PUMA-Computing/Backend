@@ -1,0 +1,453 @@
+swagger: "2.0"
+info:
+    title: PUMA Computing API
+    description: PUMA Computing API
+    version: 0.1.0
+consumes:
+    - application/json
+produces:
+    - application/json
+schemes:
+    - http
+paths:
+    /auth/login:
+        post:
+            tags:
+                - auth
+            summary: Login Endpoint
+            description: Request login to the system
+            operationId: authLogin
+            parameters:
+              - name: LoginRequest
+                in: body
+                description: The user email and password for login
+                required: true
+                schema:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                    password:
+                      type: string
+            responses:
+                '200':
+                    description: Login successful
+                    headers:
+                        X-Expires-After:
+                            description: date in UTC when token expires
+                            type: string
+                            format: date-time
+
+                '400':
+                    description: Error parsing login data
+                '401':
+                    description: Unauthorized
+                '500':
+                    description: Error generating session token
+            security:
+                - computing_auth:
+                      - write:content
+                      - read:content
+    /auth/register:
+        post:
+            tags:
+                - auth
+            summary: Registering user
+            description: creating a new user
+            operationId: authRegister
+            parameters:
+              - name: RegisterRequest
+                in: body
+                description: The user details
+                required: true
+                schema:
+                  type: object
+                  properties:
+                    first_name:
+                      type: string
+                    last_name:
+                      type: string
+                    email:
+                      type: string
+                    password:
+                      type: string
+                    nim:
+                      type: string
+                    year:
+                      type: string
+            responses:
+                '200':
+                    description: successful operation
+                '400':
+                    description: Invalid data request
+                '500':
+                    description: Error creating user
+            security:
+                - computing_auth:
+                      - write:content
+                      - read:content
+    /auth/logout:
+        post:
+            tags:
+                - auth
+            summary: Logout Endpoint
+            description: Request logout from the system
+            operationId: authLogout
+            responses:
+                '200':
+                    description: Logout successful
+                '401':
+                    description: Unauthorized
+                '500':
+                    description: Error generating session token
+            security:
+                - computing_auth:
+                      - write:content
+                      - read:content
+    /event/:
+        get:
+            tags:
+                - event
+            summary: Returns all events
+            description: Returns a list of all events
+            operationId: getAllEvent
+            responses:
+                '200':
+                    description: successful operation
+                    schema:
+                        type: array
+                        items:
+                            $ref: '#/definitions/Event'
+                '500':
+                    description: error retrieving events
+    /event/{eventId}:
+        get:
+            tags:
+                - event
+            summary: Get event by eventID
+            description: For valid response use int64 for eventID
+            operationId: getEventByID
+            parameters:
+                - name: eventId
+                  in: path
+                  description: ID of order that needs to be fetched
+                  required: true
+                  type: integer
+                  format: int64
+            responses:
+                '200':
+                    description: successful operation
+                    schema:
+                        $ref: '#/definitions/Event'
+                '500':
+                    description: Error retrieving event by ID
+    /event/{eventId}/register:
+        post:
+            tags:
+                - event
+            summary: Register User to the event
+            description: For valid response use int64 for eventID
+            operationId: registerUsersToEvent
+            parameters:
+                - name: eventId
+                  in: path
+                  description: ID of order that needs to be fetched
+                  required: true
+                  type: integer
+                  format: int64
+            responses:
+                '200':
+                    description: successful operation
+                    schema:
+                        $ref: '#/definitions/Event'
+                '500':
+                    description: Error retrieving event by ID
+    /event/create:
+        post:
+            tags:
+                - event
+            summary: Create new event
+            description: fill the value of the parameter
+            operationId: createEvent
+            parameters:
+              - name: EventRequest
+                in: body
+                description: The event details
+                required: true
+                schema:
+                  $ref: '#/definitions/Event'
+            responses:
+                '200':
+                    description: successful operation
+                    schema:
+                        $ref: '#/definitions/Event'
+                '400':
+                    description: Invalid input
+                '401':
+                    description: Unauthorized
+                '403':
+                    description: Access Denied
+                '500':
+                    description: Internal Server Error
+            security:
+                - computing_auth:
+                      - write:content
+                      - read:content
+    /event/{eventId}/edit:
+        put:
+            tags:
+                - event
+            summary: Edit existing event
+            description: update the value of the parameter
+            operationId: editEvent
+            parameters:
+              - name: eventId
+                in: path
+                description: ID of order that needs to be fetched
+                required: true
+                type: integer
+                format: int64
+              - name: EventRequest
+                in: body
+                description: The event details
+                required: true
+                schema:
+                  $ref: '#/definitions/Event'
+            responses:
+                '200':
+                    description: successful operation
+                    schema:
+                        $ref: '#/definitions/Event'
+                '400':
+                    description: Invalid input
+                '401':
+                    description: Unauthorized
+                '403':
+                    description: Access Denied
+                '500':
+                    description: Internal Server Error
+            security:
+                - computing_auth:
+                      - write:content
+                      - read:content
+    /event/{eventId}/delete:
+        delete:
+            tags:
+                - event
+            summary: Delete event
+            description: Delete the event
+            operationId: deleteEvent
+            parameters:
+                - name: eventId
+                  in: path
+                  description: ID of order that needs to be fetched
+                  required: true
+                  type: integer
+                  format: int64
+            responses:
+                '200':
+                    description: successful operation
+                '400':
+                    description: Invalid input
+                '500':
+                    description: Error retrieving event by ID
+    /news/:
+        get:
+            tags:
+                - news
+            summary: Returns all news
+            description: Returns a list of all news
+            operationId: getAllNews
+            responses:
+                '200':
+                    description: successful operation
+                    schema:
+                        type: array
+                        items:
+                            $ref: '#/definitions/News'
+                '500':
+                    description: error retrieving news
+    /news/{newsId}:
+        get:
+            tags:
+                - news
+            summary: Get news by newsID
+            description: For valid response use int64 for newsID
+            operationId: getNewsByID
+            parameters:
+              - name: newsId
+                in: path
+                description: ID of order that needs to be fetched
+                required: true
+                type: integer
+                format: int64
+            responses:
+                '200':
+                    description: successful operation
+                    schema:
+                        $ref: '#/definitions/News'
+                '500':
+                    description: Error retrieving news by ID
+    /news/create:
+        post:
+            tags:
+                - news
+            summary: Create new news
+            description: fill the value of the parameter
+            operationId: createNews
+            parameters:
+              - name: NewsRequest
+                in: body
+                description: The news details
+                required: true
+                schema:
+                  $ref: '#/definitions/News'
+            responses:
+                '200':
+                    description: successful operation
+                    schema:
+                        $ref: '#/definitions/News'
+                '400':
+                    description: Invalid input
+                '401':
+                    description: Unauthorized
+                '403':
+                    description: Access Denied
+                '500':
+                    description: Internal Server Error
+            security:
+                - computing_auth:
+                      - write:content
+                      - read:content
+    /news/{newsId}/edit:
+        put:
+            tags:
+                - news
+            summary: Edit existing news
+            description: update the value of the parameter
+            operationId: editNews
+            parameters:
+              - name: newsId
+                in: path
+                description: ID of order that needs to be fetched
+                required: true
+                type: integer
+                format: int64
+              - name: NewsRequest
+                in: body
+                description: The news details
+                required: true
+                schema:
+                  $ref: '#/definitions/News'
+            responses:
+                '200':
+                    description: successful operation
+                    schema:
+                        $ref: '#/definitions/News'
+                '400':
+                    description: Invalid input
+                '401':
+                    description: Unauthorized
+                '403':
+                    description: Access Denied
+                '500':
+                    description: Internal Server Error
+            security:
+                - computing_auth:
+                      - write:content
+                      - read:content
+    /news/{newsId}/delete:
+        delete:
+            tags:
+                - news
+            summary: Delete News
+            description: Delete the News
+            operationId: deleteNews
+            parameters:
+                - name: newsId
+                  in: path
+                  description: ID of order that needs to be fetched
+                  required: true
+                  type: integer
+                  format: int64
+            responses:
+                '200':
+                    description: successful operation
+                '400':
+                    description: Invalid input
+                '500':
+                    description: Error retrieving News by ID
+definitions:
+    User:
+        type: object
+        properties:
+            id:
+                type: integer
+                format: int64
+                readOnly: true
+            first_name:
+                type: string
+            last_name:
+                type: string
+            email:
+                type: string
+            password:
+                type: string
+            role:
+                type: string
+            nim:
+                type: string
+            year:
+                type: string
+        xml:
+            name: User
+    Event:
+        type: object
+        properties:
+            id:
+                type: integer
+                format: int64
+                readOnly: true
+            image:
+                type: string
+            name:
+                type: string
+            description:
+                type: string
+            date:
+                type: string
+                format: date-time
+            registered_users:
+                type: array
+                items:
+                    type: string
+                    format: uuid
+        xml:
+            name: Event
+    News:
+        type: object
+        properties:
+            id:
+                type: integer
+                format: int64
+                readOnly: true
+            authorID:
+                type: string
+                format: uuid
+            title:
+                type: string
+            content:
+                type: string
+            categories:
+                type: array
+                items:
+                    type: string
+            thumbnail:
+                type: string
+            visible:
+                type: boolean
+            published_date:
+                type: string
+                format: date-time
+        xml:
+            name: News

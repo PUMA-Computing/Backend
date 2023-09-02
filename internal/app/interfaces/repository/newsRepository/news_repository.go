@@ -3,13 +3,15 @@ package newsRepository
 import (
 	"Backend/internal/app/domain/news"
 	"github.com/gocql/gocql"
-	"time"
+	"gorm.io/gorm"
 )
 
 type NewsRepository interface {
-	CreateNews(news *news.News) error
 	GetNews() ([]*news.News, error)
 	GetNewsByID(id int64) (*news.News, error)
+	GetNewsByCategory(category string) ([]*news.News, error)
+	GetNewsByStatus(status string) ([]*news.News, error)
+	CreateNews(news *news.News) error
 	UpdateNews(news *news.News) error
 	DeleteNews(id int64) error
 }
@@ -17,76 +19,62 @@ type NewsRepository interface {
 type CassandraForNewsRepository struct {
 	session *gocql.Session
 }
-
-func NewCassandraForNewsRepository(session *gocql.Session) *CassandraForNewsRepository {
-	return &CassandraForNewsRepository{session: session}
+type PostgresForNewsRepository struct {
+	DB *gorm.DB
 }
 
-func (r *CassandraForNewsRepository) GetNews() ([]*news.News, error) {
-	query := "SELECT id, author_id, title, content, categories, thumbnail, visible, published_date FROM news"
-	iter := r.session.Query(query).Iter()
+func NewPostgresForNewsRepository(DB *gorm.DB) *PostgresForNewsRepository {
+	return &PostgresForNewsRepository{}
+}
 
+func (r *PostgresForNewsRepository) GetNews() ([]*news.News, error) {
 	var newsList []*news.News
-	var id int64
-	var authorID gocql.UUID
-	var title string
-	var content string
-	var categories []string
-	var thumbnail string
-	var visible bool
-	var publishedDate time.Time
-
-	for iter.Scan(&id, &authorID, &title, &content, &categories, &thumbnail, &visible, &publishedDate) {
-		newsTab := &news.News{
-			ID:            id,
-			AuthorID:      authorID,
-			Title:         title,
-			Content:       content,
-			Categories:    categories,
-			Thumbnail:     thumbnail,
-			Visible:       visible,
-			PublishedDate: publishedDate,
-		}
-		newsList = append(newsList, newsTab)
-	}
-	if err := iter.Close(); err != nil {
+	if err := r.DB.Find(&newsList).Error; err != nil {
 		return nil, err
 	}
-
 	return newsList, nil
 }
 
-func (r *CassandraForNewsRepository) GetNewsByID(id int64) (*news.News, error) {
+func (r *PostgresForNewsRepository) GetNewsByID(id int64) (*news.News, error) {
 	var newsTab news.News
-	query := "SELECT id, author_id, title, content, categories, thumbnail, visible, published_date FROM news WHERE id = ?"
-	if err := r.session.Query(query, id).Scan(
-		&newsTab.ID, &newsTab.AuthorID, &newsTab.Title, &newsTab.Content, &newsTab.Categories, &newsTab.Thumbnail, &newsTab.Visible, &newsTab.PublishedDate,
-	); err != nil {
+	if err := r.DB.Where("id = ?", id).First(&newsTab).Error; err != nil {
 		return nil, err
 	}
 	return &newsTab, nil
 }
 
-func (r *CassandraForNewsRepository) CreateNews(news *news.News) error {
-	query := "INSERT INTO news (id, author_id, title, content, categories, thumbnail, visible, published_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-	if err := r.session.Query(query, news.ID, news.AuthorID, news.Title, news.Content, news.Categories, news.Thumbnail, news.Visible, news.PublishedDate).Exec(); err != nil {
-		return err
+func (r *PostgresForNewsRepository) GetNewsByCategory(category string) ([]*news.News, error) {
+	var newsList []*news.News
+	if err := r.DB.Where("category = ?", category).Find(&newsList).Error; err != nil {
+		return nil, err
 	}
-	return nil
+	return newsList, nil
 }
 
-func (r *CassandraForNewsRepository) UpdateNews(news *news.News) error {
-	query := "UPDATE news SET title = ?, content = ?, categories = ?, thumbnail = ?, visible = ?, published_date = ? WHERE id = ?"
-	if err := r.session.Query(query, news.Title, news.Content, news.Categories, news.Thumbnail, news.Visible, news.PublishedDate, news.ID).Exec(); err != nil {
-		return err
+func (r *PostgresForNewsRepository) GetNewsByStatus(status string) ([]*news.News, error) {
+	var newsList []*news.News
+	if err := r.DB.Where("status = ?", status).Find(&newsList).Error; err != nil {
+		return nil, err
 	}
-	return nil
+	return newsList, nil
 }
 
-func (r *CassandraForNewsRepository) DeleteNews(id int64) error {
-	query := "DELETE FROM news WHERE id = ?"
-	if err := r.session.Query(query, id).Exec(); err != nil {
-		return err
+func (r *PostgresForNewsRepository) GetNewsByAuthorID(authorID int64) ([]*news.News, error) {
+	var newsList []*news.News
+	if err := r.DB.Where("author_id = ?", authorID).Find(&newsList).Error; err != nil {
+		return nil, err
 	}
-	return nil
+	return newsList, nil
+}
+
+func (r *PostgresForNewsRepository) CreateNews(news *news.News) error {
+	return r.DB.Create(news).Error
+}
+
+func (r *PostgresForNewsRepository) UpdateNews(news *news.News) error {
+	return r.DB.Save(news).Error
+}
+
+func (r *PostgresForNewsRepository) DeleteNews(id int64) error {
+	return r.DB.Delete(&news.News{}, id).Error
 }

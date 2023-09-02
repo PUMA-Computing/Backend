@@ -3,8 +3,8 @@ package admin
 import (
 	"Backend/internal/app/domain/roles"
 	"Backend/internal/utils/token"
-	"github.com/gocql/gocql"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"time"
 )
 
@@ -20,7 +20,7 @@ func AdminMiddleware() fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
 		}
 
-		userUUID, err := gocql.ParseUUID(userID)
+		userUUID, err := uuid.Parse(userID)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
 		}

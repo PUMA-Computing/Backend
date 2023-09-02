@@ -1,20 +1,21 @@
 package token
 
 import (
-	"Backend/internal/app/interfaces/repository/cassandraRepository"
+	postgresRepository2 "Backend/internal/app/interfaces/repository/postgresRepository"
 	"errors"
-	"github.com/gocql/gocql"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"time"
 )
 
 const (
-	jwtSecretKey          = "pumacomputing"
 	jwtExpirationDuration = time.Hour * 24
 	SessionDuration       = 24 * time.Hour
 )
 
-func GenerateJWTToken(userID gocql.UUID, role string) (string, error) {
+var jwtSecretKey string
+
+func GenerateJWTToken(userID uuid.UUID, role int) (string, error) {
 	claims := jwt.MapClaims{
 		"userID": userID,
 		"role":   role,
@@ -36,12 +37,12 @@ func IsValidSessionToken(sessionUserID, sessionToken string) (bool, error) {
 		return false, err
 	}
 
-	userUUID, err := gocql.ParseUUID(userID)
+	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return false, err
 	}
 
-	repo, err := cassandraRepository.NewCassandraRepository()
+	repo, err := postgresRepository2.NewPostgresRepository()
 	if err != nil {
 		return false, err
 	}
@@ -85,40 +86,40 @@ func IsTokenAboutToExpire(token string, threshold time.Duration) bool {
 	return currentTime.Add(threshold).After(expiryTime)
 }
 
-func ValidateSessionToken(tokenString string) (string, string, error) {
+func ValidateSessionToken(tokenString string) (string, int, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return []byte(jwtSecretKey), nil
 	})
 	if err != nil {
-		return "", "", err
+		return "", 0, err
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		return "", "", errors.New("invalid token claims")
+		return "", 0, errors.New("invalid token claims")
 	}
 
 	userID, ok := claims["userID"].(string)
 	if !ok {
-		return "", "", errors.New("missing userID claim")
+		return "", 0, errors.New("missing userID claim")
 	}
 
-	userRole, ok := claims["role"].(string)
+	userRole, ok := claims["role_id"].(int)
 	if !ok {
-		return "", "", errors.New("missing role claim")
+		return "", 0, errors.New("missing role claim")
 	}
 
 	return userID, userRole, nil
 }
 
-func StoreSessionData(userID gocql.UUID, sessionToken string, expirationTime time.Time) error {
-	cassandraRepository, err := cassandraRepository.NewCassandraRepository()
+func StoreSessionData(userID uuid.UUID, sessionToken string, expirationTime time.Time) error {
+	postgresRepository, err := postgresRepository2.NewPostgresRepository()
 	if err != nil {
 		return err
 	}
-	defer cassandraRepository.Close()
+	defer postgresRepository.Close()
 
-	if err := cassandraRepository.StoreSessionData(userID, sessionToken, expirationTime); err != nil {
+	if err := postgresRepository.StoreSessionData(userID, sessionToken, expirationTime); err != nil {
 		return err
 	}
 

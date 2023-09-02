@@ -1,8 +1,8 @@
 package roles
 
 const (
-	RolePUMA = "PUMA"
-	RoleUser = "Computizen"
+	RolePUMA       = 1
+	RoleComputizen = 2
 )
 
 type Role struct {

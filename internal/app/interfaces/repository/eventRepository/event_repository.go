@@ -4,151 +4,102 @@ import (
 	"Backend/internal/app/domain/event"
 	"Backend/internal/app/domain/user"
 	"github.com/gocql/gocql"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+	"time"
 )
 
 type EventRepository interface {
-	IsRegisteredForEvent(userID gocql.UUID, eventID int64) (bool, error)
-	GetEvent() ([]*event.Event, error)
-	GetEventByID(eventID int64) (*event.Event, error)
+	IsRegisteredForEvent(userID uuid.UUID, eventID int64) (bool, error)
+	GetEvent() ([]*event.Events, error)
+	GetEventByID(eventID int64) (*event.Events, error)
 	GetEventUser(eventID int64) ([]*user.User, error)
-	GetUserByID(userID gocql.UUID) (*user.User, error)
-	CreateEvent(event *event.Event) error
-	UpdateEvent(event *event.Event) error
+	GetUserByID(userID uuid.UUID) (*user.User, error)
+	CreateEvent(event *event.Events) error
+	UpdateEvent(event *event.Events) error
 	DeleteEvent(eventID int64) error
-	RegisterUserForEvent(userID gocql.UUID, eventID int64) error
+	RegisterUserForEvent(userID uuid.UUID, eventID int64) error
 }
 type CassandraEventRepository struct {
 	session *gocql.Session
 }
 
-func NewCassandraForEventRepository(session *gocql.Session) *CassandraEventRepository {
-	return &CassandraEventRepository{session: session}
+type PostgresEventRepository struct {
+	DB *gorm.DB
 }
 
-func (r *CassandraEventRepository) IsRegisteredForEvent(userID gocql.UUID, eventID int64) (bool, error) {
-	query := r.session.Query(
-		"SELECT COUNT(*) FROM events WHERE registered_users = ? AND id = ?",
-		userID, eventID,
-	)
-
-	var count int
-	if err := query.Scan(&count); err != nil {
-		return false, err
-	}
-
-	return count > 0, nil
+func NewPostgresForEventRepository(DB *gorm.DB) *PostgresEventRepository {
+	return &PostgresEventRepository{DB: DB}
 }
 
-func (r *CassandraEventRepository) GetEvent() ([]*event.Event, error) {
-	query := r.session.Query(
-		"SELECT id, image, name, description, date, registered_users FROM events ",
-	)
-	iter := query.Iter()
-	defer iter.Close()
-
-	var events []*event.Event
-
-	for {
-		var event event.Event
-		if !iter.Scan(&event.ID, &event.Image, &event.Name, &event.Description, &event.Date, &event.RegisteredUsers) {
-			break
-		}
-		events = append(events, &event)
-	}
-
-	if err := iter.Close(); err != nil {
+func (r *PostgresEventRepository) GetEvent() ([]*event.Events, error) {
+	var events []*event.Events
+	if err := r.DB.Find(&events).Error; err != nil {
 		return nil, err
 	}
 
 	return events, nil
 }
 
-func (r *CassandraEventRepository) GetEventByID(eventID int64) (*event.Event, error) {
-	var event event.Event
-
-	query := r.session.Query(
-		"SELECT id, image, name, description, date, registered_users FROM events WHERE id = ?",
-		eventID,
-	)
-
-	if err := query.Scan(&event.ID, &event.Image, &event.Name, &event.Description, &event.Date, &event.RegisteredUsers); err != nil {
+func (r *PostgresEventRepository) GetEventByID(eventID int64) (*event.Events, error) {
+	var event event.Events
+	if err := r.DB.Where("id = ?", eventID).First(&event).Error; err != nil {
 		return nil, err
 	}
 
 	return &event, nil
 }
 
-func (r *CassandraEventRepository) GetEventUser(eventID int64) ([]*user.User, error) {
-	query := r.session.Query(
-		"SELECT id, first_name, last_name, email, nim, year, role FROM users WHERE id = ?",
-		eventID,
-	)
-
-	var registeredUsers []gocql.UUID
-	if err := query.Scan(&registeredUsers); err != nil {
+func (r *PostgresEventRepository) GetEventUser(eventID int64) ([]*user.User, error) {
+	var users []*user.User
+	if err := r.DB.
+		Joins("JOIN event_registration ON event_registration.user_id = users.id").
+		Where("event_registration.event_id = ?", eventID).
+		Find(&users).
+		Error; err != nil {
 		return nil, err
-	}
-
-	users := make([]*user.User, 0)
-	for _, UserID := range registeredUsers {
-		user, err := r.GetUserByID(UserID)
-		if err != nil {
-			return nil, err
-		}
-
-		users = append(users, user)
 	}
 	return users, nil
 }
 
-func (r *CassandraEventRepository) GetUserByID(userID gocql.UUID) (*user.User, error) {
-	var user user.User
-
-	query := r.session.Query(
-		"SELECT id, first_name, last_name, nim, email, year, role FROM users WHERE id = ?",
-		userID,
-	)
-
-	if err := query.Scan(&userID, &user.FirstName, &user.LastName, &user.NIM, &user.Email, &user.Year, &user.Role); err != nil {
+func (r *PostgresEventRepository) GetUserByID(userID uuid.UUID) (*user.User, error) {
+	var u user.User
+	if err := r.DB.Where("id = ?", userID).First(&u).Error; err != nil {
 		return nil, err
 	}
 
-	return &user, nil
-
+	return &u, nil
 }
 
-func (r *CassandraEventRepository) CreateEvent(event *event.Event) error {
-	query := r.session.Query(
-		"INSERT INTO events (id, image, name, description, date, registered_users) VALUES (?, ?, ?, ?, ?, ?)",
-		event.ID, event.Image, event.Name, event.Description, event.Date, event.RegisteredUsers,
-	)
-
-	return query.Exec()
+func (r *PostgresEventRepository) RegisterUserForEvent(userID uuid.UUID, eventID int64) error {
+	registration := event.Registration{
+		EventID:   eventID,
+		UserID:    userID,
+		CreatedAt: time.Now(),
+	}
+	return r.DB.Create(&registration).Error
 }
 
-func (r *CassandraEventRepository) UpdateEvent(event *event.Event) error {
-	query := r.session.Query(
-		"UPDATE events SET image = ?, name = ?, description = ?, date = ?, registered_users = ? WHERE id = ?",
-		event.Image, event.Name, event.Description, event.Date, event.RegisteredUsers, event.ID,
-	)
-
-	return query.Exec()
+func (r *PostgresEventRepository) IsRegisteredForEvent(userID uuid.UUID, eventID int64) (bool, error) {
+	var count int64
+	if err := r.DB.
+		Model(&event.Registration{}).
+		Where("user_id = ? AND event_id = ?", userID, eventID).
+		Count(&count).
+		Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
-func (r *CassandraEventRepository) DeleteEvent(eventID int64) error {
-	query := r.session.Query(
-		"DELETE FROM events WHERE id = ?",
-		eventID,
-	)
-
-	return query.Exec()
+func (r *PostgresEventRepository) CreateEvent(event *event.Events) error {
+	return r.DB.Create(event).Error
 }
 
-func (r *CassandraEventRepository) RegisterUserForEvent(userID gocql.UUID, eventID int64) error {
-	query := r.session.Query(
-		"INSERT INTO events (registered_users, id) VALUES (?, ?)",
-		userID, eventID,
-	)
+func (r *PostgresEventRepository) UpdateEvent(event *event.Events) error {
+	return r.DB.Save(event).Error
+}
 
-	return query.Exec()
+func (r *PostgresEventRepository) DeleteEvent(eventID int64) error {
+	return r.DB.Delete(&event.Events{}, eventID).Error
 }

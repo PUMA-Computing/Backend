@@ -4,8 +4,8 @@ import (
 	"Backend/internal/app/domain/roles"
 	"Backend/internal/utils/token"
 	"fmt"
-	"github.com/gocql/gocql"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"time"
 )
 
@@ -21,12 +21,12 @@ func AuthMiddleware() fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
 		}
 
-		userUUID, err := gocql.ParseUUID(userID)
+		userUUID, err := uuid.Parse(userID)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
 		}
 
-		if userRole != roles.RoleUser && userRole != roles.RolePUMA {
+		if userRole != roles.RoleComputizen && userRole != roles.RolePUMA {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "Access Denied"})
 		}
 

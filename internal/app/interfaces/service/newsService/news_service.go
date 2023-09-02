@@ -9,7 +9,7 @@ type NewsService interface {
 	GetNews() ([]*news.News, error)
 	GetNewsByID(id int64) (*news.News, error)
 	CreateNews(news *news.News) error
-	UpdateNews(newsID int64, news *news.News) error
+	UpdateNews(news *news.News) error
 	DeleteNews(id int64) error
 }
 
@@ -37,22 +37,38 @@ func (s *NewsServiceImpl) GetNewsByID(id int64) (*news.News, error) {
 	return newsGetID, nil
 }
 
+func (r *NewsServiceImpl) GetNewsByCategory(category string) ([]*news.News, error) {
+	newsGetCategory, err := r.newsRepository.GetNewsByCategory(category)
+	if err != nil {
+		return nil, err
+	}
+	return newsGetCategory, nil
+}
+
+func (r *NewsServiceImpl) GetNewsByStatus(status string) ([]*news.News, error) {
+	newsGetStatus, err := r.newsRepository.GetNewsByStatus(status)
+	if err != nil {
+		return nil, err
+	}
+	return newsGetStatus, nil
+}
+
 func (s *NewsServiceImpl) CreateNews(news *news.News) error {
 	return s.newsRepository.CreateNews(news)
 }
 
-func (s *NewsServiceImpl) UpdateNews(newsID int64, UpdatedNews *news.News) error {
-	existingNews, err := s.newsRepository.GetNewsByID(newsID)
+func (s *NewsServiceImpl) UpdateNews(news *news.News) error {
+	existingNews, err := s.newsRepository.GetNewsByID(news.ID)
 	if err != nil {
 		return err
 	}
 
-	existingNews.Title = UpdatedNews.Title
-	existingNews.Content = UpdatedNews.Content
-	existingNews.Categories = UpdatedNews.Categories
-	existingNews.Thumbnail = UpdatedNews.Thumbnail
-	existingNews.Visible = UpdatedNews.Visible
-	existingNews.PublishedDate = UpdatedNews.PublishedDate
+	existingNews.Title = news.Title
+	existingNews.Content = news.Content
+	existingNews.CategoryID = news.CategoryID
+	existingNews.Thumbnail = news.Thumbnail
+	existingNews.Status = news.Status
+	existingNews.PublishedDate = news.PublishedDate
 
 	return s.newsRepository.UpdateNews(existingNews)
 }

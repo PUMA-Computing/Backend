@@ -12,7 +12,7 @@ func init() {
 	validate = validator.New()
 }
 
-func ValidateEvent(event *event.Event) error {
+func ValidateEvent(event *event.Events) error {
 	return validate.Struct(event)
 }
 

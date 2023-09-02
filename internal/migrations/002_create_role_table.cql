@@ -1,4 +1,0 @@
-CREATE TABLE IF NOT EXISTS Role (
-    id INT PRIMARY KEY,
-    Name TEXT,
-);

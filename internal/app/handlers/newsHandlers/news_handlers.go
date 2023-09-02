@@ -62,18 +62,20 @@ func (h *NewsHandlers) CreateNews() fiber.Handler {
 
 func (h *NewsHandlers) EditNews() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		newsID := c.Params("id")
-		newsIDInt, err := strconv.ParseInt(newsID, 10, 64)
-		var UpdatedNews news.News
-		if err := c.BodyParser(&UpdatedNews); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing Updated news"})
+		var newsItem news.News
+		if err := c.BodyParser(&newsItem); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing news"})
 		}
 
-		err = h.newsService.UpdateNews(newsIDInt, &UpdatedNews)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error updating news"})
+		if err := validation.ValidateNews(&newsItem); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error validating news"})
 		}
-		return c.JSON(fiber.Map{"message": "News updated Successfully"})
+
+		if err := h.newsService.UpdateNews(&newsItem); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error editing news"})
+		}
+
+		return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "News edited successfully"})
 	}
 }
 

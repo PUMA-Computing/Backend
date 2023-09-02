@@ -2,37 +2,52 @@ package userRepository
 
 import (
 	"Backend/internal/app/domain/user"
-	"github.com/gocql/gocql"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type UserRepository interface {
 	RegisterUser(user *user.User) error
 	GetUserByEmail(email string) (*user.User, error)
+	GetUserByID(id uuid.UUID) (*user.User, error)
+	UpdateUser(user *user.User) error
+	DeleteUser(id uuid.UUID) error
 }
 
-type CassandraUserRepository struct {
-	session *gocql.Session
+type PostgresUserRepository struct {
+	session *gorm.DB
 }
 
-func NewCassandraUserRepository(session *gocql.Session) *CassandraUserRepository {
-	return &CassandraUserRepository{session: session}
+func NewPostgresUserRepository(session *gorm.DB) *PostgresUserRepository {
+	return &PostgresUserRepository{session: session}
 }
 
-func (r *CassandraUserRepository) RegisterUser(user *user.User) error {
-	query := r.session.Query(
-		"INSERT INTO users (id, first_name, last_name, email, password, nim, year, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-		user.ID, user.FirstName, user.LastName, user.Email, user.Password, user.NIM, user.Year, user.Role,
-	)
-
-	return query.Exec()
+func (r *PostgresUserRepository) RegisterUser(user *user.User) error {
+	return r.session.Create(user).Error
 }
 
-func (r *CassandraUserRepository) GetUserByEmail(email string) (*user.User, error) {
-	query := `SELECT id, first_name, last_name, email, password, nim, year, role FROM users WHERE email = ? ALLOW FILTERING`
+func (r *PostgresUserRepository) GetUserByEmail(email string) (*user.User, error) {
 	var user user.User
-	if err := r.session.Query(query, email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.NIM, &user.Year, &user.Role); err != nil {
+	if err := r.session.Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, err
 	}
 
 	return &user, nil
+}
+
+func (r *PostgresUserRepository) GetUserByID(id uuid.UUID) (*user.User, error) {
+	var user user.User
+	if err := r.session.Where("id = ?", id).First(&user).Error; err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (r *PostgresUserRepository) UpdateUser(user *user.User) error {
+	return r.session.Save(user).Error
+}
+
+func (r *PostgresUserRepository) DeleteUser(id uuid.UUID) error {
+	return r.session.Delete(&user.User{}, id).Error
 }

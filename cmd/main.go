@@ -21,16 +21,17 @@ import (
 	eventHandlers2 "Backend/internal/app/handlers/eventHandlers"
 	news3 "Backend/internal/app/handlers/newsHandlers"
 	user3 "Backend/internal/app/handlers/userHandlers"
-	repository2 "Backend/internal/app/interfaces/repository/cassandraRepository"
 	event1 "Backend/internal/app/interfaces/repository/eventRepository"
 	news1 "Backend/internal/app/interfaces/repository/newsRepository"
+	"Backend/internal/app/interfaces/repository/postgresRepository"
 	user1 "Backend/internal/app/interfaces/repository/userRepository"
 	event2 "Backend/internal/app/interfaces/service/eventService"
 	news2 "Backend/internal/app/interfaces/service/newsService"
 	user2 "Backend/internal/app/interfaces/service/userService"
-	"Backend/pkg/migrations"
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 	"log"
+	"os"
 	"time"
 )
 
@@ -38,37 +39,41 @@ import (
  * Connect to database with retry
  * This function will try to connect to the database 5 times with a 5s delay between each try.
  */
-func connectToDatabaseWithRetry() (*repository2.CassandraRepository, error) {
-	var cassandraRepo *repository2.CassandraRepository
+func connectToDatabaseWithRetry() (*postgresRepository.PostgresRepository, error) {
+	var postgresRepo *postgresRepository.PostgresRepository
 	var err error
-
-	for retries := 0; retries < 5; retries++ {
-		cassandraRepo, err = repository2.NewCassandraRepository()
+	for i := 0; i < 5; i++ {
+		postgresRepo, err = postgresRepository.NewPostgresRepository()
 		if err == nil {
-			break
+			return postgresRepo, nil
 		}
-		log.Printf("Error connecting to the database: %s. Retrying...", err)
 		time.Sleep(5 * time.Second)
 	}
-	if err != nil {
-		return nil, err
-	}
-	return cassandraRepo, nil
+	return nil, err
 }
 
 func main() {
-	cassandraRepo, err := connectToDatabaseWithRetry()
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
+
+	jwtSecretKey := os.Getenv("JWT_SECRET")
+	if jwtSecretKey == "" {
+		log.Fatalf("JWT_SECRET_KEY environment variable not set")
+	}
+
+	postgresRepo, err := connectToDatabaseWithRetry()
 	if err != nil {
 		panic(err)
 	}
-	defer cassandraRepo.Close()
+	defer postgresRepo.Close()
 
 	/**
 	 * Repositories
 	 */
-	userRepository := user1.NewCassandraUserRepository(cassandraRepo.Session)
-	eventRepository := event1.NewCassandraForEventRepository(cassandraRepo.Session)
-	newsRepository := news1.NewCassandraForNewsRepository(cassandraRepo.Session)
+	userRepository := user1.NewPostgresUserRepository(postgresRepo.DB)
+	eventRepository := event1.NewPostgresForEventRepository(postgresRepo.DB)
+	newsRepository := news1.NewPostgresForNewsRepository(postgresRepo.DB)
 
 	/**
 	 * Services
@@ -84,11 +89,6 @@ func main() {
 	eventHandlers := eventHandlers2.NewEventHandlers(eventService)
 	newsHandlers := news3.NewNewsHandlers(newsService)
 
-	err = migrations.ExecuteMigrations(cassandraRepo.Session)
-	if err != nil {
-		log.Fatalf("Error executing migrations: %s", err.Error())
-	}
-
 	app := fiber.New()
 
 	/**
@@ -97,26 +97,6 @@ func main() {
 	v1.AuthRoutes(app, userHandlers)
 	v1.EventRoutes(app, eventHandlers)
 	v1.NewsRoutes(app, newsHandlers)
-
-	/**
-	 * Database connection checker
-	 *
-	 * This goroutine will check if the database connection is still alive every 10 seconds.
-	 */
-	go func() {
-		for {
-			if cassandraRepo.Session.Closed() {
-				log.Println("Database connection lost. Reconnecting")
-				cassandraRepo, err = connectToDatabaseWithRetry()
-				if err != nil {
-					log.Printf("Failed to reconnect to database: %s", err.Error())
-				} else {
-					log.Println("Reconnected to database")
-				}
-			}
-			time.Sleep(10 * time.Second)
-		}
-	}()
 
 	err = app.Listen(":3000")
 	if err != nil {

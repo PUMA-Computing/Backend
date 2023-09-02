@@ -5,17 +5,17 @@ import (
 	"Backend/internal/app/domain/user"
 	event2 "Backend/internal/app/interfaces/repository/eventRepository"
 	"errors"
-	"github.com/gocql/gocql"
+	"github.com/google/uuid"
 )
 
 type EventService interface {
-	CreateEvent(event *event.Event) error
-	UpdateEvent(eventID int64, updatedEvent *event.Event) error
+	CreateEvent(event *event.Events) error
+	UpdateEvent(eventID int64, updatedEvent *event.Events) error
 	DeleteEvent(eventID int64) error
 	GetEventUsers(eventID int64) ([]*user.User, error)
-	RegisterUserForEvent(UserID gocql.UUID, eventID int64) error
-	GetEvent() ([]*event.Event, error)
-	GetEventByID(eventID int64) (*event.Event, error)
+	RegisterUserForEvent(UserID uuid.UUID, eventID int64) error
+	GetEvent() ([]*event.Events, error)
+	GetEventByID(eventID int64) (*event.Events, error)
 }
 
 type EventServiceImpl struct {
@@ -26,11 +26,11 @@ func NewEventService(eventRepository event2.EventRepository) *EventServiceImpl {
 	return &EventServiceImpl{eventRepository: eventRepository}
 }
 
-func (s *EventServiceImpl) CreateEvent(event *event.Event) error {
+func (s *EventServiceImpl) CreateEvent(event *event.Events) error {
 	return s.eventRepository.CreateEvent(event)
 }
 
-func (s *EventServiceImpl) UpdateEvent(eventID int64, updatedEvent *event.Event) error {
+func (s *EventServiceImpl) UpdateEvent(eventID int64, updatedEvent *event.Events) error {
 	existingEvent, err := s.eventRepository.GetEventByID(eventID)
 	if err != nil {
 		return err
@@ -47,7 +47,7 @@ func (s *EventServiceImpl) DeleteEvent(eventID int64) error {
 	return s.eventRepository.DeleteEvent(eventID)
 }
 
-func (s *EventServiceImpl) GetEvent() ([]*event.Event, error) {
+func (s *EventServiceImpl) GetEvent() ([]*event.Events, error) {
 	events, err := s.eventRepository.GetEvent()
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (s *EventServiceImpl) GetEvent() ([]*event.Event, error) {
 	return events, nil
 }
 
-func (s *EventServiceImpl) GetEventByID(eventID int64) (*event.Event, error) {
+func (s *EventServiceImpl) GetEventByID(eventID int64) (*event.Events, error) {
 	event, err := s.eventRepository.GetEventByID(eventID)
 	if err != nil {
 		return nil, err
@@ -74,25 +74,24 @@ func (s *EventServiceImpl) GetEventUsers(EventID int64) ([]*user.User, error) {
 	return users, nil
 }
 
-func (s *EventServiceImpl) RegisterUserForEvent(UserID gocql.UUID, eventID int64) error {
-	isRegistered, err := s.eventRepository.IsRegisteredForEvent(UserID, eventID)
-	if err != nil {
-		return err
-	}
-
-	if isRegistered {
-		return errors.New("user already registered for event")
-	}
-
+func (s *EventServiceImpl) RegisterUserForEvent(UserID uuid.UUID, eventID int64) error {
 	event, err := s.eventRepository.GetEventByID(eventID)
 	if err != nil {
 		return err
 	}
 
-	event.RegisteredUsers = append(event.RegisteredUsers, UserID.String())
-	if err := s.eventRepository.UpdateEvent(event); err != nil {
+	if event == nil {
+		return errors.New("event not found")
+	}
+
+	user, err := s.eventRepository.GetUserByID(UserID)
+	if err != nil {
 		return err
 	}
 
-	return nil
+	if user == nil {
+		return errors.New("user not found")
+	}
+
+	return s.eventRepository.RegisterUserForEvent(UserID, eventID)
 }

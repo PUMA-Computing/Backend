@@ -19,13 +19,13 @@ func NewEventHandlers(eventService eventService.EventService) *EventHandlers {
 
 func (h *EventHandlers) CreateEvent() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var event event.Event
+		var event event.Events
 		if err := c.BodyParser(&event); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error Parsing event"})
 		}
 
 		/*
-			Validate eventService data
+			Validate event data
 		*/
 		if err := validation.ValidateEvent(&event); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error validating event"})
@@ -44,7 +44,7 @@ func (h *EventHandlers) EditEvent() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		eventID := c.Params("id")
 		eventIDInt, err := strconv.ParseInt(eventID, 10, 64)
-		var UpdatedEvent event.Event
+		var UpdatedEvent event.Events
 		if err := c.BodyParser(&UpdatedEvent); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error Parsing Updated event"})
 		}
@@ -112,15 +112,16 @@ func (h *EventHandlers) GetEventByID() fiber.Handler {
 
 func (h *EventHandlers) RegisterUserForEvent() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		eventID := c.Params("eventID")
-		userID, _ := getUserContext.GetUserIDFromContext(c)
+		eventID := c.Params("id")
 		eventIDInt, err := strconv.ParseInt(eventID, 10, 64)
+
+		userID, _ := getUserContext.GetUserIDFromContext(c)
+
+		err = h.eventService.RegisterUserForEvent(userID, eventIDInt)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing eventID"})
-		}
-		if err := h.eventService.RegisterUserForEvent(userID, eventIDInt); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error registering user for event"})
 		}
-		return c.JSON(fiber.Map{"message": "User registered for event"})
+
+		return c.JSON(fiber.Map{"message": "User registered for event Successfully"})
 	}
 }
