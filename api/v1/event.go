@@ -13,10 +13,10 @@ func EventRoutes(app *fiber.App, eventHandlers *eventHandlers.EventHandlers) {
 	api.Get("/", eventHandlers.GetEvent())
 	api.Get("/:id", eventHandlers.GetEventByID())
 
-	api.Use(auth.AuthMiddleware())
+	api.Use(auth.Middleware())
 	api.Post("/:id/register", eventHandlers.RegisterUserForEvent())
 
-	api.Use(admin.AdminMiddleware())
+	api.Use(admin.Middleware())
 	api.Post("/create", eventHandlers.CreateEvent())
 	api.Put("/:id/edit", eventHandlers.EditEvent())
 	api.Delete("/:id/delete", eventHandlers.DeleteEvent())

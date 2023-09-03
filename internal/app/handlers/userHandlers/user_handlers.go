@@ -1,12 +1,13 @@
 package userHandlers
 
 import (
-	"Backend/internal/app/domain/roles"
 	"Backend/internal/app/domain/user"
 	user2 "Backend/internal/app/interfaces/service/userService"
-	"Backend/internal/utils/getUserContext"
 	"Backend/internal/utils/token"
+	"errors"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"time"
 )
 
@@ -20,19 +21,52 @@ func NewUserHandlers(userService user2.UserServices) *UserHandlers {
 
 func (h *UserHandlers) RegisterUser() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var user user.User
+		var user *user.User
 		if err := c.BodyParser(&user); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing userService"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing registration data"})
 		}
 
-		user.RoleID = roles.RoleComputizen
-
-		if err := h.userService.RegisterUser(&user); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error creating user", "error": err.Error()})
+		if err := h.validateRegistrationData(user); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "User created successfully"})
+		user.RoleID = 2
+		user.CreatedAt = time.Now()
+
+		if err := h.userService.RegisterUser(user); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error registering user"})
+		}
+
+		return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "User registered successfully"})
 	}
+}
+
+func (h *UserHandlers) validateRegistrationData(user *user.User) error {
+	if user.Email == "" {
+		return errors.New("email is required")
+	}
+
+	if user.Password == "" {
+		return errors.New("password is required")
+	}
+
+	if user.FirstName == "" {
+		return errors.New("first name is required")
+	}
+
+	if user.LastName == "" {
+		return errors.New("last name is required")
+	}
+
+	if user.NIM == "" {
+		return errors.New("nim is required")
+	}
+
+	if user.Year == "" {
+		return errors.New("year is required")
+	}
+
+	return nil
 }
 
 func (h *UserHandlers) Login() fiber.Handler {
@@ -48,79 +82,80 @@ func (h *UserHandlers) Login() fiber.Handler {
 
 		user, err := h.userService.AuthenticateUser(loginData.Email, loginData.Password)
 		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid email or password", "error": err.Error()})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid email or password"})
 		}
 
 		sessionToken, err := token.GenerateJWTToken(user.User.ID, user.User.RoleID)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error generating session token"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error generating session token", "error": err.Error()})
 		}
+
+		fmt.Printf("Generated Token Claims:", sessionToken)
 
 		expirationTime := time.Now().Add(token.SessionDuration)
 		if err := token.StoreSessionData(user.User.ID, sessionToken, expirationTime); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error storing session data", "error": err.Error()})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error storing session data", "error": err.Error()})
 		}
 
-		c.Cookie(&fiber.Cookie{
-			Name:     "session_token",
-			Value:    sessionToken,
-			Expires:  expirationTime,
-			Path:     "/",
-			HTTPOnly: true,
-			Secure:   true,
-			SameSite: "Strict",
-		})
-
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Login successful", "session_token": sessionToken})
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User logged in successfully", "access_token": sessionToken})
 	}
 }
 
 func (h *UserHandlers) Logout() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		c.Cookie(&fiber.Cookie{
-			Name:     "session_token",
-			Value:    "",
-			Expires:  time.Now().Add(-time.Hour),
-			HTTPOnly: true,
-			Secure:   true,
-		})
+		sessionToken := c.Locals("sessionToken").(uuid.UUID)
+		if err := token.DeleteSessionData(sessionToken); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error logging out user"})
+		}
 
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Logout successful"})
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User logged out successfully"})
 	}
 }
 
-func (h *UserHandlers) GetUser() fiber.Handler {
+func (h *UserHandlers) GetUserProfile() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		userID, err := getUserContext.GetUserIDFromContext(c)
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized", "error": err.Error()})
-		}
-
+		userID := c.Locals("userID").(uuid.UUID)
 		user, err := h.userService.GetUserByID(userID)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error getting user", "error": err.Error()})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error getting user profile"})
 		}
 
-		return c.Status(fiber.StatusOK).JSON(user)
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User profile retrieved successfully", "user": user})
+	}
+}
+
+func (h *UserHandlers) GetAllUsers() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		users, err := h.userService.GetAllUsers()
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error getting all users"})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Users retrieved successfully", "users": users})
+	}
+}
+
+func (h *UserHandlers) GetUserByEmail() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		email := c.Locals("email").(string)
+		user, err := h.userService.GetUserByEmail(email)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error getting user by email"})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User retrieved successfully", "user": user})
 	}
 }
 
 func (h *UserHandlers) UpdateUser() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var user user.User
+		var user *user.User
 		if err := c.BodyParser(&user); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing user data"})
 		}
 
-		userID, err := getUserContext.GetUserIDFromContext(c)
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized", "error": err.Error()})
-		}
-
-		user.ID = userID
-
-		if err := h.userService.UpdateUser(&user); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error updating user", "error": err.Error()})
+		if err := h.userService.UpdateUser(user); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error updating user"})
 		}
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User updated successfully"})
@@ -129,13 +164,9 @@ func (h *UserHandlers) UpdateUser() fiber.Handler {
 
 func (h *UserHandlers) DeleteUser() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		userID, err := getUserContext.GetUserIDFromContext(c)
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized", "error": err.Error()})
-		}
-
+		userID := c.Locals("userID").(uuid.UUID)
 		if err := h.userService.DeleteUser(userID); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error deleting user", "error": err.Error()})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error deleting user"})
 		}
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User deleted successfully"})

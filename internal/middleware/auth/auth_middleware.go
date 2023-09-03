@@ -2,49 +2,51 @@ package auth
 
 import (
 	"Backend/internal/app/domain/roles"
-	"Backend/internal/utils/token"
+	token2 "Backend/internal/utils/token"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"time"
 )
 
-func AuthMiddleware() fiber.Handler {
+func Middleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		sessionToken := c.Cookies("session_token")
-		if sessionToken == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
+		authHeader := c.Get("Authorization")
+		if authHeader == "" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Missing Authorization header"})
 		}
 
-		userID, userRole, err := token.ValidateSessionToken(sessionToken)
+		authToken := token2.ExtractBearerToken(authHeader)
+		if authToken == "" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Extract Token Failed"})
+		}
+
+		userID, userRoleID, err := token2.ValidateSessionToken(authToken)
 		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Session Token Not Valid", "error": err.Error()})
 		}
 
 		userUUID, err := uuid.Parse(userID)
 		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized", "error": err.Error()})
 		}
 
-		if userRole != roles.RoleComputizen && userRole != roles.RolePUMA {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "Access Denied"})
+		if userRoleID != roles.RolePUMA && userRoleID != roles.RoleComputizen {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized", "error": err.Error()})
 		}
 
-		isValidSession, _ := token.IsValidSessionToken(userID, sessionToken)
-		if !isValidSession {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
+		isValid, err := token2.IsValidSessionToken(userID, authToken, userRoleID)
+		if err != nil || !isValid {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid session token", "error": err.Error()})
 		}
 
-		if token.IsTokenAboutToExpire(sessionToken, 5*time.Minute) {
-			newToken, _ := token.GenerateJWTToken(userUUID, userRole)
-			c.Cookie(&fiber.Cookie{
-				Name:     "session_token",
-				Value:    newToken,
-				Expires:  time.Now().Add(time.Hour * 24),
-				Path:     "/",
-				Secure:   true,
-				HTTPOnly: true,
-			})
+		if token2.IsSessionTokenAboutExpired(authToken, 5*time.Minute) {
+			newToken, err := token2.GenerateJWTToken(userUUID, userRoleID)
+			if err != nil {
+				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid session token", "error": err.Error()})
+			}
+
+			c.Response().Header.Set("Authorization", "Bearer "+newToken)
 		}
 
 		return c.Next()

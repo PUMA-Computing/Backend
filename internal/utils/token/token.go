@@ -3,8 +3,10 @@ package token
 import (
 	postgresRepository2 "Backend/internal/app/interfaces/repository/postgresRepository"
 	"errors"
+	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"strings"
 	"time"
 )
 
@@ -15,57 +17,90 @@ const (
 
 var jwtSecretKey string
 
-func GenerateJWTToken(userID uuid.UUID, role int) (string, error) {
+func GenerateJWTToken(userID uuid.UUID, roleID int) (string, error) {
 	claims := jwt.MapClaims{
-		"userID": userID,
-		"role":   role,
+		"userID": userID.String(),
+		"roleID": roleID,
 		"exp":    time.Now().Add(jwtExpirationDuration).Unix(),
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString([]byte(jwtSecretKey))
-	if err != nil {
-		return "", err
-	}
+	fmt.Printf("claims: %v\n", claims)
 
-	return signedToken, nil
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	return token.SignedString([]byte(jwtSecretKey))
 }
 
-func IsValidSessionToken(sessionUserID, sessionToken string) (bool, error) {
-	userID, _, err := ValidateSessionToken(sessionToken)
+func ExtractBearerToken(authHeader string) string {
+	const bearerPrefix = "Bearer "
+	if strings.HasPrefix(authHeader, bearerPrefix) {
+		return strings.TrimPrefix(authHeader, bearerPrefix)
+	}
+
+	//if strings.HasPrefix(authHeader, bearerPrefix) {
+	//	token := strings.TrimPrefix(authHeader, bearerPrefix)
+	//	claims, err := ValidateSessionToken(token)
+	//	if err != nil {
+	//		fmt.Printf("Error extracting roleID from token: %v\n", err)
+	//	} else {
+	//		roleID, ok := claims["roleID"].(int)
+	//		if !ok {
+	//			fmt.Println("RoleID not found in token claims")
+	//		} else {
+	//			fmt.Printf("Extracted RoleID: %d\n", roleID)
+	//		}
+	//	}
+	//	return token
+	//}
+
+	return ""
+}
+
+func IsValidSessionToken(sessionUserID, sessionToken string, roleID int) (bool, error) {
+	token, err := jwt.Parse(sessionToken, func(token *jwt.Token) (interface{}, error) {
+		return []byte(jwtSecretKey), nil
+	})
 	if err != nil {
 		return false, err
 	}
 
-	userUUID, err := uuid.Parse(userID)
-	if err != nil {
-		return false, err
+	if !token.Valid {
+		return false, errors.New("invalid token")
 	}
 
-	repo, err := postgresRepository2.NewPostgresRepository()
-	if err != nil {
-		return false, err
-	}
-	defer repo.Close()
-
-	sessionData, err := repo.GetSessionData(userUUID)
-	if err != nil {
-		return false, err
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return false, errors.New("invalid token claims")
 	}
 
-	if sessionData.SessionToken != sessionToken {
-		return false, nil
+	userID, ok := claims["userID"].(string)
+	if !ok || userID != sessionUserID {
+		return false, errors.New("missing userID claim")
 	}
 
-	if time.Now().After(sessionData.ExpiredAt) {
-		return false, nil
+	roleIDFloat, ok := claims["roleID"].(float64)
+	if !ok {
+		return false, errors.New("missing roleID claim")
+	}
+
+	roleID = int(roleIDFloat)
+
+	exp, ok := claims["exp"].(float64)
+	if !ok {
+		return false, errors.New("missing expiry claim")
+	}
+
+	expiryTime := time.Unix(int64(exp), 0)
+
+	if time.Now().After(expiryTime) {
+		return false, errors.New("token expired")
 	}
 
 	return true, nil
 }
 
-func IsTokenAboutToExpire(token string, threshold time.Duration) bool {
-	parsedToken, _, err := new(jwt.Parser).ParseUnverified(token, jwt.MapClaims{})
+func IsSessionTokenAboutExpired(tokenString string, threshold time.Duration) bool {
+	parsedToken, _, err := new(jwt.Parser).ParseUnverified(tokenString, jwt.MapClaims{})
 	if err != nil {
 		return false
 	}
@@ -95,7 +130,7 @@ func ValidateSessionToken(tokenString string) (string, int, error) {
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
+	if !ok {
 		return "", 0, errors.New("invalid token claims")
 	}
 
@@ -104,12 +139,16 @@ func ValidateSessionToken(tokenString string) (string, int, error) {
 		return "", 0, errors.New("missing userID claim")
 	}
 
-	userRole, ok := claims["role_id"].(int)
+	roleIDFloat, ok := claims["roleID"].(float64)
 	if !ok {
-		return "", 0, errors.New("missing role claim")
+		return "", 0, errors.New("missing roleID claim")
 	}
 
-	return userID, userRole, nil
+	roleID := int(roleIDFloat)
+
+	fmt.Printf("ValidateSessionToken: userID: %s, roleID: %d\n", userID, roleID)
+
+	return userID, roleID, nil
 }
 
 func StoreSessionData(userID uuid.UUID, sessionToken string, expirationTime time.Time) error {
@@ -120,6 +159,20 @@ func StoreSessionData(userID uuid.UUID, sessionToken string, expirationTime time
 	defer postgresRepository.Close()
 
 	if err := postgresRepository.StoreSessionData(userID, sessionToken, expirationTime); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteSessionData(userID uuid.UUID) error {
+	postgresRepository, err := postgresRepository2.NewPostgresRepository()
+	if err != nil {
+		return err
+	}
+	defer postgresRepository.Close()
+
+	if err := postgresRepository.DeleteSessionData(userID); err != nil {
 		return err
 	}
 

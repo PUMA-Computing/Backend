@@ -2,12 +2,11 @@ package migrations
 
 import (
 	"fmt"
-	"github.com/gocql/gocql"
+	"gorm.io/gorm"
 	"os"
-	"path/filepath"
 )
 
-func ExecuteMigrations(session *gocql.Session) error {
+func ExecuteMigrations(session *gorm.DB) error {
 	migrationsDir := "./internal/migrations"
 	files, err := os.ReadDir(migrationsDir)
 	if err != nil {
@@ -15,18 +14,15 @@ func ExecuteMigrations(session *gocql.Session) error {
 	}
 
 	for _, file := range files {
-		if filepath.Ext(file.Name()) == ".cql" {
-			cqlBytes, err := os.ReadFile(filepath.Join(migrationsDir, file.Name()))
-			if err != nil {
-				return err
+		if err := session.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Exec(fmt.Sprintf("SELECT 1 FROM %s LIMIT 1", file.Name())).Error; err != nil {
+				if err := tx.Exec(fmt.Sprintf("CREATE TABLE %s ()", file.Name())).Error; err != nil {
+					return err
+				}
 			}
-
-			cqlQuery := string(cqlBytes)
-			if err := session.Query(cqlQuery).Exec(); err != nil {
-				return err
-			}
-
-			fmt.Printf("Executed migration: %s\n", file.Name())
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 

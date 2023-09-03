@@ -15,7 +15,7 @@ func NewsRoutes(app *fiber.App, newsHandlers *newsHandlers.NewsHandlers) {
 	//api.Use(auth.AuthMiddleware())
 	//api.Post("/:id/register", newsHandlers.LikeNews())
 
-	api.Use(admin.AdminMiddleware())
+	api.Use(admin.Middleware())
 	api.Post("/create", newsHandlers.CreateNews())
 	api.Put("/:id/edit", newsHandlers.EditNews())
 	api.Delete("/:id/delete", newsHandlers.DeleteNews())

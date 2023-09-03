@@ -2,7 +2,6 @@ package newsRepository
 
 import (
 	"Backend/internal/app/domain/news"
-	"github.com/gocql/gocql"
 	"gorm.io/gorm"
 )
 
@@ -16,15 +15,12 @@ type NewsRepository interface {
 	DeleteNews(id int64) error
 }
 
-type CassandraForNewsRepository struct {
-	session *gocql.Session
-}
 type PostgresForNewsRepository struct {
 	DB *gorm.DB
 }
 
 func NewPostgresForNewsRepository(DB *gorm.DB) *PostgresForNewsRepository {
-	return &PostgresForNewsRepository{}
+	return &PostgresForNewsRepository{DB: DB}
 }
 
 func (r *PostgresForNewsRepository) GetNews() ([]*news.News, error) {

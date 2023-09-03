@@ -8,42 +8,41 @@ import (
 	"time"
 )
 
-func AdminMiddleware() fiber.Handler {
+func Middleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		sessionToken := c.Cookies("session_token")
-		if sessionToken == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
+		authHeader := c.Get("Authorization")
+		if authHeader == "" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Missing Authorization header"})
 		}
 
-		userID, userRole, err := token.ValidateSessionToken(sessionToken)
+		authToken := token.ExtractBearerToken(authHeader)
+		if authToken == "" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Extract Token Failed"})
+		}
+
+		userID, userRoleID, err := token.ValidateSessionToken(authToken)
 		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Session Token Not Valid", "error": err.Error(), "Extract Token:": authToken})
 		}
 
 		userUUID, err := uuid.Parse(userID)
 		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized", "error": err.Error()})
+		}
+
+		if userRoleID != roles.RolePUMA {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
 		}
 
-		if userRole != roles.RolePUMA {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "Access Denied"})
-		}
-
-		isValidSession, _ := token.IsValidSessionToken(userID, sessionToken)
+		isValidSession, _ := token.IsValidSessionToken(userID, authToken, userRoleID)
 		if !isValidSession {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid session token", "error": err.Error()})
 		}
 
-		if token.IsTokenAboutToExpire(sessionToken, 5*time.Minute) {
-			newToken, _ := token.GenerateJWTToken(userUUID, userRole)
-			c.Cookie(&fiber.Cookie{
-				Name:     "session_token",
-				Value:    newToken,
-				Expires:  time.Now().Add(time.Hour * 24),
-				Path:     "/",
-				Secure:   true,
-				HTTPOnly: true,
-			})
+		if token.IsSessionTokenAboutExpired(authToken, 5*time.Minute) {
+			newToken, _ := token.GenerateJWTToken(userUUID, userRoleID)
+
+			c.Response().Header.Set("Authorization", "Bearer "+newToken)
 		}
 
 		return c.Next()

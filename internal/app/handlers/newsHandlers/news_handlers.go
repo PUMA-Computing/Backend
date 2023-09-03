@@ -28,15 +28,17 @@ func (h *NewsHandlers) GetNews() fiber.Handler {
 
 func (h *NewsHandlers) GetNewsByID() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		newsID, err := c.ParamsInt("id")
+		newsID := c.Params("id")
+		newsIDInt, err := strconv.ParseInt(newsID, 10, 64)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid news ID"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing news ID"})
 		}
 
-		newsItem, err := h.newsService.GetNewsByID(int64(newsID))
+		newsItem, err := h.newsService.GetNewsByID(newsIDInt)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error retrieving news by ID"})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Error retrieving news", "error": err.Error()})
 		}
+
 		return c.JSON(newsItem)
 	}
 }

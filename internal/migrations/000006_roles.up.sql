@@ -1,5 +1,3 @@
-CREATE TABLE IF NOT EXISTS roles (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
+INSERT INTO roles(id, name, created_at)
+    VALUES (1, 'PUMA', now()),
+           (2, 'Computizen', now())

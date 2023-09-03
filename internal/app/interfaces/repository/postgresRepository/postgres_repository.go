@@ -49,12 +49,23 @@ func (r *PostgresRepository) Close() {
 }
 
 func (r *PostgresRepository) StoreSessionData(userID uuid.UUID, sessionToken string, expirationTime time.Time) error {
+	existingSessionData, _ := r.GetSessionData(userID)
+
 	sessionData := SessionData{
 		UserID:       userID,
 		SessionToken: sessionToken,
 		ExpiredAt:    expirationTime,
 	}
-	return r.DB.Create(&sessionData).Error
+
+	if existingSessionData == nil {
+		return r.DB.Create(&sessionData).Error
+	} else {
+		return r.DB.Model(existingSessionData).
+			Updates(SessionData{
+				SessionToken: sessionToken,
+				ExpiredAt:    expirationTime,
+			}).Error
+	}
 }
 
 func (r *PostgresRepository) GetSessionData(userID uuid.UUID) (*SessionData, error) {
@@ -64,4 +75,8 @@ func (r *PostgresRepository) GetSessionData(userID uuid.UUID) (*SessionData, err
 		return nil, err
 	}
 	return &sessionData, nil
+}
+
+func (r *PostgresRepository) DeleteSessionData(userID uuid.UUID) error {
+	return r.DB.Where("user_id = ?", userID).Delete(&SessionData{}).Error
 }

@@ -2,12 +2,15 @@ package userRepository
 
 import (
 	"Backend/internal/app/domain/user"
+	"Backend/pkg/bcrypt"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type UserRepository interface {
 	RegisterUser(user *user.User) error
+	AuthenticateUser(email, password string) (*user.User, error)
+	GetAllUsers() ([]*user.User, error)
 	GetUserByEmail(email string) (*user.User, error)
 	GetUserByID(id uuid.UUID) (*user.User, error)
 	UpdateUser(user *user.User) error
@@ -22,32 +25,54 @@ func NewPostgresUserRepository(session *gorm.DB) *PostgresUserRepository {
 	return &PostgresUserRepository{session: session}
 }
 
-func (r *PostgresUserRepository) RegisterUser(user *user.User) error {
-	return r.session.Create(user).Error
+func (p *PostgresUserRepository) RegisterUser(user *user.User) error {
+	return p.session.Create(user).Error
 }
 
-func (r *PostgresUserRepository) GetUserByEmail(email string) (*user.User, error) {
+func (p *PostgresUserRepository) AuthenticateUser(email, password string) (*user.User, error) {
 	var user user.User
-	if err := r.session.Where("email = ?", email).First(&user).Error; err != nil {
+	if err := p.session.Where("email = ?", email).First(&user).Error; err != nil {
+		return nil, err
+	}
+
+	if err := bcrypt.ComparePassword(user.Password, password); err != nil {
 		return nil, err
 	}
 
 	return &user, nil
 }
 
-func (r *PostgresUserRepository) GetUserByID(id uuid.UUID) (*user.User, error) {
+func (p *PostgresUserRepository) GetAllUsers() ([]*user.User, error) {
+	var users []*user.User
+	if err := p.session.Find(&users).Error; err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
+func (p *PostgresUserRepository) GetUserByID(id uuid.UUID) (*user.User, error) {
 	var user user.User
-	if err := r.session.Where("id = ?", id).First(&user).Error; err != nil {
+	if err := p.session.Where("id = ?", id).First(&user).Error; err != nil {
 		return nil, err
 	}
 
 	return &user, nil
 }
 
-func (r *PostgresUserRepository) UpdateUser(user *user.User) error {
-	return r.session.Save(user).Error
+func (p *PostgresUserRepository) GetUserByEmail(email string) (*user.User, error) {
+	var user user.User
+	if err := p.session.Where("email = ?", email).First(&user).Error; err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }
 
-func (r *PostgresUserRepository) DeleteUser(id uuid.UUID) error {
-	return r.session.Delete(&user.User{}, id).Error
+func (p *PostgresUserRepository) UpdateUser(user *user.User) error {
+	return p.session.Save(user).Error
+}
+
+func (p *PostgresUserRepository) DeleteUser(id uuid.UUID) error {
+	return p.session.Delete(&user.User{}, id).Error
 }

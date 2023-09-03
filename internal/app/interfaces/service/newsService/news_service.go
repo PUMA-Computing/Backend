@@ -22,11 +22,11 @@ func NewNewsService(NewsRepository newsRepository.NewsRepository) *NewsServiceIm
 }
 
 func (s *NewsServiceImpl) GetNews() ([]*news.News, error) {
-	newsGet, err := s.newsRepository.GetNews()
+	newsList, err := s.newsRepository.GetNews()
 	if err != nil {
 		return nil, err
 	}
-	return newsGet, nil
+	return newsList, nil
 }
 
 func (s *NewsServiceImpl) GetNewsByID(id int64) (*news.News, error) {

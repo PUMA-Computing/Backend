@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS news (
     id SERIAL PRIMARY KEY,
-    author_id INTEGER REFERENCES users(id),
+    author_id uuid REFERENCES users(id),
     title VARCHAR(255) NOT NULL,
     content VARCHAR NOT NULL,
     category_id INTEGER REFERENCES news_categories(id),
