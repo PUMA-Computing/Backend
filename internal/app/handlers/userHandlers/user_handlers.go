@@ -147,6 +147,30 @@ func (h *UserHandlers) GetUserByEmail() fiber.Handler {
 	}
 }
 
+func (h *UserHandlers) GetUserRoleByID() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID").(uuid.UUID)
+		userRoleID, err := h.userService.GetUserRoleByID(userID)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error getting user role by id"})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User role retrieved successfully", "userRoleID": userRoleID})
+	}
+}
+
+func (h *UserHandlers) GetUserRoleByEmail() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		email := c.Locals("email").(string)
+		userRoleID, err := h.userService.GetUserRoleByEmail(email)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error getting user role by email"})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User role retrieved successfully", "userRoleID": userRoleID})
+	}
+}
+
 func (h *UserHandlers) UpdateUser() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var user *user.User

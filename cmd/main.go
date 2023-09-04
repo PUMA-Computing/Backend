@@ -94,9 +94,9 @@ func main() {
 	/**
 	 * Routes
 	 */
-	v1.AuthRoutes(app, userHandlers)
-	v1.EventRoutes(app, eventHandlers)
-	v1.NewsRoutes(app, newsHandlers)
+	v1.AuthRoutes(app, userHandlers, userRepository)
+	v1.EventRoutes(app, eventHandlers, userRepository)
+	v1.NewsRoutes(app, newsHandlers, userRepository)
 
 	err = app.Listen(":3000")
 	if err != nil {

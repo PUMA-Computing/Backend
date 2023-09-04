@@ -15,6 +15,8 @@ type UserRepository interface {
 	GetUserByID(id uuid.UUID) (*user.User, error)
 	UpdateUser(user *user.User) error
 	DeleteUser(id uuid.UUID) error
+	GetUserRoleByID(id uuid.UUID) (int, error)
+	GetUserRoleByEmail(email string) (int, error)
 }
 
 type PostgresUserRepository struct {
@@ -60,6 +62,14 @@ func (p *PostgresUserRepository) GetUserByID(id uuid.UUID) (*user.User, error) {
 	return &user, nil
 }
 
+func (p *PostgresUserRepository) GetUserRoleByID(id uuid.UUID) (int, error) {
+	var user user.User
+	if err := p.session.Where("id = ?", id).First(&user).Error; err != nil {
+		return 0, err
+	}
+
+	return user.RoleID, nil
+}
 func (p *PostgresUserRepository) GetUserByEmail(email string) (*user.User, error) {
 	var user user.User
 	if err := p.session.Where("email = ?", email).First(&user).Error; err != nil {
@@ -67,6 +77,15 @@ func (p *PostgresUserRepository) GetUserByEmail(email string) (*user.User, error
 	}
 
 	return &user, nil
+}
+
+func (p *PostgresUserRepository) GetUserRoleByEmail(email string) (int, error) {
+	var user user.User
+	if err := p.session.Where("email = ?", email).First(&user).Error; err != nil {
+		return 0, err
+	}
+
+	return user.RoleID, nil
 }
 
 func (p *PostgresUserRepository) UpdateUser(user *user.User) error {

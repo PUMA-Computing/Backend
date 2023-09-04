@@ -18,7 +18,9 @@ type UserServices interface {
 	AuthenticateUser(email, password string) (*AuthResponse, error)
 	GetAllUsers() ([]*user.User, error)
 	GetUserByID(id uuid.UUID) (*user.User, error)
+	GetUserRoleByID(id uuid.UUID) (int, error)
 	GetUserByEmail(email string) (*user.User, error)
+	GetUserRoleByEmail(email string) (int, error)
 	UpdateUser(user *user.User) error
 	DeleteUser(id uuid.UUID) error
 }
@@ -63,8 +65,16 @@ func (u *UserService) GetUserByEmail(email string) (*user.User, error) {
 	return u.userRepository.GetUserByEmail(email)
 }
 
+func (u *UserService) GetUserRoleByEmail(email string) (int, error) {
+	return u.userRepository.GetUserRoleByEmail(email)
+}
+
 func (u *UserService) GetUserByID(id uuid.UUID) (*user.User, error) {
 	return u.userRepository.GetUserByID(id)
+}
+
+func (u *UserService) GetUserRoleByID(id uuid.UUID) (int, error) {
+	return u.userRepository.GetUserRoleByID(id)
 }
 
 func (u *UserService) UpdateUser(user *user.User) error {

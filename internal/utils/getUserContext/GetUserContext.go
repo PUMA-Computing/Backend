@@ -2,7 +2,6 @@ package getUserContext
 
 import (
 	"errors"
-	"github.com/gocql/gocql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
@@ -10,7 +9,7 @@ import (
 const userIDKey = "userID"
 const userRoleKey = "userRole"
 
-func SetUserIDInContext(c *fiber.Ctx, userID gocql.UUID) {
+func SetUserIDInContext(c *fiber.Ctx, userID uuid.UUID) {
 	c.Locals(userIDKey, userID)
 }
 
@@ -26,23 +25,23 @@ func GetUserIDFromContext(c *fiber.Ctx) (uuid.UUID, error) {
 	return userID, nil
 }
 
-func GetUserRoleFromContext(c *fiber.Ctx) (string, error) {
-	userRole, ok := c.Locals(userRoleKey).(string)
+func GetUserRoleFromContext(c *fiber.Ctx) (int, error) {
+	userRole, ok := c.Locals(userRoleKey).(int)
 	if !ok {
-		return "", errors.New("error getting userRole from context")
+		return 0, errors.New("error getting userRole from context")
 	}
 	return userRole, nil
 }
 
-func GetUserIDAndRoleFromContext(c *fiber.Ctx) (uuid.UUID, string, error) {
+func GetUserIDAndRoleFromContext(c *fiber.Ctx) (uuid.UUID, int, error) {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil {
-		return uuid.UUID{}, "", err
+		return uuid.UUID{}, 0, err
 	}
 
 	userRole, err := GetUserRoleFromContext(c)
 	if err != nil {
-		return uuid.UUID{}, "", err
+		return uuid.UUID{}, 0, err
 	}
 
 	return userID, userRole, nil

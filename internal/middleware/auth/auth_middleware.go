@@ -2,6 +2,7 @@ package auth
 
 import (
 	"Backend/internal/app/domain/roles"
+	"Backend/internal/app/interfaces/repository/userRepository"
 	token2 "Backend/internal/utils/token"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
@@ -9,7 +10,7 @@ import (
 	"time"
 )
 
-func Middleware() fiber.Handler {
+func Middleware(userRepo userRepository.UserRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
@@ -21,7 +22,7 @@ func Middleware() fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Extract Token Failed"})
 		}
 
-		userID, userRoleID, err := token2.ValidateSessionToken(authToken)
+		userID, err := token2.ValidateSessionToken(authToken)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Session Token Not Valid", "error": err.Error()})
 		}
@@ -31,11 +32,18 @@ func Middleware() fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized", "error": err.Error()})
 		}
 
+		// TODO: Get User Role ID from Database using GetUserRoleByID
+		userRoleID, err := userRepo.GetUserRoleByID(userUUID)
+		fmt.Printf("userRoleID: %d\n", userRoleID)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized", "error": err.Error()})
+		}
+
 		if userRoleID != roles.RolePUMA && userRoleID != roles.RoleComputizen {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized", "error": err.Error()})
 		}
 
-		isValid, err := token2.IsValidSessionToken(userID, authToken, userRoleID)
+		isValid, err := token2.IsValidSessionToken(userID, authToken)
 		if err != nil || !isValid {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid session token", "error": err.Error()})
 		}

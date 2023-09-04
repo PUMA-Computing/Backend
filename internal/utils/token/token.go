@@ -20,7 +20,6 @@ var jwtSecretKey string
 func GenerateJWTToken(userID uuid.UUID, roleID int) (string, error) {
 	claims := jwt.MapClaims{
 		"userID": userID.String(),
-		"roleID": roleID,
 		"exp":    time.Now().Add(jwtExpirationDuration).Unix(),
 	}
 
@@ -56,7 +55,7 @@ func ExtractBearerToken(authHeader string) string {
 	return ""
 }
 
-func IsValidSessionToken(sessionUserID, sessionToken string, roleID int) (bool, error) {
+func IsValidSessionToken(sessionUserID, sessionToken string) (bool, error) {
 	token, err := jwt.Parse(sessionToken, func(token *jwt.Token) (interface{}, error) {
 		return []byte(jwtSecretKey), nil
 	})
@@ -77,13 +76,6 @@ func IsValidSessionToken(sessionUserID, sessionToken string, roleID int) (bool, 
 	if !ok || userID != sessionUserID {
 		return false, errors.New("missing userID claim")
 	}
-
-	roleIDFloat, ok := claims["roleID"].(float64)
-	if !ok {
-		return false, errors.New("missing roleID claim")
-	}
-
-	roleID = int(roleIDFloat)
 
 	exp, ok := claims["exp"].(float64)
 	if !ok {
@@ -121,34 +113,27 @@ func IsSessionTokenAboutExpired(tokenString string, threshold time.Duration) boo
 	return currentTime.Add(threshold).After(expiryTime)
 }
 
-func ValidateSessionToken(tokenString string) (string, int, error) {
+func ValidateSessionToken(tokenString string) (string, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return []byte(jwtSecretKey), nil
 	})
 	if err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", 0, errors.New("invalid token claims")
+		return "", errors.New("invalid token claims")
 	}
 
 	userID, ok := claims["userID"].(string)
 	if !ok {
-		return "", 0, errors.New("missing userID claim")
+		return "", errors.New("missing userID claim")
 	}
 
-	roleIDFloat, ok := claims["roleID"].(float64)
-	if !ok {
-		return "", 0, errors.New("missing roleID claim")
-	}
+	fmt.Printf("ValidateSessionToken: userID: %s", userID)
 
-	roleID := int(roleIDFloat)
-
-	fmt.Printf("ValidateSessionToken: userID: %s, roleID: %d\n", userID, roleID)
-
-	return userID, roleID, nil
+	return userID, nil
 }
 
 func StoreSessionData(userID uuid.UUID, sessionToken string, expirationTime time.Time) error {

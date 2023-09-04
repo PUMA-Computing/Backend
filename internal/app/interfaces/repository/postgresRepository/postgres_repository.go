@@ -34,9 +34,9 @@ func NewPostgresRepository() (*PostgresRepository, error) {
 		return nil, err
 	}
 
-	if err := db.AutoMigrate(&SessionData{}); err != nil {
-		return nil, err
-	}
+	//if err := db.AutoMigrate(&SessionData{}); err != nil {
+	//	return nil, err
+	//}
 	return &PostgresRepository{DB: db}, nil
 }
 
