@@ -103,9 +103,13 @@ func (h *UserHandlers) Login() fiber.Handler {
 
 func (h *UserHandlers) Logout() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		sessionToken := c.Locals("sessionToken").(uuid.UUID)
-		if err := token.DeleteSessionData(sessionToken); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error logging out user"})
+		userIDInterface, ok := c.Locals("userID").(uuid.UUID)
+		if !ok {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid user id format"})
+		}
+
+		if err := h.userService.Logout(userIDInterface); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error logout user", "error": err.Error()})
 		}
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User logged out successfully"})

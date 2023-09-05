@@ -16,6 +16,7 @@ type AuthResponse struct {
 type UserServices interface {
 	RegisterUser(user *user.User) error
 	AuthenticateUser(email, password string) (*AuthResponse, error)
+	Logout(id uuid.UUID) error
 	GetAllUsers() ([]*user.User, error)
 	GetUserByID(id uuid.UUID) (*user.User, error)
 	GetUserRoleByID(id uuid.UUID) (int, error)
@@ -59,6 +60,10 @@ func (u *UserService) AuthenticateUser(email, password string) (*AuthResponse, e
 
 func (u *UserService) GetAllUsers() ([]*user.User, error) {
 	return u.userRepository.GetAllUsers()
+}
+
+func (u *UserService) Logout(id uuid.UUID) error {
+	return u.userRepository.Logout(id)
 }
 
 func (u *UserService) GetUserByEmail(email string) (*user.User, error) {

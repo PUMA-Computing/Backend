@@ -50,6 +50,7 @@ func Middleware(userRepo userRepository.UserRepository) fiber.Handler {
 
 			c.Response().Header.Set("Authorization", "Bearer "+newToken)
 		}
+		c.Locals("userID", userUUID)
 
 		return c.Next()
 	}

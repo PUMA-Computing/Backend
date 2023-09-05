@@ -32,9 +32,8 @@ func Middleware(userRepo userRepository.UserRepository) fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized", "error": err.Error()})
 		}
 
-		// TODO: Get User Role ID from Database using GetUserRoleByID
 		userRoleID, err := userRepo.GetUserRoleByID(userUUID)
-		fmt.Printf("userRoleID: %d\n", userRoleID)
+		//fmt.Printf("userRoleID: %d\n", userRoleID)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized", "error": err.Error()})
 		}
@@ -56,6 +55,7 @@ func Middleware(userRepo userRepository.UserRepository) fiber.Handler {
 
 			c.Response().Header.Set("Authorization", "Bearer "+newToken)
 		}
+		c.Locals("userID", userUUID)
 
 		return c.Next()
 	}

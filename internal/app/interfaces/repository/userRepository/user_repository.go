@@ -2,6 +2,7 @@ package userRepository
 
 import (
 	"Backend/internal/app/domain/user"
+	"Backend/internal/app/interfaces/repository/postgresRepository"
 	"Backend/pkg/bcrypt"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -17,6 +18,7 @@ type UserRepository interface {
 	DeleteUser(id uuid.UUID) error
 	GetUserRoleByID(id uuid.UUID) (int, error)
 	GetUserRoleByEmail(email string) (int, error)
+	Logout(id uuid.UUID) error
 }
 
 type PostgresUserRepository struct {
@@ -42,6 +44,14 @@ func (p *PostgresUserRepository) AuthenticateUser(email, password string) (*user
 	}
 
 	return &user, nil
+}
+
+func (p *PostgresUserRepository) Logout(id uuid.UUID) error {
+	if err := p.session.Delete(&postgresRepository.SessionData{}, id).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *PostgresUserRepository) GetAllUsers() ([]*user.User, error) {

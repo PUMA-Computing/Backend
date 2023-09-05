@@ -150,16 +150,16 @@ func StoreSessionData(userID uuid.UUID, sessionToken string, expirationTime time
 	return nil
 }
 
-func DeleteSessionData(userID uuid.UUID) error {
-	postgresRepository, err := postgresRepository2.NewPostgresRepository()
-	if err != nil {
-		return err
-	}
-	defer postgresRepository.Close()
-
-	if err := postgresRepository.DeleteSessionData(userID); err != nil {
-		return err
-	}
-
-	return nil
-}
+//func DeleteSessionData(userID uuid.UUID) error {
+//	postgresRepository, err := postgresRepository2.NewPostgresRepository()
+//	if err != nil {
+//		return err
+//	}
+//	defer postgresRepository.Close()
+//
+//	if err := postgresRepository.DeleteSessionData(userID); err != nil {
+//		return err
+//	}
+//
+//	return nil
+//}

@@ -9,9 +9,9 @@ import (
 )
 
 type SessionData struct {
-	UserID       uuid.UUID `gorm:"PRIMARY_KEY"`
-	SessionToken string    `gorm:"unique"`
-	ExpiredAt    time.Time
+	UserID       uuid.UUID `json:"user_id" gorm:"PRIMARY_KEY"`
+	SessionToken string    `json:"session_token" gorm:"unique"`
+	ExpiredAt    time.Time `json:"expired_at"`
 }
 
 type PostgresRepository struct {
@@ -75,8 +75,4 @@ func (r *PostgresRepository) GetSessionData(userID uuid.UUID) (*SessionData, err
 		return nil, err
 	}
 	return &sessionData, nil
-}
-
-func (r *PostgresRepository) DeleteSessionData(userID uuid.UUID) error {
-	return r.DB.Where("user_id = ?", userID).Delete(&SessionData{}).Error
 }

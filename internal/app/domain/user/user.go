@@ -16,3 +16,9 @@ type User struct {
 	Year      string    `json:"year"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+type SessionData struct {
+	UserID       uuid.UUID `json:"user_id" gorm:"PRIMARY_KEY"`
+	SessionToken string    `json:"session_token"gorm:"unique"`
+	ExpiredAt    time.Time `json:"expired_at"`
+}
