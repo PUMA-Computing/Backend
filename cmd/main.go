@@ -1,19 +1,3 @@
-//   PUMA Computing API:
-//    version: 1.0.0
-//    title: PUMA Computing API
-//   Schemes: http, https
-//   Host: localhost:3000
-//   BasePath: /api/v1
-//      Consumes:
-//      - application/json
-//   Produces:
-//   - application/json
-//   SecurityDefinitions:
-//    Bearer:
-//     type: apiKey
-//     name: Authorization
-//     in: header
-//   swagger:meta
 package main
 
 import (
@@ -29,6 +13,7 @@ import (
 	news2 "Backend/internal/app/interfaces/service/newsService"
 	user2 "Backend/internal/app/interfaces/service/userService"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
@@ -90,6 +75,15 @@ func main() {
 	newsHandlers := news3.NewNewsHandlers(newsService)
 
 	app := fiber.New()
+
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "*", // Change to your actual frontend domain(s) in production
+		AllowMethods:     "GET,POST,PUT,DELETE",
+		AllowHeaders:     "Origin, Content-Type, Accept",
+		ExposeHeaders:    "Authorization",
+		AllowCredentials: true,
+		MaxAge:           3600,
+	}))
 
 	/**
 	 * Routes
