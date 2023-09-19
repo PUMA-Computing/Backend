@@ -1,6 +1,7 @@
 package userHandlers
 
 import (
+	"Backend/internal/app/domain/roles"
 	"Backend/internal/app/domain/user"
 	user2 "Backend/internal/app/interfaces/service/userService"
 	"Backend/internal/utils/token"
@@ -8,6 +9,7 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"strings"
 	"time"
 )
 
@@ -18,6 +20,10 @@ type UserHandlers struct {
 func NewUserHandlers(userService user2.UserServices) *UserHandlers {
 	return &UserHandlers{userService: userService}
 }
+
+/**
+ * Authentication Management
+ */
 
 func (h *UserHandlers) RegisterUser() fiber.Handler {
 	return func(c *fiber.Ctx) error {
@@ -30,10 +36,11 @@ func (h *UserHandlers) RegisterUser() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		user.RoleID = 2
-		user.CreatedAt = time.Now()
-
 		if err := h.userService.RegisterUser(user); err != nil {
+			if strings.Contains(err.Error(), "user with the same email or nim already exists") {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+			}
+
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error registering user"})
 		}
 
@@ -116,6 +123,48 @@ func (h *UserHandlers) Logout() fiber.Handler {
 	}
 }
 
+/**
+ * End Authentication Management
+ */
+
+/**
+ * Manage Profile Management
+ */
+
+func (h *UserHandlers) UpdateUser() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var user *user.User
+		if err := c.BodyParser(&user); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing update data"})
+		}
+
+		if err := h.userService.UpdateUser(user); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error updating user"})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User updated successfully"})
+	}
+}
+
+func (h *UserHandlers) DeleteUser() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID").(uuid.UUID)
+		if err := h.userService.DeleteUser(userID); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error deleting user"})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User deleted successfully"})
+	}
+}
+
+/**
+ * End Manage Profile Management
+ */
+
+/**
+ * Get User Management
+ */
+
 func (h *UserHandlers) GetUserProfile() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userID := c.Locals("userID").(uuid.UUID)
@@ -175,28 +224,144 @@ func (h *UserHandlers) GetUserRoleByEmail() fiber.Handler {
 	}
 }
 
-func (h *UserHandlers) UpdateUser() fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		var user *user.User
-		if err := c.BodyParser(&user); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing user data"})
-		}
-
-		if err := h.userService.UpdateUser(user); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error updating user"})
-		}
-
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User updated successfully"})
-	}
-}
-
-func (h *UserHandlers) DeleteUser() fiber.Handler {
+func (h *UserHandlers) GetUserRoleAndPermissions() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userID := c.Locals("userID").(uuid.UUID)
-		if err := h.userService.DeleteUser(userID); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error deleting user"})
+		userRole, userPermissions, userRolePermissions, err := h.userService.GetUserRoleAndPermissions(userID)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error getting user role and permissions"})
 		}
 
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User deleted successfully"})
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User role and permissions retrieved successfully", "userRole": userRole, "userPermissions": userPermissions, "userRolePermissions": userRolePermissions})
 	}
 }
+
+/**
+ * End Get User Management
+ */
+
+/**
+ * Role and Permission Management
+ */
+
+func (h *UserHandlers) CreateRole() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var role *roles.Role
+		if err := c.BodyParser(&role); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing role data"})
+		}
+
+		if err := h.userService.CreateRole(role); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error creating role"})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Role created successfully"})
+	}
+}
+
+func (h *UserHandlers) UpdateRole() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var role *roles.Role
+		if err := c.BodyParser(&role); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing role data"})
+		}
+
+		if err := h.userService.UpdateRole(role); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error updating role"})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Role updated successfully"})
+	}
+}
+
+func (h *UserHandlers) DeleteRole() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		roleID := c.Locals("roleID").(int)
+		if err := h.userService.DeleteRole(roleID); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error deleting role"})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Role deleted successfully"})
+	}
+}
+
+func (h *UserHandlers) AssignUserRole() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var userRoleData struct {
+			UserID uuid.UUID `json:"user_id"`
+			RoleID int       `json:"role_id"`
+		}
+
+		if err := c.BodyParser(&userRoleData); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing user role data"})
+		}
+
+		if err := h.userService.AssignUserRole(userRoleData.UserID, userRoleData.RoleID); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error assigning user role"})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User role assigned successfully"})
+	}
+}
+
+func (h *UserHandlers) AssignRolePermission() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var rolePermissionData struct {
+			RoleID       int `json:"role_id"`
+			PermissionID int `json:"permission_id"`
+		}
+
+		if err := c.BodyParser(&rolePermissionData); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing role permission data"})
+		}
+
+		if err := h.userService.AssignRolePermission(rolePermissionData.RoleID, rolePermissionData.PermissionID); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error assigning role permission"})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Role permission assigned successfully"})
+	}
+}
+
+func (h *UserHandlers) DeleteRolePermission() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var rolePermissionData struct {
+			RoleID       int `json:"role_id"`
+			PermissionID int `json:"permission_id"`
+		}
+
+		if err := c.BodyParser(&rolePermissionData); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing role permission data"})
+		}
+
+		if err := h.userService.DeleteRolePermission(rolePermissionData.RoleID, rolePermissionData.PermissionID); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error deleting role permission"})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Role permission deleted successfully"})
+	}
+}
+
+func (h *UserHandlers) HasPermission() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var rolePermissionData struct {
+			RoleID       int `json:"role_id"`
+			PermissionID int `json:"permission_id"`
+		}
+
+		if err := c.BodyParser(&rolePermissionData); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing role permission data"})
+		}
+
+		hasPermission, err := h.userService.HasPermission(rolePermissionData.RoleID, rolePermissionData.PermissionID)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error checking permission"})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Permission checked successfully", "hasPermission": hasPermission})
+	}
+}
+
+/**
+ * End Role and Permission Management
+ */

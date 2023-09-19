@@ -11,7 +11,7 @@ type User struct {
 	LastName  string    `json:"last_name"`
 	Email     string    `json:"email"`
 	Password  string    `json:"password"`
-	RoleID    int       `json:"role_id"`
+	RoleID    int       `json:"role_id" gorm:"index"`
 	NIM       string    `json:"nim"`
 	Year      string    `json:"year"`
 	CreatedAt time.Time `json:"created_at"`

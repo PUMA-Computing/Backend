@@ -4,7 +4,6 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"os"
 	"time"
 )
 
@@ -19,11 +18,18 @@ type PostgresRepository struct {
 }
 
 func NewPostgresRepository() (*PostgresRepository, error) {
-	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
-	dbUser := os.Getenv("DB_USER")
-	dbPassword := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
+	//dbHost := os.Getenv("DB_HOST")
+	//dbPort := os.Getenv("DB_PORT")
+	//dbUser := os.Getenv("DB_USER")
+	//dbPassword := os.Getenv("DB_PASSWORD")
+	//dbName := os.Getenv("DB_NAME")
+
+	//TEST DB
+	dbHost := "139.59.116.226"
+	dbPort := "5432"
+	dbUser := "computing"
+	dbPassword := "computing2023"
+	dbName := "puma"
 
 	dsn := "host=" + dbHost + " port=" + dbPort + " user=" + dbUser + " password=" + dbPassword + " dbname=" + dbName + " sslmode=disable TimeZone=Asia/Jakarta"
 	db, err := gorm.Open(postgres.New(postgres.Config{

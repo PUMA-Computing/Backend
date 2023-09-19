@@ -15,8 +15,7 @@ func AuthRoutes(app *fiber.App, userHandlers *userHandlers.UserHandlers, userRep
 	api.Post("/auth/login", userHandlers.Login())
 	//api.Post("/user/forgot-password", userHandlers.ForgotPassword())
 
-	api.Use(auth.Middleware(userRepo))
-	api.Get("/user/:id", userHandlers.GetUserProfile())
+	api.Get("/user/:id", auth.Middleware(userRepo, "Manage_Profile"), userHandlers.GetUserProfile())
 	api.Post("/user/update", userHandlers.UpdateUser())
 	api.Post("/user/delete", userHandlers.DeleteUser())
 	api.Post("/user/logout", userHandlers.Logout())

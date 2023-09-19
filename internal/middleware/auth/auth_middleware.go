@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"Backend/internal/app/domain/roles"
 	"Backend/internal/app/interfaces/repository/userRepository"
 	token2 "Backend/internal/utils/token"
 	"fmt"
@@ -10,7 +9,7 @@ import (
 	"time"
 )
 
-func Middleware(userRepo userRepository.UserRepository) fiber.Handler {
+func Middleware(userRepo userRepository.UserRepository, requiredPermission string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
@@ -32,15 +31,24 @@ func Middleware(userRepo userRepository.UserRepository) fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized", "error": err.Error()})
 		}
 
-		userRoleID, err := userRepo.GetUserRoleByID(userUUID)
-		//fmt.Printf("userRoleID: %d\n", userRoleID)
+		userRoleID, userPermissions, _, _ := userRepo.GetUserRoleAndPermissions(userUUID)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized", "error": err.Error()})
 		}
 
-		if userRoleID != roles.RolePUMA && userRoleID != roles.RoleComputizen {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized", "error": err.Error()})
+		hasRequiredPermission := false
+		for _, permission := range userPermissions {
+			if permission.Name == requiredPermission {
+				hasRequiredPermission = true
+				break
+			}
 		}
+
+		if !hasRequiredPermission {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
+		}
+
+		roleID := userRoleID.ID
 
 		isValid, err := token2.IsValidSessionToken(userID, authToken)
 		if err != nil || !isValid {
@@ -48,7 +56,7 @@ func Middleware(userRepo userRepository.UserRepository) fiber.Handler {
 		}
 
 		if token2.IsSessionTokenAboutExpired(authToken, 5*time.Minute) {
-			newToken, err := token2.GenerateJWTToken(userUUID, userRoleID)
+			newToken, err := token2.GenerateJWTToken(userUUID, roleID)
 			if err != nil {
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid session token", "error": err.Error()})
 			}
