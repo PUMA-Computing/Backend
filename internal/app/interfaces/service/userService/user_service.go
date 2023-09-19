@@ -5,6 +5,7 @@ import (
 	user2 "Backend/internal/app/interfaces/repository/userRepository"
 	token2 "Backend/internal/utils/token"
 	"Backend/pkg/bcrypt"
+	"errors"
 	"github.com/google/uuid"
 	"time"
 )
@@ -22,6 +23,7 @@ type UserServices interface {
 	GetUserByID(id uuid.UUID) (*user.User, error)
 	GetUserRoleByID(id uuid.UUID) (int, error)
 	GetUserByEmail(email string) (*user.User, error)
+	GetUserByNIM(nim string) (*user.User, error)
 	GetUserRoleByEmail(email string) (int, error)
 	UpdateUser(user *user.User) error
 	DeleteUser(id uuid.UUID) error
@@ -36,6 +38,24 @@ func NewUserService(userRepository user2.UserRepository) *UserService {
 }
 
 func (u *UserService) RegisterUser(user *user.User) error {
+	existingUserByEmail, err := u.userRepository.GetUserByEmail(user.Email)
+	if err != nil {
+		return err
+	}
+
+	if existingUserByEmail != nil {
+		return errors.New("email already registered")
+	}
+
+	existingUserByNim, err := u.userRepository.GetUserByNIM(user.NIM)
+	if err != nil {
+		return err
+	}
+
+	if existingUserByNim != nil {
+		return errors.New("NIM already registered")
+	}
+
 	hashedPassword, err := bcrypt.HashPassword(user.Password)
 	if err != nil {
 		return err
@@ -71,6 +91,10 @@ func (u *UserService) Logout(id uuid.UUID) error {
 
 func (u *UserService) GetUserByEmail(email string) (*user.User, error) {
 	return u.userRepository.GetUserByEmail(email)
+}
+
+func (u *UserService) GetUserByNIM(nim string) (*user.User, error) {
+	return u.userRepository.GetUserByNIM(nim)
 }
 
 func (u *UserService) GetUserRoleByEmail(email string) (int, error) {

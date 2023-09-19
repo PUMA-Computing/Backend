@@ -18,6 +18,7 @@ type UserRepository interface {
 	DeleteUser(id uuid.UUID) error
 	GetUserRoleByID(id uuid.UUID) (int, error)
 	GetUserRoleByEmail(email string) (int, error)
+	GetUserByNIM(nim string) (*user.User, error)
 	Logout(id uuid.UUID) error
 }
 
@@ -80,9 +81,19 @@ func (p *PostgresUserRepository) GetUserRoleByID(id uuid.UUID) (int, error) {
 
 	return user.RoleID, nil
 }
+
 func (p *PostgresUserRepository) GetUserByEmail(email string) (*user.User, error) {
 	var user user.User
 	if err := p.session.Where("email = ?", email).First(&user).Error; err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (p *PostgresUserRepository) GetUserByNIM(nim string) (*user.User, error) {
+	var user user.User
+	if err := p.session.Where("nim = ?", nim).First(&user).Error; err != nil {
 		return nil, err
 	}
 
