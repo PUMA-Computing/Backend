@@ -44,7 +44,7 @@ func (u *UserService) RegisterUser(user *user.User) error {
 	}
 
 	if existingUserByEmail != nil {
-		return errors.New("email already registered")
+		return errors.New("Email already registered")
 	}
 
 	existingUserByNim, err := u.userRepository.GetUserByNIM(user.NIM)

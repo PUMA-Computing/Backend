@@ -74,12 +74,12 @@ func (h *UserHandlers) Login() fiber.Handler {
 		}
 
 		if err := c.BodyParser(&loginData); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing login data"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error(), "error": "Error parsing login data"})
 		}
 
 		user, err := h.userService.AuthenticateUser(loginData.Email, loginData.Password)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid email or password"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error Authenticate User", "error": "Email or password is incorrect"})
 		}
 
 		sessionToken, err := token.GenerateJWTToken(user.User.ID, user.User.RoleID)
@@ -91,7 +91,7 @@ func (h *UserHandlers) Login() fiber.Handler {
 
 		expirationTime := time.Now().Add(token.SessionDuration)
 		if err := token.StoreSessionData(user.User.ID, sessionToken, expirationTime); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error storing session data", "error": err.Error()})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "err.Error()", "error": "Error storing session data"})
 		}
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User logged in successfully", "access_token": sessionToken})
