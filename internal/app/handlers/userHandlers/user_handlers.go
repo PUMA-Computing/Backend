@@ -23,18 +23,15 @@ func (h *UserHandlers) RegisterUser() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var user *user.User
 		if err := c.BodyParser(&user); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing registration data"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error parsing registration data", "error": err.Error()})
 		}
 
 		if err := h.validateRegistrationData(user); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		user.RoleID = 2
-		user.CreatedAt = time.Now()
-
 		if err := h.userService.RegisterUser(user); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error registering user"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Error registering user", "error": err.Error()})
 		}
 
 		return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "User registered successfully"})

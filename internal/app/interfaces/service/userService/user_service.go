@@ -6,6 +6,7 @@ import (
 	token2 "Backend/internal/utils/token"
 	"Backend/pkg/bcrypt"
 	"github.com/google/uuid"
+	"time"
 )
 
 type AuthResponse struct {
@@ -41,6 +42,8 @@ func (u *UserService) RegisterUser(user *user.User) error {
 	}
 	user.Password = hashedPassword
 	user.ID = uuid.New()
+	user.RoleID = 2
+	user.CreatedAt = time.Now()
 	return u.userRepository.RegisterUser(user)
 }
 
