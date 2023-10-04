@@ -1,7 +1,7 @@
 package services
 
 import (
-	"Backend/internal/database"
+	"Backend/internal/database/app"
 	"Backend/internal/models"
 	"github.com/google/uuid"
 )
@@ -14,7 +14,7 @@ func NewEventService() *EventService {
 }
 
 func (es *EventService) CreateEvent(event *models.Event) error {
-	if err := database.CreateEvent(event); err != nil {
+	if err := app.CreateEvent(event); err != nil {
 		return err
 	}
 
@@ -22,7 +22,7 @@ func (es *EventService) CreateEvent(event *models.Event) error {
 }
 
 func (s *EventService) GetEventByID(eventID int) (*models.Event, error) {
-	event, err := database.GetEventByID(eventID)
+	event, err := app.GetEventByID(eventID)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +30,7 @@ func (s *EventService) GetEventByID(eventID int) (*models.Event, error) {
 }
 
 func (es *EventService) EditEvent(eventID int, updatedEvent *models.Event) error {
-	if err := database.UpdateEvent(eventID, updatedEvent); err != nil {
+	if err := app.UpdateEvent(eventID, updatedEvent); err != nil {
 		return err
 	}
 
@@ -38,7 +38,7 @@ func (es *EventService) EditEvent(eventID int, updatedEvent *models.Event) error
 }
 
 func (es *EventService) DeleteEvent(eventID int) error {
-	if err := database.DeleteEvent(eventID); err != nil {
+	if err := app.DeleteEvent(eventID); err != nil {
 		return err
 	}
 
@@ -46,7 +46,7 @@ func (es *EventService) DeleteEvent(eventID int) error {
 }
 
 func (es *EventService) ListEvents() ([]*models.Event, error) {
-	events, err := database.ListEvents()
+	events, err := app.ListEvents()
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (es *EventService) ListEvents() ([]*models.Event, error) {
 }
 
 func (es *EventService) RegisterForEvent(userID uuid.UUID, eventID int) error {
-	if err := database.RegisterForEvent(userID, eventID); err != nil {
+	if err := app.RegisterForEvent(userID, eventID); err != nil {
 		return err
 	}
 
@@ -63,7 +63,7 @@ func (es *EventService) RegisterForEvent(userID uuid.UUID, eventID int) error {
 }
 
 func (es *EventService) ListRegisteredUsers(eventID int) ([]*models.User, error) {
-	users, err := database.ListRegisteredUsers(eventID)
+	users, err := app.ListRegisteredUsers(eventID)
 	if err != nil {
 		return nil, err
 	}

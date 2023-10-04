@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS users (
-                                     id SERIAL PRIMARY KEY,
+                                     id UUID PRIMARY KEY,
                                      username VARCHAR(255) NOT NULL,
                                      password VARCHAR(255) NOT NULL,
                                      first_name VARCHAR(255) NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
                                      email VARCHAR(255) NOT NULL,
                                      student_id VARCHAR(255) NOT NULL,
                                      major VARCHAR(255) NOT NULL,
-                                     role_id INT,
+                                     role_id INT REFERENCES roles(id) NOT NULL,
                                      created_at TIMESTAMPTZ DEFAULT NOW(),
                                      updated_at TIMESTAMPTZ DEFAULT NOW()
 );

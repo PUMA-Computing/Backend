@@ -1,12 +1,13 @@
-package database
+package app
 
 import (
+	"Backend/internal/database"
 	"Backend/internal/models"
 	"context"
 )
 
 func CreateNews(news *models.News) error {
-	_, err := DB.Exec(context.Background(), `
+	_, err := database.DB.Exec(context.Background(), `
 			INSERT INTO news (title, content, user_id)
 			VALUES ($1, $2, $3)`,
 		news.Title, news.Content, news.UserID)
@@ -14,7 +15,7 @@ func CreateNews(news *models.News) error {
 }
 
 func UpdateNews(newsID int, news *models.News) error {
-	_, err := DB.Exec(context.Background(), `
+	_, err := database.DB.Exec(context.Background(), `
 		UPDATE news SET title = $1, content = $2, publish_date = $3
 		WHERE id = $4`,
 		news.Title, news.Content, news.PublishDate, newsID)
@@ -22,14 +23,14 @@ func UpdateNews(newsID int, news *models.News) error {
 }
 
 func DeleteNews(newsID int) error {
-	_, err := DB.Exec(context.Background(), `
+	_, err := database.DB.Exec(context.Background(), `
 		DELETE FROM news WHERE id = $1`, newsID)
 	return err
 }
 
 func GetNewsByID(newsID int) (*models.News, error) {
 	var news models.News
-	err := DB.QueryRow(context.Background(), `
+	err := database.DB.QueryRow(context.Background(), `
 		SELECT id, title, content, user_id, publish_date, likes, created_at, updated_at
 		FROM news WHERE id = $1`, newsID).Scan(&news.ID, &news.Title, &news.Content, &news.UserID, &news.PublishDate, &news.Likes, &news.CreatedAt, &news.UpdatedAt)
 	if err != nil {
@@ -40,7 +41,7 @@ func GetNewsByID(newsID int) (*models.News, error) {
 
 func ListNews() ([]*models.News, error) {
 	var news []*models.News
-	rows, err := DB.Query(context.Background(), `
+	rows, err := database.DB.Query(context.Background(), `
 		SELECT id, title, content, user_id, publish_date, likes, created_at, updated_at
 		FROM news`)
 	if err != nil {
@@ -59,7 +60,7 @@ func ListNews() ([]*models.News, error) {
 }
 
 func LikeNews(newsID int) error {
-	_, err := DB.Exec(context.Background(), `
+	_, err := database.DB.Exec(context.Background(), `
 		UPDATE news SET likes = likes + 1
 		WHERE id = $1`, newsID)
 	return err

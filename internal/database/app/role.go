@@ -1,12 +1,13 @@
-package database
+package app
 
 import (
+	"Backend/internal/database"
 	"Backend/internal/models"
 	"context"
 )
 
 func CreateRole(role *models.Roles) error {
-	_, err := DB.Exec(context.Background(), `
+	_, err := database.DB.Exec(context.Background(), `
 		INSERT INTO roles (name) 
 		VALUES ($1)`,
 		role.Name)
@@ -14,7 +15,7 @@ func CreateRole(role *models.Roles) error {
 }
 
 func UpdateRole(roleID int, updatedRole *models.Roles) error {
-	_, err := DB.Exec(context.Background(), `
+	_, err := database.DB.Exec(context.Background(), `
 		UPDATE roles SET name = $1
 		WHERE id = $2`,
 		updatedRole.Name, roleID)
@@ -22,14 +23,14 @@ func UpdateRole(roleID int, updatedRole *models.Roles) error {
 }
 
 func DeleteRole(roleID int) error {
-	_, err := DB.Exec(context.Background(), `
+	_, err := database.DB.Exec(context.Background(), `
 		DELETE FROM roles WHERE id = $1`, roleID)
 	return err
 }
 
 func GetRoleByID(roleID int) (*models.Roles, error) {
 	var role models.Roles
-	err := DB.QueryRow(context.Background(), `
+	err := database.DB.QueryRow(context.Background(), `
 		SELECT id, name
 		FROM roles WHERE id = $1`, roleID).Scan(&role.ID, &role.Name)
 	if err != nil {
@@ -40,7 +41,7 @@ func GetRoleByID(roleID int) (*models.Roles, error) {
 
 func ListRoles() ([]*models.Roles, error) {
 	var roles []*models.Roles
-	rows, err := DB.Query(context.Background(), `
+	rows, err := database.DB.Query(context.Background(), `
 		SELECT id, name
 		FROM roles`)
 	if err != nil {
@@ -59,9 +60,10 @@ func ListRoles() ([]*models.Roles, error) {
 }
 
 func AssignRoleToUser(userID int, roleID int) error {
-	_, err := DB.Exec(context.Background(), `
-		INSERT INTO user_roles (user_id, role_id) 
-		VALUES ($1, $2)`,
-		userID, roleID)
+	// Update the RoleID of the user on table users
+	_, err := database.DB.Exec(context.Background(), `
+		UPDATE users SET role_id = $1
+		WHERE id = $2`,
+		roleID, userID)
 	return err
 }

@@ -2,7 +2,10 @@ package services
 
 import (
 	"Backend/internal/database"
+	"Backend/internal/database/app"
 	"Backend/internal/models"
+	"context"
+	"github.com/google/uuid"
 )
 
 type PermissionService struct {
@@ -13,7 +16,7 @@ func NewPermissionService() *PermissionService {
 }
 
 func (ps *PermissionService) ListPermission() ([]*models.Permission, error) {
-	permissions, err := database.ListPermission()
+	permissions, err := app.ListPermission()
 	if err != nil {
 		return nil, err
 	}
@@ -22,9 +25,13 @@ func (ps *PermissionService) ListPermission() ([]*models.Permission, error) {
 }
 
 func (ps *PermissionService) AssignPermissionToRole(roleID int, permissionIDs []int) error {
-	if err := database.AssignPermissionsToRole(roleID, permissionIDs); err != nil {
+	if err := app.AssignPermissionsToRole(roleID, permissionIDs); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (ps *PermissionService) CheckPermission(ctx context.Context, userID uuid.UUID, requiredPermission string) (bool, error) {
+	return database.CheckPermission(ctx, userID, requiredPermission)
 }

@@ -1,13 +1,14 @@
-package database
+package app
 
 import (
+	"Backend/internal/database"
 	"Backend/internal/models"
 	"context"
 )
 
 func ListPermission() ([]*models.Permission, error) {
 	var permissions []*models.Permission
-	rows, err := DB.Query(context.Background(), `
+	rows, err := database.DB.Query(context.Background(), `
 		SELECT id, name
 		FROM permissions`)
 	if err != nil {
@@ -27,7 +28,7 @@ func ListPermission() ([]*models.Permission, error) {
 
 func AssignPermissionsToRole(roleID int, permissionIDs []int) error {
 	ctx := context.Background()
-	tx, err := DB.Begin(ctx)
+	tx, err := database.DB.Begin(ctx)
 	if err != nil {
 		return err
 	}

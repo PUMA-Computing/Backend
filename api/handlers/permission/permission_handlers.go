@@ -25,7 +25,7 @@ func (h *Handler) ListPermissions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": permissions})
 }
 
-func (h *Handler) AssingPermissionToRole(c *gin.Context) {
+func (h *Handler) AssignPermissionToRole(c *gin.Context) {
 	roleIDStr := c.Param("roleID")
 	roleID, err := strconv.Atoi(roleIDStr)
 	if err != nil {

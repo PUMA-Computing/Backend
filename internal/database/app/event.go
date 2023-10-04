@@ -1,6 +1,7 @@
-package database
+package app
 
 import (
+	"Backend/internal/database"
 	"Backend/internal/models"
 	"context"
 	"github.com/google/uuid"
@@ -10,7 +11,7 @@ type Event struct {
 }
 
 func CreateEvent(event *models.Event) error {
-	_, err := DB.Exec(context.Background(), `
+	_, err := database.DB.Exec(context.Background(), `
         INSERT INTO events (title, description, date, user_id) 
         VALUES ($1, $2, $3, $4)`,
 		event.Title, event.Description, event.Date, event.UserID)
@@ -18,7 +19,7 @@ func CreateEvent(event *models.Event) error {
 }
 
 func UpdateEvent(eventID int, updatedEvent *models.Event) error {
-	_, err := DB.Exec(context.Background(), `
+	_, err := database.DB.Exec(context.Background(), `
 		UPDATE events SET title = $1, description = $2, date = $3, user_id = $4
 		WHERE id = $5`,
 		updatedEvent.Title, updatedEvent.Description, updatedEvent.Date, updatedEvent.UserID, eventID)
@@ -26,14 +27,14 @@ func UpdateEvent(eventID int, updatedEvent *models.Event) error {
 }
 
 func DeleteEvent(eventID int) error {
-	_, err := DB.Exec(context.Background(), `
+	_, err := database.DB.Exec(context.Background(), `
 		DELETE FROM events WHERE id = $1`, eventID)
 	return err
 }
 
 func GetEventByID(eventID int) (*models.Event, error) {
 	var event models.Event
-	err := DB.QueryRow(context.Background(), `
+	err := database.DB.QueryRow(context.Background(), `
 		SELECT id, title, description, date, user_id, created_at, updated_at
 		FROM events WHERE id = $1`, eventID).Scan(&event.ID, &event.Title, &event.Description, &event.Date, &event.UserID, &event.CreatedAt, &event.UpdatedAt)
 	if err != nil {
@@ -44,7 +45,7 @@ func GetEventByID(eventID int) (*models.Event, error) {
 
 func ListEvents() ([]*models.Event, error) {
 	var events []*models.Event
-	rows, err := DB.Query(context.Background(), `
+	rows, err := database.DB.Query(context.Background(), `
 		SELECT id, title, description, date, user_id, created_at, updated_at
 		FROM events`)
 	if err != nil {
@@ -63,7 +64,7 @@ func ListEvents() ([]*models.Event, error) {
 }
 
 func RegisterForEvent(userID uuid.UUID, eventID int) error {
-	_, err := DB.Exec(context.Background(), `
+	_, err := database.DB.Exec(context.Background(), `
 		INSERT INTO event_registrations (event_id, user_id) 
 		VALUES ($1, $2)`,
 		eventID, userID)
@@ -71,7 +72,7 @@ func RegisterForEvent(userID uuid.UUID, eventID int) error {
 }
 
 func ListRegisteredUsers(eventID int) ([]*models.User, error) {
-	rows, err := DB.Query(context.Background(), `
+	rows, err := database.DB.Query(context.Background(), `
         SELECT u.id, u.username, u.first_name, u.middle_name, u.last_name, u.email, u.role_id, u.created_at, u.updated_at
         FROM users u
         JOIN event_registrations er ON u.id = er.user_id

@@ -23,6 +23,8 @@ func Init(config *configs.Config) {
 	if err != nil {
 		log.Fatalf("Failed to connect to the database: %v", err)
 	}
+
+	log.Println("Connected to the database")
 }
 
 func Close() {

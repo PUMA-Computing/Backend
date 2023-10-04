@@ -6,6 +6,7 @@ import (
 	"Backend/api/handlers/permission"
 	"Backend/api/handlers/role"
 	"Backend/api/handlers/user"
+	"Backend/api/middleware"
 	"Backend/internal/services"
 	"github.com/gin-gonic/gin"
 )
@@ -19,7 +20,7 @@ func SetupRoutes() *gin.Engine {
 	roleService := services.NewRoleService()
 	permissionService := services.NewPermissionService()
 
-	userHandlers := user.NewUserHandlers(userService)
+	userHandlers := user.NewUserHandlers(userService, permissionService)
 	eventHandlers := event.NewEventHandlers(eventService)
 	newsHandlers := news.NewNewsHandler(newsService)
 	roleHandlers := role.NewRoleHandler(roleService)
@@ -29,10 +30,13 @@ func SetupRoutes() *gin.Engine {
 	{
 		authRoutes.POST("/register", userHandlers.RegisterUser)
 		authRoutes.POST("/login", userHandlers.Login)
+		authRoutes.POST("/logout", userHandlers.Logout)
+		authRoutes.POST("/refresh-token", middleware.TokenMiddleware(), userHandlers.RefreshToken)
 	}
 
 	userRoutes := r.Group("/users")
 	{
+		userRoutes.Use(middleware.TokenMiddleware())
 		userRoutes.GET("/:userID", userHandlers.GetUserByID)
 		userRoutes.PUT("/:userID/edit", userHandlers.EditUser)
 		userRoutes.DELETE("/:userID/delete", userHandlers.DeleteUser)
@@ -41,14 +45,15 @@ func SetupRoutes() *gin.Engine {
 
 	eventRoutes := r.Group("/events")
 	{
+		eventRoutes.Use(middleware.TokenMiddleware())
 		eventRoutes.POST("/create", eventHandlers.CreateEvent)
 		eventRoutes.GET("/:eventID", eventHandlers.GetEventByID)
 		eventRoutes.PUT("/:eventID/edit", eventHandlers.EditEvent)
 		eventRoutes.DELETE("/:eventID/delete", eventHandlers.DeleteEvent)
-		eventRoutes.GET("/", eventHandlers.ListEvents)
 		eventRoutes.POST("/:eventID/register", eventHandlers.RegisterForEvent)
 		eventRoutes.GET("/:eventID/registered-user", eventHandlers.ListRegisteredUsers)
 	}
+	eventRoutes.GET("/", eventHandlers.ListEvents)
 
 	newsRoutes := r.Group("/news")
 	{
@@ -73,7 +78,7 @@ func SetupRoutes() *gin.Engine {
 	permissionRoutes := r.Group("/permissions")
 	{
 		permissionRoutes.GET("/", permissionHandlers.ListPermissions)
-		permissionRoutes.POST("/assign/:roleID", permissionHandlers.AssingPermissionToRole)
+		permissionRoutes.POST("/assign/:roleID", permissionHandlers.AssignPermissionToRole)
 
 	}
 	return r

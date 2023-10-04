@@ -1,7 +1,7 @@
 package services
 
 import (
-	"Backend/internal/database"
+	"Backend/internal/database/app"
 	"Backend/internal/models"
 )
 
@@ -13,7 +13,7 @@ func NewNewsService() *NewsService {
 }
 
 func (ns *NewsService) CreateNews(news *models.News) error {
-	if err := database.CreateNews(news); err != nil {
+	if err := app.CreateNews(news); err != nil {
 		return err
 	}
 
@@ -21,7 +21,7 @@ func (ns *NewsService) CreateNews(news *models.News) error {
 }
 
 func (ns *NewsService) EditNews(newsID int, updatedNews *models.News) error {
-	if err := database.UpdateNews(newsID, updatedNews); err != nil {
+	if err := app.UpdateNews(newsID, updatedNews); err != nil {
 		return err
 	}
 
@@ -29,7 +29,7 @@ func (ns *NewsService) EditNews(newsID int, updatedNews *models.News) error {
 }
 
 func (ns *NewsService) DeleteNews(newsID int) error {
-	if err := database.DeleteNews(newsID); err != nil {
+	if err := app.DeleteNews(newsID); err != nil {
 		return err
 	}
 
@@ -37,7 +37,7 @@ func (ns *NewsService) DeleteNews(newsID int) error {
 }
 
 func (ns *NewsService) GetNewsByID(newsID int) (*models.News, error) {
-	news, err := database.GetNewsByID(newsID)
+	news, err := app.GetNewsByID(newsID)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (ns *NewsService) GetNewsByID(newsID int) (*models.News, error) {
 }
 
 func (ns *NewsService) ListNews() ([]*models.News, error) {
-	news, err := database.ListNews()
+	news, err := app.ListNews()
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (ns *NewsService) ListNews() ([]*models.News, error) {
 }
 
 func (ns *NewsService) LikeNews(newsID int) error {
-	if err := database.LikeNews(newsID); err != nil {
+	if err := app.LikeNews(newsID); err != nil {
 		return err
 	}
 

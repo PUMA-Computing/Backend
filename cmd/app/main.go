@@ -4,6 +4,7 @@ import (
 	"Backend/api"
 	"Backend/configs"
 	"Backend/internal/database"
+	"Backend/pkg/utils"
 	"github.com/joho/godotenv"
 	"log"
 )
@@ -16,6 +17,8 @@ func main() {
 	config := configs.LoadConfig()
 
 	database.Migrate()
+	database.Init(config)
+	utils.InitRedis()
 
 	r := api.SetupRoutes()
 
