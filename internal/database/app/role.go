@@ -9,17 +9,17 @@ import (
 
 func CreateRole(role *models.Roles) error {
 	_, err := database.DB.Exec(context.Background(), `
-		INSERT INTO roles (name) 
-		VALUES ($1)`,
-		role.Name)
+		INSERT INTO roles (name, created_at, updated_at) 
+		VALUES ($1, $2, $3)`,
+		role.Name, role.CreatedAt, role.UpdatedAt)
 	return err
 }
 
 func UpdateRole(roleID int, updatedRole *models.Roles) error {
 	_, err := database.DB.Exec(context.Background(), `
-		UPDATE roles SET name = $1
-		WHERE id = $2`,
-		updatedRole.Name, roleID)
+		UPDATE roles SET name = $1, updated_at = $2
+		WHERE id = $3`,
+		updatedRole.Name, updatedRole.UpdatedAt, roleID)
 	return err
 }
 
@@ -32,8 +32,8 @@ func DeleteRole(roleID int) error {
 func GetRoleByID(roleID int) (*models.Roles, error) {
 	var role models.Roles
 	err := database.DB.QueryRow(context.Background(), `
-		SELECT id, name
-		FROM roles WHERE id = $1`, roleID).Scan(&role.ID, &role.Name)
+		SELECT id, name, updated_at, created_at
+		FROM roles WHERE id = $1`, roleID).Scan(&role.ID, &role.Name, &role.CreatedAt, &role.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func GetRoleByID(roleID int) (*models.Roles, error) {
 func ListRoles() ([]*models.Roles, error) {
 	var roles []*models.Roles
 	rows, err := database.DB.Query(context.Background(), `
-		SELECT id, name
+		SELECT id, name, updated_at, created_at
 		FROM roles`)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func ListRoles() ([]*models.Roles, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var role models.Roles
-		err := rows.Scan(&role.ID, &role.Name)
+		err := rows.Scan(&role.ID, &role.Name, &role.CreatedAt, &role.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}

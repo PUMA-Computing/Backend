@@ -7,8 +7,11 @@ import (
 	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
+	"time"
 )
 
 type Handler struct {
@@ -26,7 +29,12 @@ func NewRoleHandler(roleService *services.RoleService, userService *services.Use
 }
 
 func (h *Handler) CreateRole(c *gin.Context) {
-	userID, err := utils.GetUserIDFromContext(c)
+	token, err := utils.ExtractTokenFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
@@ -49,42 +57,35 @@ func (h *Handler) CreateRole(c *gin.Context) {
 		return
 	}
 
+	newRole.CreatedAt = time.Now()
+	newRole.UpdatedAt = time.Now()
+
 	if err := h.roleService.CreateRole(&newRole); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"data": newRole,
-		"meta": gin.H{"message": "Role Created Successfully"},
+		"data": gin.H{
+			"types":      "roles",
+			"attributes": newRole,
+		},
 	})
 }
 
 func (h *Handler) GetRoleByID(c *gin.Context) {
-	roleIDStr := c.Param("roleID")
-	roleID, err := strconv.Atoi(roleIDStr)
+	token, err := utils.ExtractTokenFromHeader(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": []string{"Invalid Role ID"}})
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
 	}
-
-	role, err := h.roleService.GetRoleByID(roleID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"errors": []string{"Role not found"}})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": role})
-}
-
-func (h *Handler) EditRole(c *gin.Context) {
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
 	}
 
-	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "roles:edit")
+	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "roles:get")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
@@ -102,10 +103,64 @@ func (h *Handler) EditRole(c *gin.Context) {
 		return
 	}
 
+	role, err := h.roleService.GetRoleByID(roleID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"errors": []string{"Role not found"}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"type":       "news",
+			"id":         role.ID,
+			"attributes": role,
+		},
+	})
+}
+
+func (h *Handler) EditRole(c *gin.Context) {
+	token, err := utils.ExtractTokenFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+
+	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "roles:edit")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+
+	if !hasPermission {
+		c.JSON(http.StatusForbidden, gin.H{"errors": []string{"Permission Denied"}})
+		return
+	}
+
+	log.Println("Edit Role")
+
+	roleIDStr := c.Param("roleID")
+	roleID, err := strconv.Atoi(roleIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": []string{"Invalid Role ID"}})
+		return
+	}
+
 	var updatedRole models.Roles
 	if err := c.BindJSON(&updatedRole); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": []string{err.Error()}})
 		return
+	}
+
+	updatedRole.UpdatedAt = time.Now()
+
+	updatedAttributes := make(map[string]interface{})
+	if updatedRole.Name != "" {
+		updatedAttributes["name"] = updatedRole.Name
 	}
 
 	if err := h.roleService.EditRole(roleID, &updatedRole); err != nil {
@@ -114,13 +169,21 @@ func (h *Handler) EditRole(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data": updatedRole,
-		"meta": gin.H{"message": "Role Updated Successfully"},
+		"data": gin.H{
+			"type":       "roles",
+			"id":         roleID,
+			"attributes": updatedAttributes,
+		},
 	})
 }
 
 func (h *Handler) DeleteRole(c *gin.Context) {
-	userID, err := utils.GetUserIDFromContext(c)
+	token, err := utils.ExtractTokenFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
@@ -149,11 +212,20 @@ func (h *Handler) DeleteRole(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"meta": gin.H{"message": "Role Deleted Successfully"}})
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"message": "Role Deleted Successfully",
+		},
+	})
 }
 
 func (h *Handler) ListRoles(c *gin.Context) {
-	userID, err := utils.GetUserIDFromContext(c)
+	token, err := utils.ExtractTokenFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
@@ -176,11 +248,21 @@ func (h *Handler) ListRoles(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": roles})
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"type":       "roles",
+			"attributes": roles,
+		},
+	})
 }
 
 func (h *Handler) AssignRoleToUser(c *gin.Context) {
-	userID, err := utils.GetUserIDFromContext(c)
+	token, err := utils.ExtractTokenFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
@@ -227,5 +309,21 @@ func (h *Handler) AssignRoleToUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"meta": gin.H{"message": "Role Assigned Successfully"}})
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"type": "users_roles",
+			"id":   roleID,
+			"attributes": gin.H{
+				"user_id": targetUserID,
+				"role_id": roleID,
+			},
+		},
+		"relationships": gin.H{
+			"author": gin.H{
+				"data": gin.H{
+					"id": userID,
+				},
+			},
+		},
+	})
 }

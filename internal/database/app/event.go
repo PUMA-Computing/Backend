@@ -5,6 +5,7 @@ import (
 	"Backend/internal/models"
 	"context"
 	"github.com/google/uuid"
+	"time"
 )
 
 type Event struct {
@@ -65,9 +66,9 @@ func ListEvents() ([]*models.Event, error) {
 
 func RegisterForEvent(userID uuid.UUID, eventID int) error {
 	_, err := database.DB.Exec(context.Background(), `
-		INSERT INTO event_registrations (event_id, user_id) 
-		VALUES ($1, $2)`,
-		eventID, userID)
+		INSERT INTO event_registrations (event_id, user_id, registration_date) 
+		VALUES ($1, $2, $3)`,
+		eventID, userID, time.Now())
 	return err
 }
 

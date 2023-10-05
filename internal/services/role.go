@@ -22,6 +22,23 @@ func (rs *RoleService) CreateRole(role *models.Roles) error {
 }
 
 func (rs *RoleService) EditRole(roleID int, updatedRole *models.Roles) error {
+	existingRole, err := app.GetRoleByID(roleID)
+	if err != nil {
+		return err
+	}
+
+	if updatedRole.Name == "" {
+		updatedRole.Name = existingRole.Name
+	}
+
+	if updatedRole.CreatedAt.IsZero() {
+		updatedRole.CreatedAt = existingRole.CreatedAt
+	}
+
+	if updatedRole.UpdatedAt.IsZero() {
+		updatedRole.UpdatedAt = existingRole.UpdatedAt
+	}
+
 	if err := app.UpdateRole(roleID, updatedRole); err != nil {
 		return err
 	}
