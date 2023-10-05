@@ -2,18 +2,30 @@ package utils
 
 import (
 	"context"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
+	"log"
 	"os"
 )
 
 var Rdb *redis.Client
 
 func InitRedis() {
-	Rdb = redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_URL"),
-		Password: os.Getenv("REDIS_PASS"),
+	redisURL := os.Getenv("REDIS_URL")
+	redisPassword := os.Getenv("REDIS_PASS")
+
+	log.Printf("Redis URL: %s", redisURL)
+	log.Printf("Redis Password: %s", redisPassword)
+
+	options := &redis.Options{
+		Addr:     redisURL,
+		Password: redisPassword,
 		DB:       0,
-	})
+	}
+
+	Rdb = redis.NewClient(options)
+	if err := Rdb.Ping(context.Background()).Err(); err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
 }
 
 func IsTokenRevoked(tokenString string) (bool, error) {

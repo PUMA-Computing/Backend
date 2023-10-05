@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 type Handlers struct {
@@ -32,16 +33,33 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 
 	log.Println("Before calling CreateUser")
 
-	if err := h.UserService.RegisterUser(&newUser); err != nil {
+	newUser.RoleID = 2
+	newUser.CreatedAt = time.Time{}
+	newUser.UpdatedAt = time.Time{}
+
+	err := h.UserService.RegisterUser(&newUser)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
 	}
-
 	log.Println("After calling CreateUser")
 
 	c.JSON(http.StatusCreated, gin.H{
-		"data": newUser,
-		"meta": gin.H{"message": "User Registered Successfully"},
+		"jsonapi": gin.H{
+			"version": "1.1",
+		},
+		"data": gin.H{
+			"type":       "users",
+			"attributes": newUser,
+		},
+		"relationships": gin.H{
+			"role": gin.H{
+				"data": gin.H{
+					"type": "roles",
+					"id":   newUser.RoleID,
+				},
+			},
+		},
 	})
 }
 
@@ -70,8 +88,18 @@ func (h *Handlers) Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data": user,
-		"meta": gin.H{"token": token},
+		"jsonapi": gin.H{
+			"version": "1.1",
+		},
+		"data": gin.H{
+			"id":   user.ID,
+			"type": "token",
+			"attributes": gin.H{
+				"access_token": token,
+				"token_type":   "Bearer",
+				"expires_in":   86400,
+			},
+		},
 	})
 }
 
@@ -93,7 +121,7 @@ func (h *Handlers) Logout(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"meta": gin.H{"message": "Logged out successfully"}})
+	c.JSON(http.StatusOK, gin.H{"data": gin.H{"message": "Logout Successful"}})
 }
 
 func (h *Handlers) GetUserByID(c *gin.Context) {
@@ -103,7 +131,7 @@ func (h *Handlers) GetUserByID(c *gin.Context) {
 		return
 	}
 
-	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "view:users")
+	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "get:users")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
@@ -120,7 +148,21 @@ func (h *Handlers) GetUserByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": user})
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"type":       "users",
+			"id":         userID,
+			"attributes": user,
+		},
+		"relationships": gin.H{
+			"role": gin.H{
+				"data": gin.H{
+					"type": "roles",
+					"id":   user.RoleID,
+				},
+			},
+		},
+	})
 }
 
 func (h *Handlers) EditUser(c *gin.Context) {
@@ -130,7 +172,92 @@ func (h *Handlers) EditUser(c *gin.Context) {
 		return
 	}
 
-	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "edit:users")
+	log.Println("userID: ", userID)
+
+	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "users:edit")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+
+	log.Println("hasPermission: ", hasPermission)
+
+	if !hasPermission {
+		c.JSON(http.StatusForbidden, gin.H{"errors": []string{"Permission Denied"}})
+		return
+	}
+
+	log.Println("Before binding JSON")
+
+	var updatedUser models.User
+	if err := c.BindJSON(&updatedUser); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+
+	updatedUser.RoleID = 2
+	updatedUser.UpdatedAt = time.Time{}
+
+	updatedAttributes := make(map[string]interface{})
+
+	if updatedUser.Username != "" {
+		updatedAttributes["username"] = updatedUser.Username
+	}
+
+	if updatedUser.Password != "" {
+		updatedAttributes["password"] = updatedUser.Password
+	}
+
+	if updatedUser.FirstName != "" {
+		updatedAttributes["first_name"] = updatedUser.FirstName
+	}
+
+	if updatedUser.MiddleName != "" {
+		updatedAttributes["middle_name"] = updatedUser.MiddleName
+	}
+
+	if updatedUser.LastName != "" {
+		updatedAttributes["last_name"] = updatedUser.LastName
+	}
+
+	if updatedUser.Email != "" {
+		updatedAttributes["email"] = updatedUser.Email
+	}
+
+	if updatedUser.StudentID != "" {
+		updatedAttributes["student_id"] = updatedUser.StudentID
+	}
+
+	if updatedUser.Major != "" {
+		updatedAttributes["major"] = updatedUser.Major
+	}
+
+	log.Println("After binding JSON")
+
+	if err := h.UserService.EditUser(userID, &updatedUser); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+
+	log.Println("After calling EditUser")
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"type":       "users",
+			"id":         userID,
+			"attributes": updatedAttributes,
+		},
+	})
+}
+
+func (h *Handlers) DeleteUser(c *gin.Context) {
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+
+	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "users:delete")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
@@ -141,43 +268,52 @@ func (h *Handlers) EditUser(c *gin.Context) {
 		return
 	}
 
-	var updatedUser models.User
-	if err := c.BindJSON(&updatedUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": []string{err.Error()}})
-		return
-	}
-
-	if err := h.UserService.EditUser(userID, &updatedUser); err != nil {
+	if err := h.UserService.DeleteUser(userID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": updatedUser})
+	c.JSON(http.StatusOK, gin.H{"data": gin.H{"message": "User Deleted Successfully"}})
 }
 
-func (h *Handlers) DeleteUser(c *gin.Context) {
+func (h *Handlers) ListUsers(c *gin.Context) {
+	log.Println("Before calling GetUserIDFromContext")
 	userID, err := utils.GetUserIDFromContext(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
 	}
 
-	if err := h.UserService.DeleteUser(userID); err != nil {
+	log.Println("userID: ", userID)
+
+	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "users:list")
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": gin.H{"message": "User deleted successfully"}})
-}
+	log.Println("hasPermission: ", hasPermission)
 
-func (h *Handlers) ListUsers(c *gin.Context) {
+	if !hasPermission {
+		c.JSON(http.StatusForbidden, gin.H{"errors": []string{"Permission Denied"}})
+		return
+	}
+
+	log.Println("Before calling ListUsers")
+
 	users, err := h.UserService.ListUsers()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": users})
+	log.Println("After calling ListUsers")
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"type":       "users",
+			"attributes": users,
+		}})
 }
 
 func (h *Handlers) RefreshToken(c *gin.Context) {
@@ -206,7 +342,11 @@ func (h *Handlers) RefreshToken(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data": gin.H{"message": "Token refreshed successfully"},
-		"meta": gin.H{"token": token},
+		"data": gin.H{
+			"types": "Bearer",
+			"attributes": gin.H{
+				"access_token": token,
+			},
+		},
 	})
 }

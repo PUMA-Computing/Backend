@@ -4,6 +4,7 @@ import (
 	"Backend/internal/database"
 	"Backend/internal/models"
 	"context"
+	"github.com/google/uuid"
 )
 
 func CreateRole(role *models.Roles) error {
@@ -59,7 +60,7 @@ func ListRoles() ([]*models.Roles, error) {
 	return roles, nil
 }
 
-func AssignRoleToUser(userID int, roleID int) error {
+func AssignRoleToUser(userID uuid.UUID, roleID int) error {
 	// Update the RoleID of the user on table users
 	_, err := database.DB.Exec(context.Background(), `
 		UPDATE users SET role_id = $1

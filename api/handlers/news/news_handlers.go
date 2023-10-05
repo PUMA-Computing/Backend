@@ -3,22 +3,43 @@ package news
 import (
 	"Backend/internal/models"
 	"Backend/internal/services"
+	"Backend/pkg/utils"
+	"context"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 )
 
 type Handler struct {
-	NewsService *services.NewsService
+	NewsService       *services.NewsService
+	PermissionService *services.PermissionService
 }
 
-func NewNewsHandler(newsService *services.NewsService) *Handler {
+func NewNewsHandler(newsService *services.NewsService, permissionService *services.PermissionService) *Handler {
 	return &Handler{
-		NewsService: newsService,
+		NewsService:       newsService,
+		PermissionService: permissionService,
 	}
 }
 
 func (h *Handler) CreateNews(c *gin.Context) {
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+
+	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "news:create")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+
+	if !hasPermission {
+		c.JSON(http.StatusForbidden, gin.H{"errors": []string{"Permission Denied"}})
+		return
+	}
+
 	var newNews models.News
 	if err := c.BindJSON(&newNews); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": []string{err.Error()}})
@@ -54,6 +75,23 @@ func (h *Handler) GetNewsByID(c *gin.Context) {
 }
 
 func (h *Handler) EditNews(c *gin.Context) {
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+
+	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "news:edit")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+
+	if !hasPermission {
+		c.JSON(http.StatusForbidden, gin.H{"errors": []string{"Permission Denied"}})
+		return
+	}
+
 	newsIDStr := c.Param("newsID")
 	newsID, err := strconv.Atoi(newsIDStr)
 	if err != nil {
@@ -73,6 +111,23 @@ func (h *Handler) EditNews(c *gin.Context) {
 }
 
 func (h *Handler) DeleteNews(c *gin.Context) {
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+
+	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "news:delete")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+
+	if !hasPermission {
+		c.JSON(http.StatusForbidden, gin.H{"errors": []string{"Permission Denied"}})
+		return
+	}
+
 	newsIDStr := c.Param("newsID")
 	newsID, err := strconv.Atoi(newsIDStr)
 	if err != nil {

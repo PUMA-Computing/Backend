@@ -18,6 +18,15 @@ func GetUserIDFromContext(c *gin.Context) (uuid.UUID, error) {
 	return userID, nil
 }
 
+func GetUserIDFromToken(tokenString, secretKey string) (uuid.UUID, error) {
+	claims, err := ValidateToken(tokenString, secretKey)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return claims.UserID, nil
+}
+
 func ExtractTokenFromHeader(c *gin.Context) (string, error) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {

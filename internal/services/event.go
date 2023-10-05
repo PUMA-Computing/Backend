@@ -21,7 +21,7 @@ func (es *EventService) CreateEvent(event *models.Event) error {
 	return nil
 }
 
-func (s *EventService) GetEventByID(eventID int) (*models.Event, error) {
+func (es *EventService) GetEventByID(eventID int) (*models.Event, error) {
 	event, err := app.GetEventByID(eventID)
 	if err != nil {
 		return nil, err
@@ -30,6 +30,23 @@ func (s *EventService) GetEventByID(eventID int) (*models.Event, error) {
 }
 
 func (es *EventService) EditEvent(eventID int, updatedEvent *models.Event) error {
+	existingEvent, err := app.GetEventByID(eventID)
+	if err != nil {
+		return err
+	}
+
+	if updatedEvent.Title == "" {
+		updatedEvent.Title = existingEvent.Title
+	}
+
+	if updatedEvent.Description == "" {
+		updatedEvent.Description = existingEvent.Description
+	}
+
+	if updatedEvent.Date == existingEvent.Date {
+		updatedEvent.Date = existingEvent.Date
+	}
+
 	if err := app.UpdateEvent(eventID, updatedEvent); err != nil {
 		return err
 	}
