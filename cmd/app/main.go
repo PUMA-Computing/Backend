@@ -5,6 +5,7 @@ import (
 	"Backend/configs"
 	"Backend/internal/database"
 	"Backend/pkg/utils"
+	"github.com/gin-contrib/cors"
 	"github.com/joho/godotenv"
 	"log"
 )
@@ -21,6 +22,11 @@ func main() {
 	utils.InitRedis()
 
 	r := api.SetupRoutes()
+
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowOrigins = []string{"*"}
+
+	r.Use(cors.New(corsConfig))
 
 	port := ":" + config.ServerPort
 	if err := r.Run(port); err != nil {
