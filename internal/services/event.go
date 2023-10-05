@@ -21,7 +21,7 @@ func (es *EventService) CreateEvent(event *models.Event) error {
 	return nil
 }
 
-func (s *EventService) GetEventByID(eventID int) (*models.Event, error) {
+func (es *EventService) GetEventByID(eventID int) (*models.Event, error) {
 	event, err := app.GetEventByID(eventID)
 	if err != nil {
 		return nil, err

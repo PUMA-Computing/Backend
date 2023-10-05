@@ -3,6 +3,7 @@ package services
 import (
 	"Backend/internal/database/app"
 	"Backend/internal/models"
+	"github.com/google/uuid"
 )
 
 type RoleService struct {
@@ -53,7 +54,7 @@ func (rs *RoleService) ListRoles() ([]*models.Roles, error) {
 	return roles, nil
 }
 
-func (rs *RoleService) AssignRoleToUser(userID int, roleID int) error {
+func (rs *RoleService) AssignRoleToUser(userID uuid.UUID, roleID int) error {
 	if err := app.AssignRoleToUser(userID, roleID); err != nil {
 		return err
 	}

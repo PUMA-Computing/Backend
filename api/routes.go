@@ -21,9 +21,9 @@ func SetupRoutes() *gin.Engine {
 	permissionService := services.NewPermissionService()
 
 	userHandlers := user.NewUserHandlers(userService, permissionService)
-	eventHandlers := event.NewEventHandlers(eventService)
-	newsHandlers := news.NewNewsHandler(newsService)
-	roleHandlers := role.NewRoleHandler(roleService)
+	eventHandlers := event.NewEventHandlers(eventService, permissionService)
+	newsHandlers := news.NewNewsHandler(newsService, permissionService)
+	roleHandlers := role.NewRoleHandler(roleService, userService, permissionService)
 	permissionHandlers := permission.NewPermissionHandler(permissionService)
 
 	authRoutes := r.Group("/auth")
@@ -34,50 +34,53 @@ func SetupRoutes() *gin.Engine {
 		authRoutes.POST("/refresh-token", middleware.TokenMiddleware(), userHandlers.RefreshToken)
 	}
 
-	userRoutes := r.Group("/users")
+	userRoutes := r.Group("/user")
 	{
 		userRoutes.Use(middleware.TokenMiddleware())
 		userRoutes.GET("/:userID", userHandlers.GetUserByID)
-		userRoutes.PUT("/:userID/edit", userHandlers.EditUser)
-		userRoutes.DELETE("/:userID/delete", userHandlers.DeleteUser)
+		userRoutes.PUT("/edit", userHandlers.EditUser)
+		userRoutes.DELETE("/delete", userHandlers.DeleteUser)
 		userRoutes.GET("/", userHandlers.ListUsers)
 	}
 
-	eventRoutes := r.Group("/events")
+	eventRoutes := r.Group("/event")
 	{
+		eventRoutes.GET("/:eventID", eventHandlers.GetEventByID)
+		eventRoutes.GET("/", eventHandlers.ListEvents)
 		eventRoutes.Use(middleware.TokenMiddleware())
 		eventRoutes.POST("/create", eventHandlers.CreateEvent)
-		eventRoutes.GET("/:eventID", eventHandlers.GetEventByID)
 		eventRoutes.PUT("/:eventID/edit", eventHandlers.EditEvent)
 		eventRoutes.DELETE("/:eventID/delete", eventHandlers.DeleteEvent)
 		eventRoutes.POST("/:eventID/register", eventHandlers.RegisterForEvent)
 		eventRoutes.GET("/:eventID/registered-user", eventHandlers.ListRegisteredUsers)
 	}
-	eventRoutes.GET("/", eventHandlers.ListEvents)
 
 	newsRoutes := r.Group("/news")
 	{
+		newsRoutes.Use(middleware.TokenMiddleware())
 		newsRoutes.POST("/create", newsHandlers.CreateNews)
-		newsRoutes.GET("/:newsID", newsHandlers.GetNewsByID)
 		newsRoutes.PUT("/:newsID/edit", newsHandlers.EditNews)
 		newsRoutes.DELETE("/:newsID/delete", newsHandlers.DeleteNews)
-		newsRoutes.GET("/", newsHandlers.ListNews)
 		newsRoutes.POST("/:newsID/like", newsHandlers.LikeNews)
 	}
+	newsRoutes.GET("/:newsID", newsHandlers.GetNewsByID)
+	newsRoutes.GET("/", newsHandlers.ListNews)
 
 	roleRoutes := r.Group("/roles")
 	{
+		roleRoutes.Use(middleware.TokenMiddleware())
 		roleRoutes.POST("/create", roleHandlers.CreateRole)
-		roleRoutes.GET("/:roleID", roleHandlers.GetRoleByID)
 		roleRoutes.PUT("/:roleID/edit", roleHandlers.EditRole)
 		roleRoutes.DELETE("/:roleID/delete", roleHandlers.DeleteRole)
 		roleRoutes.GET("/", roleHandlers.ListRoles)
-		roleRoutes.POST("/:roleID/assign-permission", roleHandlers.AssignRoleToUser)
+		roleRoutes.POST("/:roleID/assign/:userID", roleHandlers.AssignRoleToUser)
 	}
+	roleRoutes.GET("/:roleID", roleHandlers.GetRoleByID)
 
 	permissionRoutes := r.Group("/permissions")
 	{
-		permissionRoutes.GET("/", permissionHandlers.ListPermissions)
+		permissionRoutes.Use(middleware.TokenMiddleware())
+		permissionRoutes.GET("/list", permissionHandlers.ListPermissions)
 		permissionRoutes.POST("/assign/:roleID", permissionHandlers.AssignPermissionToRole)
 
 	}

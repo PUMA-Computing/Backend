@@ -3,9 +3,11 @@ package services
 import (
 	"Backend/internal/database/app"
 	"Backend/internal/models"
+	"Backend/pkg/utils"
 	"errors"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"log"
 	"time"
 )
 
@@ -33,11 +35,11 @@ func (us *UserService) RegisterUser(user *models.User) error {
 		}
 
 		if existingUserByUsername != nil {
-			return errors.New("username already exists")
+			return &utils.ConflictError{Message: "username already exists"}
 		}
 
 		if existingUserByEmail != nil {
-			return errors.New("email already exists")
+			return &utils.ConflictError{Message: "email already exists"}
 		}
 	}
 
@@ -62,16 +64,20 @@ func (us *UserService) RegisterUser(user *models.User) error {
 }
 
 func (us *UserService) Login(username, password string) (*models.User, error) {
-	var u models.User
+	log.Println("Before calling GetUserByUsername")
 	user, err := app.GetUserByUsername(username)
 	if err != nil {
 		return nil, err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+	log.Println("After calling GetUserByUsername")
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
 		return nil, errors.New("invalid username or password")
 	}
+
+	log.Println("After calling CompareHashAndPassword")
 
 	return user, nil
 }
@@ -81,15 +87,52 @@ func (us *UserService) GetUserByID(userID uuid.UUID) (*models.User, error) {
 }
 
 func (us *UserService) EditUser(userID uuid.UUID, updatedUser *models.User) error {
-	existingUser, err := app.GetUserByUsernameOrEmail(updatedUser.Username, updatedUser.Email)
+	existingUser, err := app.GetUserByID(userID)
 	if err != nil {
 		return err
 	}
-	if existingUser != nil {
-		return errors.New("username or email already exists")
+	if existingUser == nil {
+		return errors.New("user not found")
 	}
 
-	return app.UpdateUser(userID, updatedUser)
+	if updatedUser.Username != "" {
+		existingUser.Username = updatedUser.Username
+	}
+
+	if updatedUser.Password != "" {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(updatedUser.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+
+		existingUser.Password = string(hashedPassword)
+	}
+
+	if updatedUser.FirstName != "" {
+		existingUser.FirstName = updatedUser.FirstName
+	}
+
+	if updatedUser.MiddleName != "" {
+		existingUser.MiddleName = updatedUser.MiddleName
+	}
+
+	if updatedUser.LastName != "" {
+		existingUser.LastName = updatedUser.LastName
+	}
+
+	if updatedUser.Email != "" {
+		existingUser.Email = updatedUser.Email
+	}
+
+	if updatedUser.StudentID != "" {
+		existingUser.StudentID = updatedUser.StudentID
+	}
+
+	if updatedUser.Major != "" {
+		existingUser.Major = updatedUser.Major
+	}
+
+	return app.UpdateUser(userID, existingUser)
 }
 
 func (us *UserService) DeleteUser(userID uuid.UUID) error {
