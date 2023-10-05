@@ -13,17 +13,17 @@ type Event struct {
 
 func CreateEvent(event *models.Event) error {
 	_, err := database.DB.Exec(context.Background(), `
-        INSERT INTO events (title, description, date, user_id) 
-        VALUES ($1, $2, $3, $4)`,
-		event.Title, event.Description, event.Date, event.UserID)
+        INSERT INTO events (title, description, start_date, end_date, user_id, status, link, thumbnail) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		event.Title, event.Description, event.StartDate, event.EndDate, event.UserID, event.Status, event.Link, event.Thumbnail)
 	return err
 }
 
 func UpdateEvent(eventID int, updatedEvent *models.Event) error {
 	_, err := database.DB.Exec(context.Background(), `
-		UPDATE events SET title = $1, description = $2, date = $3, user_id = $4
-		WHERE id = $5`,
-		updatedEvent.Title, updatedEvent.Description, updatedEvent.Date, updatedEvent.UserID, eventID)
+		UPDATE events SET title = $1, description = $2, start_date = $3, end_date = $4, user_id = $5, status = $6, link = $7, thumbnail = $8
+		WHERE id = $9`,
+		updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate, updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Link, updatedEvent.Thumbnail, eventID)
 	return err
 }
 
@@ -36,8 +36,8 @@ func DeleteEvent(eventID int) error {
 func GetEventByID(eventID int) (*models.Event, error) {
 	var event models.Event
 	err := database.DB.QueryRow(context.Background(), `
-		SELECT id, title, description, date, user_id, created_at, updated_at
-		FROM events WHERE id = $1`, eventID).Scan(&event.ID, &event.Title, &event.Description, &event.Date, &event.UserID, &event.CreatedAt, &event.UpdatedAt)
+		SELECT id, title, description, start_date, end_date, user_id, status, link, thumbnail, created_at, updated_at
+		FROM events WHERE id = $1`, eventID).Scan(&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Link, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -45,22 +45,25 @@ func GetEventByID(eventID int) (*models.Event, error) {
 }
 
 func ListEvents() ([]*models.Event, error) {
-	var events []*models.Event
 	rows, err := database.DB.Query(context.Background(), `
-		SELECT id, title, description, date, user_id, created_at, updated_at
+		SELECT id, title, description, start_date, end_date, user_id, status, link, thumbnail, created_at, updated_at
 		FROM events`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
+	var events []*models.Event
 	for rows.Next() {
 		var event models.Event
-		err := rows.Scan(&event.ID, &event.Title, &event.Description, &event.Date, &event.UserID, &event.CreatedAt, &event.UpdatedAt)
+		err := rows.Scan(
+			&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Link, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
 		events = append(events, &event)
 	}
+
 	return events, nil
 }
 
