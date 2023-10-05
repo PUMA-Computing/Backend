@@ -7,7 +7,9 @@ import (
 	"context"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"os"
 	"strconv"
+	"time"
 )
 
 type Handler struct {
@@ -23,7 +25,12 @@ func NewNewsHandler(newsService *services.NewsService, permissionService *servic
 }
 
 func (h *Handler) CreateNews(c *gin.Context) {
-	userID, err := utils.GetUserIDFromContext(c)
+	token, err := utils.ExtractTokenFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
@@ -46,14 +53,27 @@ func (h *Handler) CreateNews(c *gin.Context) {
 		return
 	}
 
+	newNews.UserID = userID
+	newNews.CreatedAt = time.Time{}
+	newNews.UpdatedAt = time.Time{}
+
 	if err := h.NewsService.CreateNews(&newNews); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"data": newNews,
-		"meta": gin.H{"message": "News Created Successfully"},
+		"data": gin.H{
+			"types":      "news",
+			"attributes": newNews,
+		},
+		"relationships": gin.H{
+			"author": gin.H{
+				"data": gin.H{
+					"id": userID,
+				},
+			},
+		},
 	})
 }
 
@@ -71,11 +91,29 @@ func (h *Handler) GetNewsByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": news})
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"type":       "news",
+			"id":         news.ID,
+			"attributes": news,
+		},
+		"relationships": gin.H{
+			"author": gin.H{
+				"data": gin.H{
+					"id": news.UserID,
+				},
+			},
+		},
+	})
 }
 
 func (h *Handler) EditNews(c *gin.Context) {
-	userID, err := utils.GetUserIDFromContext(c)
+	token, err := utils.ExtractTokenFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
@@ -98,20 +136,58 @@ func (h *Handler) EditNews(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": []string{"Invalid News ID"}})
 		return
 	}
+
 	var updatedNews models.News
 	if err := c.BindJSON(&updatedNews); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": []string{err.Error()}})
 		return
 	}
 
+	updatedNews.UpdatedAt = time.Time{}
+
+	updatedAttributes := make(map[string]interface{})
+	if updatedNews.Title != "" {
+		updatedAttributes["title"] = updatedNews.Title
+	}
+
+	if updatedNews.Content != "" {
+		updatedAttributes["content"] = updatedNews.Content
+	}
+
+	if updatedNews.PublishDate.IsZero() {
+		updatedAttributes["publish_date"] = updatedNews.PublishDate
+	}
+
+	if updatedNews.Likes != 0 {
+		updatedAttributes["likes"] = updatedNews.Likes
+	}
+
 	if err := h.NewsService.EditNews(newsID, &updatedNews); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 	}
-	c.JSON(http.StatusOK, gin.H{"data": updatedNews})
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"type":       "news",
+			"id":         newsID,
+			"attributes": updatedAttributes,
+		},
+		"relationships": gin.H{
+			"author": gin.H{
+				"data": gin.H{
+					"id": userID,
+				},
+			},
+		},
+	})
 }
 
 func (h *Handler) DeleteNews(c *gin.Context) {
-	userID, err := utils.GetUserIDFromContext(c)
+	token, err := utils.ExtractTokenFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
+	}
+	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
@@ -140,7 +216,11 @@ func (h *Handler) DeleteNews(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"meta": gin.H{"message": "News Deleted Successfully"}})
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"message": "News Deleted Successfully",
+		},
+	})
 }
 
 func (h *Handler) ListNews(c *gin.Context) {
@@ -150,7 +230,12 @@ func (h *Handler) ListNews(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": news})
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"type":       "news",
+			"attributes": news,
+		},
+	})
 }
 
 func (h *Handler) LikeNews(c *gin.Context) {
@@ -166,5 +251,9 @@ func (h *Handler) LikeNews(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"meta": gin.H{"message": "News Liked Successfully"}})
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"message": "News Liked Successfully",
+		},
+	})
 }

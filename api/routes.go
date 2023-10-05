@@ -57,14 +57,14 @@ func SetupRoutes() *gin.Engine {
 
 	newsRoutes := r.Group("/news")
 	{
+		newsRoutes.GET("/:newsID", newsHandlers.GetNewsByID)
+		newsRoutes.GET("/", newsHandlers.ListNews)
 		newsRoutes.Use(middleware.TokenMiddleware())
 		newsRoutes.POST("/create", newsHandlers.CreateNews)
 		newsRoutes.PUT("/:newsID/edit", newsHandlers.EditNews)
 		newsRoutes.DELETE("/:newsID/delete", newsHandlers.DeleteNews)
 		newsRoutes.POST("/:newsID/like", newsHandlers.LikeNews)
 	}
-	newsRoutes.GET("/:newsID", newsHandlers.GetNewsByID)
-	newsRoutes.GET("/", newsHandlers.ListNews)
 
 	roleRoutes := r.Group("/roles")
 	{

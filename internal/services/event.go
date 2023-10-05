@@ -43,8 +43,20 @@ func (es *EventService) EditEvent(eventID int, updatedEvent *models.Event) error
 		updatedEvent.Description = existingEvent.Description
 	}
 
-	if updatedEvent.Date == existingEvent.Date {
+	if updatedEvent.Date.IsZero() {
 		updatedEvent.Date = existingEvent.Date
+	}
+
+	if updatedEvent.UserID == uuid.Nil {
+		updatedEvent.UserID = existingEvent.UserID
+	}
+
+	if updatedEvent.CreatedAt.IsZero() {
+		updatedEvent.CreatedAt = existingEvent.CreatedAt
+	}
+
+	if updatedEvent.UpdatedAt.IsZero() {
+		updatedEvent.UpdatedAt = existingEvent.UpdatedAt
 	}
 
 	if err := app.UpdateEvent(eventID, updatedEvent); err != nil {
