@@ -27,36 +27,20 @@ func ListPermission() ([]*models.Permission, error) {
 }
 
 func AssignPermissionsToRole(roleID int, permissionIDs []int) error {
-	ctx := context.Background()
-	tx, err := database.DB.Begin(ctx)
+	_, err := database.DB.Exec(context.Background(), `
+		DELETE FROM role_permissions
+		WHERE role_id = $1`, roleID)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if r := recover(); r != nil {
-			err := tx.Rollback(ctx)
-			if err != nil {
-				return
-			}
-		}
-	}()
 
 	for _, permissionID := range permissionIDs {
-		_, err := tx.Exec(ctx, `
-            INSERT INTO role_permissions (role_id, permission_id)
-            VALUES ($1, $2)`,
-			roleID, permissionID)
+		_, err := database.DB.Exec(context.Background(), `
+			INSERT INTO role_permissions (role_id, permission_id)
+			VALUES ($1, $2)`, roleID, permissionID)
 		if err != nil {
-			err := tx.Rollback(ctx)
-			if err != nil {
-				return err
-			}
 			return err
 		}
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return err
 	}
 
 	return nil

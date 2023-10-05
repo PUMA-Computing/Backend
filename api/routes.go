@@ -57,8 +57,8 @@ func SetupRoutes() *gin.Engine {
 
 	newsRoutes := r.Group("/news")
 	{
-		newsRoutes.GET("/:newsID", newsHandlers.GetNewsByID)
 		newsRoutes.GET("/", newsHandlers.ListNews)
+		newsRoutes.GET("/:newsID", newsHandlers.GetNewsByID)
 		newsRoutes.Use(middleware.TokenMiddleware())
 		newsRoutes.POST("/create", newsHandlers.CreateNews)
 		newsRoutes.PUT("/:newsID/edit", newsHandlers.EditNews)
@@ -69,14 +69,13 @@ func SetupRoutes() *gin.Engine {
 	roleRoutes := r.Group("/roles")
 	{
 		roleRoutes.Use(middleware.TokenMiddleware())
+		roleRoutes.GET("/", roleHandlers.ListRoles)
 		roleRoutes.POST("/create", roleHandlers.CreateRole)
+		roleRoutes.GET("/:roleID", roleHandlers.GetRoleByID)
 		roleRoutes.PUT("/:roleID/edit", roleHandlers.EditRole)
 		roleRoutes.DELETE("/:roleID/delete", roleHandlers.DeleteRole)
-		roleRoutes.GET("/", roleHandlers.ListRoles)
 		roleRoutes.POST("/:roleID/assign/:userID", roleHandlers.AssignRoleToUser)
 	}
-	roleRoutes.GET("/:roleID", roleHandlers.GetRoleByID)
-
 	permissionRoutes := r.Group("/permissions")
 	{
 		permissionRoutes.Use(middleware.TokenMiddleware())

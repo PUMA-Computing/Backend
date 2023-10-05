@@ -41,10 +41,22 @@ func (h *Handler) ListPermissions(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": permissions})
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"type":       "permissions",
+			"attributes": permissions,
+		},
+	})
 }
 
 func (h *Handler) AssignPermissionToRole(c *gin.Context) {
+	roleIDStr := c.Param("roleID")
+	roleID, err := strconv.Atoi(roleIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": []string{"Invalid Role ID"}})
+		return
+	}
+
 	userID, err := utils.GetUserIDFromContext(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
@@ -62,15 +74,9 @@ func (h *Handler) AssignPermissionToRole(c *gin.Context) {
 		return
 	}
 
-	roleIDStr := c.Param("roleID")
-	roleID, err := strconv.Atoi(roleIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": []string{"Invalid Role ID"}})
-		return
-	}
-
 	var permissionIDs []int
-	if err := c.BindJSON(&permissionIDs); err != nil {
+
+	if err := c.ShouldBindJSON(&permissionIDs); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": []string{err.Error()}})
 		return
 	}
@@ -80,5 +86,21 @@ func (h *Handler) AssignPermissionToRole(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"meta": gin.H{"message": "Permission assigned to role successfully"}})
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"type": "roles_permissions",
+			"id":   roleID,
+			"attributes": gin.H{
+				"permissions": permissionIDs,
+				"role_id":     roleID,
+			},
+		},
+		"relationships": gin.H{
+			"roles": gin.H{
+				"data": gin.H{
+					"id": roleID,
+				},
+			},
+		},
+	})
 }
