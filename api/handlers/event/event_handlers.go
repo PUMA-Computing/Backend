@@ -107,12 +107,6 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 		return
 	}
 
-	existingEvent, err := h.EventService.GetEventByID(eventID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
-		return
-	}
-
 	// Check if the user is the author of the event
 
 	//if userID != existingEvent.UserID {
@@ -126,7 +120,6 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 		return
 	}
 
-	updatedEvent.UserID = existingEvent.UserID
 	updatedEvent.UpdatedAt = time.Time{}
 
 	updatedAttributes := make(map[string]interface{})
