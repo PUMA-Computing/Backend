@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"log"
-	"time"
 )
 
 type UserService struct{}
@@ -24,21 +23,21 @@ func (us *UserService) RegisterUser(user *models.User) error {
 	}
 
 	if hasRows {
-		existingUserByUsername, err := app.GetUserByUsername(user.Username)
+		existingUserByUsername, err := app.IsUsernameExists(user.Username)
 		if err != nil {
 			return err
 		}
 
-		existingUserByEmail, err := app.GetUserByEmail(user.Email)
+		existingUserByEmail, err := app.IsEmailExists(user.Email)
 		if err != nil {
 			return err
 		}
 
-		if existingUserByUsername != nil {
+		if existingUserByUsername {
 			return &utils.ConflictError{Message: "username already exists"}
 		}
 
-		if existingUserByEmail != nil {
+		if existingUserByEmail {
 			return &utils.ConflictError{Message: "email already exists"}
 		}
 	}
@@ -51,9 +50,6 @@ func (us *UserService) RegisterUser(user *models.User) error {
 	}
 
 	user.Password = string(hashedPassword)
-	user.RoleID = 2
-	user.CreatedAt = time.Time{}
-	user.UpdatedAt = time.Time{}
 
 	err = app.CreateUser(user)
 	if err != nil {

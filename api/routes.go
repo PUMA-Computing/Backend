@@ -40,7 +40,7 @@ func SetupRoutes() *gin.Engine {
 		userRoutes.GET("/:userID", userHandlers.GetUserByID)
 		userRoutes.PUT("/edit", userHandlers.EditUser)
 		userRoutes.DELETE("/delete", userHandlers.DeleteUser)
-		userRoutes.GET("/", userHandlers.ListUsers)
+		userRoutes.GET("/list", userHandlers.ListUsers)
 	}
 
 	eventRoutes := r.Group("/event")
@@ -52,7 +52,7 @@ func SetupRoutes() *gin.Engine {
 		eventRoutes.PUT("/:eventID/edit", eventHandlers.EditEvent)
 		eventRoutes.DELETE("/:eventID/delete", eventHandlers.DeleteEvent)
 		eventRoutes.POST("/:eventID/register", eventHandlers.RegisterForEvent)
-		eventRoutes.GET("/:eventID/registered-user", eventHandlers.ListRegisteredUsers)
+		eventRoutes.GET("/:eventID/registered-users", eventHandlers.ListRegisteredUsers)
 	}
 
 	newsRoutes := r.Group("/news")

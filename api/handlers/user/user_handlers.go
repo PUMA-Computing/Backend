@@ -5,7 +5,6 @@ import (
 	"Backend/internal/services"
 	"Backend/pkg/utils"
 	"context"
-	"errors"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -34,22 +33,33 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 
 	log.Println("Before calling CreateUser")
 
+	newUser.RoleID = 2
+	newUser.CreatedAt = time.Time{}
+	newUser.UpdatedAt = time.Time{}
+
 	err := h.UserService.RegisterUser(&newUser)
 	if err != nil {
-		switch e := err.(type) {
-		case *utils.ConflictError:
-			c.JSON(http.StatusConflict, gin.H{"errors": []string{e.Message}})
-		case *utils.InternalServerError:
-			c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{e.Message}})
-		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{errors.New("something went wrong").Error()}})
-		}
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		return
 	}
 	log.Println("After calling CreateUser")
 
 	c.JSON(http.StatusCreated, gin.H{
-		"data": newUser,
-		"meta": gin.H{"message": "User Registered Successfully"},
+		"jsonapi": gin.H{
+			"version": "1.1",
+		},
+		"data": gin.H{
+			"type":       "users",
+			"attributes": newUser,
+		},
+		"relationships": gin.H{
+			"role": gin.H{
+				"data": gin.H{
+					"type": "roles",
+					"id":   newUser.RoleID,
+				},
+			},
+		},
 	})
 }
 
@@ -78,11 +88,16 @@ func (h *Handlers) Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
+		"jsonapi": gin.H{
+			"version": "1.1",
+		},
 		"data": gin.H{
-			"user": user,
-			"token": gin.H{
-				"type":         "Bearer",
+			"id":   user.ID,
+			"type": "token",
+			"attributes": gin.H{
 				"access_token": token,
+				"token_type":   "Bearer",
+				"expires_in":   86400,
 			},
 		},
 	})
@@ -106,7 +121,7 @@ func (h *Handlers) Logout(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"meta": gin.H{"message": "Logged out successfully"}})
+	c.JSON(http.StatusOK, gin.H{"data": gin.H{"message": "Logout Successful"}})
 }
 
 func (h *Handlers) GetUserByID(c *gin.Context) {
@@ -133,7 +148,21 @@ func (h *Handlers) GetUserByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": user})
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"type":       "users",
+			"id":         userID,
+			"attributes": user,
+		},
+		"relationships": gin.H{
+			"role": gin.H{
+				"data": gin.H{
+					"type": "roles",
+					"id":   user.RoleID,
+				},
+			},
+		},
+	})
 }
 
 func (h *Handlers) EditUser(c *gin.Context) {
@@ -218,7 +247,6 @@ func (h *Handlers) EditUser(c *gin.Context) {
 			"id":         userID,
 			"attributes": updatedAttributes,
 		},
-		"meta": gin.H{"message": "User Updated Successfully"},
 	})
 }
 
@@ -245,26 +273,33 @@ func (h *Handlers) DeleteUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": gin.H{"message": "User deleted successfully"}})
+	c.JSON(http.StatusOK, gin.H{"data": gin.H{"message": "User Deleted Successfully"}})
 }
 
 func (h *Handlers) ListUsers(c *gin.Context) {
+	log.Println("Before calling GetUserIDFromContext")
 	userID, err := utils.GetUserIDFromContext(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
 	}
 
-	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "users:get")
+	log.Println("userID: ", userID)
+
+	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "users:list")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
 	}
 
+	log.Println("hasPermission: ", hasPermission)
+
 	if !hasPermission {
 		c.JSON(http.StatusForbidden, gin.H{"errors": []string{"Permission Denied"}})
 		return
 	}
+
+	log.Println("Before calling ListUsers")
 
 	users, err := h.UserService.ListUsers()
 	if err != nil {
@@ -272,7 +307,13 @@ func (h *Handlers) ListUsers(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": users})
+	log.Println("After calling ListUsers")
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"type":       "users",
+			"attributes": users,
+		}})
 }
 
 func (h *Handlers) RefreshToken(c *gin.Context) {
@@ -301,7 +342,11 @@ func (h *Handlers) RefreshToken(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data": gin.H{"token": token},
-		"meta": gin.H{"message": "Token Refreshed Successfully"},
+		"data": gin.H{
+			"types": "Bearer",
+			"attributes": gin.H{
+				"access_token": token,
+			},
+		},
 	})
 }
