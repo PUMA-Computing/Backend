@@ -6,6 +6,7 @@ import (
 	"Backend/pkg/utils"
 	"context"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -51,6 +52,21 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 	if err := c.BindJSON(&newEvent); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": []string{err.Error()}})
 		return
+	}
+
+	now := time.Now()
+	if newEvent.StartDate.Before(now) {
+		newEvent.Status = "Upcoming"
+	} else if newEvent.StartDate.After(now) && newEvent.EndDate.Before(now) {
+		newEvent.Status = "Open"
+	} else {
+		newEvent.Status = "Completed"
+	}
+
+	newEvent.Link = "/events/" + utils.GenerateFriendlyURL(newEvent.Title)
+
+	if newEvent.Thumbnail == "" {
+		newEvent.Thumbnail = "default.jpg"
 	}
 
 	newEvent.UserID = userID
@@ -132,6 +148,21 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 		updatedAttributes["description"] = updatedEvent.Description
 	}
 
+	if updatedEvent.StartDate.IsZero() {
+		updatedAttributes["start_date"] = updatedEvent.StartDate
+	}
+
+	if updatedEvent.EndDate.IsZero() {
+		updatedAttributes["end_date"] = updatedEvent.EndDate
+	}
+
+	if updatedEvent.Status != "" {
+		updatedAttributes["status"] = updatedEvent.Status
+	}
+
+	if updatedEvent.Thumbnail != "" {
+		updatedAttributes["thumbnail"] = updatedEvent.Thumbnail
+	}
 	if err := h.EventService.EditEvent(eventID, &updatedEvent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
@@ -222,11 +253,14 @@ func (h *Handlers) GetEventByID(c *gin.Context) {
 }
 
 func (h *Handlers) ListEvents(c *gin.Context) {
+	log.Println("List Events Begin")
 	events, err := h.EventService.ListEvents()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
 		return
 	}
+
+	log.Println("List Events End")
 
 	c.JSON(http.StatusOK, gin.H{
 		"data": gin.H{

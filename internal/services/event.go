@@ -3,7 +3,9 @@ package services
 import (
 	"Backend/internal/database/app"
 	"Backend/internal/models"
+	"Backend/pkg/utils"
 	"github.com/google/uuid"
+	"log"
 )
 
 type EventService struct {
@@ -35,20 +37,34 @@ func (es *EventService) EditEvent(eventID int, updatedEvent *models.Event) error
 		return err
 	}
 
-	if updatedEvent.Title == "" {
-		updatedEvent.Title = existingEvent.Title
+	if updatedEvent.Title != "" && updatedEvent.Title != existingEvent.Title {
+		updatedEvent.Link = "/events/" + utils.GenerateFriendlyURL(updatedEvent.Title)
+	} else {
+		updatedEvent.Link = existingEvent.Link
 	}
 
 	if updatedEvent.Description == "" {
 		updatedEvent.Description = existingEvent.Description
 	}
 
-	if updatedEvent.Date.IsZero() {
-		updatedEvent.Date = existingEvent.Date
+	if updatedEvent.StartDate.IsZero() {
+		updatedEvent.StartDate = existingEvent.StartDate
+	}
+
+	if updatedEvent.EndDate.IsZero() {
+		updatedEvent.EndDate = existingEvent.EndDate
 	}
 
 	if updatedEvent.UserID == uuid.Nil {
 		updatedEvent.UserID = existingEvent.UserID
+	}
+
+	if updatedEvent.Status == "" {
+		updatedEvent.Status = existingEvent.Status
+	}
+
+	if updatedEvent.Link == "" {
+		updatedEvent.Link = existingEvent.Link
 	}
 
 	if updatedEvent.CreatedAt.IsZero() {
@@ -57,6 +73,10 @@ func (es *EventService) EditEvent(eventID int, updatedEvent *models.Event) error
 
 	if updatedEvent.UpdatedAt.IsZero() {
 		updatedEvent.UpdatedAt = existingEvent.UpdatedAt
+	}
+
+	if updatedEvent.Thumbnail == "" {
+		updatedEvent.Thumbnail = existingEvent.Thumbnail
 	}
 
 	if err := app.UpdateEvent(eventID, updatedEvent); err != nil {
@@ -75,10 +95,13 @@ func (es *EventService) DeleteEvent(eventID int) error {
 }
 
 func (es *EventService) ListEvents() ([]*models.Event, error) {
+	log.Println("Service ListEvents Begin")
 	events, err := app.ListEvents()
 	if err != nil {
 		return nil, err
 	}
+
+	log.Println("Service ListEvents End")
 
 	return events, nil
 }

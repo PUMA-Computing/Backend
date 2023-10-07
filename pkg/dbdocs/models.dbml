@@ -1,0 +1,68 @@
+Project puma_website {
+  database_type: 'PostgreSQL'
+  Note: '''
+    # Ecommerce Database
+    **markdown content here**
+  '''
+}
+
+Table roles {
+  id int [pk, increment]
+  name varchar [not null]
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+}
+
+Table users {
+    id uuid [pk, increment]
+    username varchar [not null, unique]
+    password varchar [not null]
+    first_name varchar [not null]
+    middle_name varchar
+    last_name varchar [not null]
+    email varchar [not null, unique]
+    student_id varchar [unique]
+    major varchar [not null]
+    role_id int [ref: > roles.id]
+    created_at datetime [default: `now()`]
+    updated_at datetime [default: `now()`]
+}
+
+Table events {
+    id int [pk, increment]
+    title varchar [not null]
+    description varchar [not null]
+    date datetime [not null]
+    user_id uuid [ref: > users.id]
+    created_at datetime [default: `now()`]
+    updated_at datetime [default: `now()`]
+}
+
+Table news {
+    id int [pk, increment]
+    title varchar [not null]
+    content varchar [not null]
+    user_id uuid [ref: > users.id]
+    likes int [default: 0]
+    created_at datetime [default: `now()`]
+    updated_at datetime [default: `now()`]
+}
+
+Table permissions {
+    id int [pk, increment]
+    name varchar [not null]
+    created_at datetime [default: `now()`]
+    updated_at datetime [default: `now()`]
+}
+
+Table role_permissions {
+    role_id int [ref: > roles.id]
+    permission_id int [ref: > permissions.id]
+}
+
+Table event_registrations {
+    id int [pk, increment]
+    event_id int [ref: > events.id]
+    user_id uuid [ref: > users.id]
+    registration_date datetime [default: `now()`]
+}
