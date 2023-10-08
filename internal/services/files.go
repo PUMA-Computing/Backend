@@ -19,9 +19,8 @@ func (ns *FilesService) GetFileNameWithoutExtension(fileName string) string {
 }
 
 func (ns *FilesService) ConvertFileName(fileName string) string {
-	fileExtension := filepath.Ext(fileName)
 	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
-	return timestamp + "-" + ns.GetFileNameWithoutExtension(fileName) + fileExtension
+	return timestamp + "-" + fileName
 }
 
 func (ns *FilesService) ConvertToPublicDirectory(fileName string) string {
