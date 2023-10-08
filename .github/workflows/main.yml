@@ -1,7 +1,12 @@
 name: CI/CD Pipeline
 
 on:
+  workflow_dispatch:
   push:
+    branches:
+      - main
+      - development
+  pull_request:
     branches:
       - main
       - development
@@ -31,6 +36,6 @@ jobs:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
-          docker build -t your-docker-image-name:latest .
+          docker build -t computing-api:latest .
           echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-          docker push your-docker-image-name:latest
+          docker push computing-api:latest
