@@ -2,6 +2,7 @@ package api
 
 import (
 	"Backend/api/handlers/event"
+	"Backend/api/handlers/files"
 	"Backend/api/handlers/news"
 	"Backend/api/handlers/permission"
 	"Backend/api/handlers/role"
@@ -17,23 +18,27 @@ func SetupRoutes() *gin.Engine {
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"}, // Add your frontend URL
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH"},
 		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
+
+	r.Static("/public", "./public")
 
 	userService := services.NewUserService()
 	eventService := services.NewEventService()
 	newsService := services.NewNewsService()
 	roleService := services.NewRoleService()
 	permissionService := services.NewPermissionService()
+	filesService := services.NewFilesService()
 
 	userHandlers := user.NewUserHandlers(userService, permissionService)
 	eventHandlers := event.NewEventHandlers(eventService, permissionService)
 	newsHandlers := news.NewNewsHandler(newsService, permissionService)
 	roleHandlers := role.NewRoleHandler(roleService, userService, permissionService)
 	permissionHandlers := permission.NewPermissionHandler(permissionService)
+	filesHandlers := files.NewFilesHandler(filesService, permissionService)
 
 	authRoutes := r.Group("/auth")
 	{
@@ -91,6 +96,11 @@ func SetupRoutes() *gin.Engine {
 		permissionRoutes.GET("/list", permissionHandlers.ListPermissions)
 		permissionRoutes.POST("/assign/:roleID", permissionHandlers.AssignPermissionToRole)
 
+	}
+
+	filesRoutes := r.Group("/files")
+	{
+		filesRoutes.PUT("/", filesHandlers.UploadFile)
 	}
 	return r
 }
