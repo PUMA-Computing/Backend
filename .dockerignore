@@ -1,0 +1,4 @@
+# Exclude development files and directories
+.vscode
+.idea
+.git
