@@ -16,7 +16,7 @@ RUN CGO_ENABLED=0 go build \
     -v \
     -trimpath \
     -o main \
-    cmd/app/main.go
+    main.go
 
 RUN echo "ID=\"distroless\"" > /etc/os-release
 
