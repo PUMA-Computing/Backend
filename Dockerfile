@@ -28,7 +28,9 @@ RUN echo "ID=\"distroless\"" > /etc/os-release
 FROM gcr.io/distroless/static:latest
 COPY --from=builder /etc/os-release /etc/os-release
 
-CMD [ "/app/main" ]
+COPY --from=builder /app/main /usr/bin/
+COPY --from=builder /app/.env /usr/bin/
+CMD [ "/usr/bin/main" ]
 
 # Expose the port that the application will run on
 EXPOSE 8080
