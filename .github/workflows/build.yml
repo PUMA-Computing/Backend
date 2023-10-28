@@ -1,4 +1,4 @@
-name: Docker Image for Golang (repos)
+name: Docker Image for Golang (repo)
 
 on:
   push:
