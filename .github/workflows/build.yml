@@ -2,6 +2,9 @@ name: Docker Image for Golang (repos)
 
 on:
   push:
+    branches:
+      - master
+      - development
 
 jobs:
   build_and_push:
