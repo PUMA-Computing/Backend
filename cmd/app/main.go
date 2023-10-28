@@ -22,7 +22,12 @@ func main() {
 
 	r := api.SetupRoutes()
 
-	port := ":" + config.ServerPort
+	port := ":"
+	if config.ServerPort == "" {
+		port = port + "8080"
+	} else {
+		port = port + config.ServerPort
+	}
 	if err := r.Run(port); err != nil {
 		log.Fatalf("Failed to run server: %v", err)
 	}
