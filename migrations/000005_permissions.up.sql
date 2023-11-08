@@ -34,3 +34,4 @@ VALUES
     ('roles:assign', 'Assign Role to User'),
     ('permissions:list', 'List permissions'),
     ('permissions:assign', 'Assign permissions to role');
+    ('files:upload', 'Upload File'),

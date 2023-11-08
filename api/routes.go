@@ -1,13 +1,13 @@
 package api
 
 import (
-	"Backend/api/handlers/event"
-	"Backend/api/handlers/files"
-	"Backend/api/handlers/news"
-	"Backend/api/handlers/permission"
-	"Backend/api/handlers/role"
-	"Backend/api/handlers/user"
-	"Backend/api/middleware"
+	"Backend/internal/handlers/event"
+	"Backend/internal/handlers/files"
+	"Backend/internal/handlers/news"
+	"Backend/internal/handlers/permission"
+	"Backend/internal/handlers/role"
+	"Backend/internal/handlers/user"
+	"Backend/internal/middleware"
 	"Backend/internal/services"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -38,7 +38,7 @@ func SetupRoutes() *gin.Engine {
 	newsHandlers := news.NewNewsHandler(newsService, permissionService)
 	roleHandlers := role.NewRoleHandler(roleService, userService, permissionService)
 	permissionHandlers := permission.NewPermissionHandler(permissionService)
-	filesHandlers := files.NewFilesHandler(filesService, permissionService)
+	filesHandlers := files.NewFilesHandlers(filesService, permissionService)
 
 	authRoutes := r.Group("/auth")
 	{
@@ -100,7 +100,8 @@ func SetupRoutes() *gin.Engine {
 
 	filesRoutes := r.Group("/files")
 	{
-		filesRoutes.PUT("/", filesHandlers.UploadFile)
+		//filesRoutes.PUT("/", filesHandlers.UploadFile)
+		filesRoutes.PUT("/upload/profile-picture", filesHandlers.UploadFile)
 	}
 	return r
 }

@@ -232,6 +232,14 @@ func (h *Handlers) EditUser(c *gin.Context) {
 		updatedAttributes["major"] = updatedUser.Major
 	}
 
+	if updatedUser.ProfilePicture != "" {
+		updatedAttributes["profile_picture"] = updatedUser.ProfilePicture
+	}
+
+	if updatedUser.DateOfBirth != time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC) { // If the user has not updated their date of birth, the default value will be 0001-01-01T00:00:00Z, which is the zero value for time.Time
+		updatedAttributes["date_of_birth"] = updatedUser.DateOfBirth
+	}
+
 	log.Println("After binding JSON")
 
 	if err := h.UserService.EditUser(userID, &updatedUser); err != nil {
