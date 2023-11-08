@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS users (
                                      email VARCHAR(255) NOT NULL,
                                      student_id VARCHAR(255) NOT NULL,
                                      major VARCHAR(255) NOT NULL,
+                                     profile_picture VARCHAR NOT NULL,
+                                     date_of_birth DATE NOT NULL,
                                      role_id INT REFERENCES roles(id) NOT NULL,
                                      created_at TIMESTAMPTZ DEFAULT NOW(),
                                      updated_at TIMESTAMPTZ DEFAULT NOW()
