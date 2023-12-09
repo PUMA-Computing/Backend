@@ -10,33 +10,6 @@ import (
 	"log"
 )
 
-func TableHasRows(tableName string) (bool, error) {
-	query := "SELECT EXISTS(SELECT 1 FROM " + tableName + ")"
-	var exists bool
-	err := database.DB.QueryRow(context.Background(), query).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-
-	return exists, nil
-}
-
-func CreateUser(user *models.User) error {
-	query := `
-		INSERT INTO users (id, username, password, first_name, middle_name, last_name, email, student_id, major, role_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
-
-	log.Printf("SQL Query: %v", query)
-
-	_, err := database.DB.Exec(context.Background(), query, user.ID, user.Username, user.Password, user.FirstName, user.MiddleName, user.LastName, user.Email, user.StudentID, user.Major, user.RoleID)
-
-	if err != nil {
-		log.Printf("Error creating user: %v", err)
-		return err
-	}
-	return err
-}
-
 func GetUserByUsernameOrEmail(username, email string) (*models.User, error) {
 	query := "SELECT * FROM users WHERE username = $1 OR email = $2"
 	var user models.User

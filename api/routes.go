@@ -1,6 +1,7 @@
 package api
 
 import (
+	"Backend/internal/handlers/auth"
 	"Backend/internal/handlers/event"
 	"Backend/internal/handlers/files"
 	"Backend/internal/handlers/news"
@@ -26,6 +27,7 @@ func SetupRoutes() *gin.Engine {
 
 	r.Static("/public", "./public")
 
+	authService := services.NewAuthService()
 	userService := services.NewUserService()
 	eventService := services.NewEventService()
 	newsService := services.NewNewsService()
@@ -33,6 +35,7 @@ func SetupRoutes() *gin.Engine {
 	permissionService := services.NewPermissionService()
 	filesService := services.NewFilesService()
 
+	authHandlers := auth.NewAuthHandlers(authService, permissionService)
 	userHandlers := user.NewUserHandlers(userService, permissionService)
 	eventHandlers := event.NewEventHandlers(eventService, permissionService)
 	newsHandlers := news.NewNewsHandler(newsService, permissionService)
@@ -44,10 +47,10 @@ func SetupRoutes() *gin.Engine {
 
 	authRoutes := api.Group("/auth")
 	{
-		authRoutes.POST("/register", userHandlers.RegisterUser)
-		authRoutes.POST("/login", userHandlers.Login)
-		authRoutes.POST("/logout", userHandlers.Logout)
-		authRoutes.POST("/refresh-token", middleware.TokenMiddleware(), userHandlers.RefreshToken)
+		authRoutes.POST("/register", authHandlers.RegisterUser)
+		authRoutes.POST("/login", authHandlers.Login)
+		authRoutes.POST("/logout", authHandlers.Logout)
+		authRoutes.POST("/refresh-token", middleware.TokenMiddleware(), authHandlers.RefreshToken)
 	}
 
 	userRoutes := api.Group("/user")
