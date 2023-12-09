@@ -59,13 +59,9 @@ func (h *Handlers) UploadFile(c *gin.Context) {
 	}
 
 	fileName := utils.GenerateUniqueFileName(file.Filename)
-	if err := c.SaveUploadedFile(file, "/public/assets/image/"+fileName); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"data": gin.H{
-			"success": "false",
-			"type":    "URL",
-			"message": err.Error(),
-		}})
-		return
+	err = h.FilesService.UploadFileToBucket(file, fileName)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": "Cannot upload file to buckets"})
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": gin.H{
