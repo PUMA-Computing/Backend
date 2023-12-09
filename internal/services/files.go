@@ -1,9 +1,19 @@
 package services
 
 import (
+	"Backend/configs"
 	"Backend/pkg/utils"
 	"bytes"
+	"context"
+	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"log"
+	"mime"
 	"mime/multipart"
+
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -78,4 +88,62 @@ func (fs *FilesService) IsFileSignatureValid(file *multipart.FileHeader) bool {
 	}
 
 	return bytes.Equal(buffer, magicNumber)
+}
+
+func (fs *FilesService) UploadFileToBucket(file *multipart.FileHeader, fileName string) (err error) {
+	loadConfig := configs.LoadConfig()
+	var accountId = loadConfig.CloudflareAccountId
+	var accessKeyId = loadConfig.CloudflareR2AccessId
+	var accessKeySecret = loadConfig.CloudflareR2AccessKey
+	var url = fmt.Sprintf("https://%s.r2.cloudflarestorage.com/", accountId)
+
+	log.Println(url)
+
+	r2Resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+		return aws.Endpoint{
+			URL: url,
+		}, nil
+	})
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithEndpointResolverWithOptions(r2Resolver),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyId, accessKeySecret, "")),
+	)
+	if err != nil {
+		return err
+	}
+
+	client := s3.NewFromConfig(cfg)
+
+	fileContent, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer fileContent.Close()
+
+	contentType := getContentType(fileName)
+
+	_, err = client.PutObject(context.TODO(), &s3.PutObjectInput{
+		Bucket:      aws.String(loadConfig.CloudflareR2Bucket),
+		Key:         aws.String("images/" + fileName),
+		Body:        fileContent,
+		ContentType: aws.String(contentType),
+	}, func(options *s3.Options) {
+		options.Region = "APAC"
+	})
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func getContentType(filePath string) string {
+	// Use the mime package to determine the content type based on the file extension
+	ext := mime.TypeByExtension(filepath.Ext(filePath))
+	if ext != "" {
+		return ext
+	}
+	// If mime.TypeByExtension fails, you can provide a default content type
+	return "application/octet-stream"
 }
