@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"log"
 	"mime"
 	"mime/multipart"
 
@@ -96,8 +95,6 @@ func (fs *FilesService) UploadFileToBucket(file *multipart.FileHeader, fileName 
 	var accessKeyId = loadConfig.CloudflareR2AccessId
 	var accessKeySecret = loadConfig.CloudflareR2AccessKey
 	var url = fmt.Sprintf("https://%s.r2.cloudflarestorage.com/", accountId)
-
-	log.Println(url)
 
 	r2Resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
 		return aws.Endpoint{
