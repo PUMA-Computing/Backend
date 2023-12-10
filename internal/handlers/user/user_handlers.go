@@ -27,7 +27,7 @@ func NewUserHandlers(userService *services.UserService, permissionService *servi
 func (h *Handlers) RegisterUser(c *gin.Context) {
 	var newUser models.User
 	if err := c.BindJSON(&newUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": []string{err.Error()}})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "errors": []string{err.Error()}})
 		return
 	}
 
@@ -39,15 +39,13 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 
 	err := h.UserService.RegisterUser(&newUser)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "errors": []string{err.Error()}})
 		return
 	}
 	log.Println("After calling CreateUser")
 
 	c.JSON(http.StatusCreated, gin.H{
-		"jsonapi": gin.H{
-			"version": "1.1",
-		},
+		"success": true,
 		"data": gin.H{
 			"type":       "users",
 			"attributes": newUser,
@@ -66,34 +64,32 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 func (h *Handlers) Login(c *gin.Context) {
 	var loginRequest models.User
 	if err := c.BindJSON(&loginRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": []string{err.Error()}})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "errors": []string{err.Error()}})
 		return
 	}
 
 	user, err := h.UserService.Login(loginRequest.Username, loginRequest.Password)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": []string{err.Error()}})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "errors": []string{err.Error()}})
 		return
 	}
 
 	token, err := utils.GenerateJWTToken(user.ID, os.Getenv("JWT_SECRET_KEY"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "errors": []string{err.Error()}})
 		return
 	}
 
 	if err := utils.StoreTokenInRedis(user.ID, token); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "errors": []string{err.Error()}})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"jsonapi": gin.H{
-			"version": "1.1",
-		},
+		"success": true,
 		"data": gin.H{
-			"id":   user.ID,
-			"type": "token",
+			"user_id": user.ID,
+			"type":    "token",
 			"attributes": gin.H{
 				"access_token": token,
 				"token_type":   "Bearer",
@@ -106,22 +102,22 @@ func (h *Handlers) Login(c *gin.Context) {
 func (h *Handlers) Logout(c *gin.Context) {
 	tokenString, err := utils.ExtractTokenFromHeader(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"errors": []string{"Unauthorized"}})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "errors": []string{"Unauthorized"}})
 		return
 	}
 
 	_, err = utils.ValidateToken(tokenString, os.Getenv("JWT_SECRET_KEY"))
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"errors": []string{"Unauthorized"}})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "errors": []string{"Unauthorized"}})
 		return
 	}
 
 	err = utils.RevokeToken(tokenString)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": []string{err.Error()}})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "errors": []string{err.Error()}})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": gin.H{"message": "Logout Successful"}})
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Logout Successful", "data": gin.H{}})
 }
 
 func (h *Handlers) GetUserByID(c *gin.Context) {
