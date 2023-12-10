@@ -23,10 +23,23 @@ func CreateUser(user *models.User) error {
 	query := `
 		INSERT INTO users (id, username, password, first_name, middle_name, last_name, email, student_id, major, role_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
-
 	log.Printf("SQL Query: %v", query)
 
-	_, err := database.DB.Exec(context.Background(), query, user.ID, user.Username, user.Password, user.FirstName, user.MiddleName, user.LastName, user.Email, user.StudentID, user.Major, user.RoleID)
+	var username *string
+	if user.Username != "" {
+		username = &user.Username
+	}
+
+	var middleName *string
+	if user.MiddleName != "" {
+		middleName = &user.MiddleName
+	}
+
+	if user.Major == "" {
+		user.Major = "Informatics"
+	}
+
+	_, err := database.DB.Exec(context.Background(), query, user.ID, username, user.Password, user.FirstName, middleName, user.LastName, user.Email, user.StudentID, user.Major, user.RoleID)
 
 	if err != nil {
 		log.Printf("Error creating user: %v", err)
@@ -35,18 +48,36 @@ func CreateUser(user *models.User) error {
 	return err
 }
 
-func AuthenticateUser(username, email string, password string) (*models.User, error) {
+func AuthenticateUser(usernameOrEmail string) (*models.User, error) {
 	var user models.User
 	var userID string
 	var query string
 	var err error
+	var username *string
+	var middleName *string
 
-	if username != "" {
-		query = "SELECT * FROM users WHERE username = $1"
-		err = database.DB.QueryRow(context.Background(), query, username).Scan(&userID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.RoleID, &user.CreatedAt, &user.UpdatedAt)
-	} else if email != "" {
-		query = "SELECT * FROM users WHERE email = $1"
-		err = database.DB.QueryRow(context.Background(), query, email).Scan(&userID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.RoleID, &user.CreatedAt, &user.UpdatedAt)
+	if usernameOrEmail != "" {
+		query = "SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, role_id, created_at, updated_at FROM users WHERE email = $1 or username = $1"
+
+		err = database.DB.QueryRow(
+			context.Background(),
+			query,
+			usernameOrEmail,
+		).Scan(
+			&userID, &username, &user.Password, &user.FirstName, &middleName,
+			&user.LastName, &user.Email, &user.StudentID, &user.Major, &user.RoleID,
+			&user.CreatedAt, &user.UpdatedAt,
+		)
+		if username != nil {
+			user.Username = *username
+		}
+		if middleName != nil {
+			user.MiddleName = *middleName
+		}
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
 	} else {
 		return nil, nil
 	}

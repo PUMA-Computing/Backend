@@ -38,7 +38,7 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 
 	err := h.AuthService.RegisterUser(&newUser)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return
 	}
 	log.Println("After calling CreateUser")
@@ -68,9 +68,10 @@ func (h *Handlers) Login(c *gin.Context) {
 		return
 	}
 
-	user, err := h.AuthService.LoginUser(loginRequest.Username, loginRequest.Email, loginRequest.Password)
+	user, err := h.AuthService.LoginUser(loginRequest.Username, loginRequest.Password)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		log.Println("Error in here")
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 

@@ -23,26 +23,12 @@ func GetUserByUsernameOrEmail(username, email string) (*models.User, error) {
 	return &user, nil
 }
 
-func IsUsernameExists(username string) (bool, error) {
+func IsUsernameOrEmailExists(username string) (bool, error) {
 	log.Printf("username: %v", username)
-	query := "SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)"
+	query := "SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 OR email = $1)"
 	log.Printf("query: %v", query)
 	var exists bool
 	err := database.DB.QueryRow(context.Background(), query, username).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	log.Printf("exists: %v", exists)
-
-	return exists, nil
-}
-
-func IsEmailExists(email string) (bool, error) {
-	log.Printf("email: %v", email)
-	query := "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)"
-	log.Printf("query: %v", query)
-	var exists bool
-	err := database.DB.QueryRow(context.Background(), query, email).Scan(&exists)
 	if err != nil {
 		return false, err
 	}

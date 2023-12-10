@@ -22,23 +22,21 @@ func (as *AuthService) RegisterUser(user *models.User) error {
 	}
 
 	if hasRows {
-		existingUserByUsername, err := app.IsUsernameExists(user.Username)
+		var checkUsernameOrEmail string
+		if user.Username != "" {
+			checkUsernameOrEmail = user.Username
+		} else {
+			checkUsernameOrEmail = user.Email
+		}
+		existingUsernameOrEmail, err := app.IsUsernameOrEmailExists(checkUsernameOrEmail)
 		if err != nil {
 			return err
 		}
 
-		existingUserByEmail, err := app.IsEmailExists(user.Email)
-		if err != nil {
-			return err
+		if existingUsernameOrEmail {
+			return &utils.ConflictError{Message: "Username or email already exists"}
 		}
 
-		if existingUserByUsername {
-			return &utils.ConflictError{Message: "username already exists"}
-		}
-
-		if existingUserByEmail {
-			return &utils.ConflictError{Message: "email already exists"}
-		}
 	}
 
 	user.ID = uuid.New()
@@ -58,8 +56,8 @@ func (as *AuthService) RegisterUser(user *models.User) error {
 	return nil
 }
 
-func (as *AuthService) LoginUser(username, email, password string) (*models.User, error) {
-	user, err := app.AuthenticateUser(username, email, password)
+func (as *AuthService) LoginUser(username string, password string) (*models.User, error) {
+	user, err := app.AuthenticateUser(username)
 	if err != nil {
 		return nil, err
 	}
