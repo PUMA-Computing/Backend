@@ -40,7 +40,9 @@ func SetupRoutes() *gin.Engine {
 	permissionHandlers := permission.NewPermissionHandler(permissionService)
 	filesHandlers := files.NewFilesHandlers(filesService, permissionService)
 
-	authRoutes := r.Group("/auth")
+	api := r.Group("/api/v1")
+
+	authRoutes := api.Group("/auth")
 	{
 		authRoutes.POST("/register", userHandlers.RegisterUser)
 		authRoutes.POST("/login", userHandlers.Login)
@@ -48,7 +50,7 @@ func SetupRoutes() *gin.Engine {
 		authRoutes.POST("/refresh-token", middleware.TokenMiddleware(), userHandlers.RefreshToken)
 	}
 
-	userRoutes := r.Group("/user")
+	userRoutes := api.Group("/user")
 	{
 		userRoutes.Use(middleware.TokenMiddleware())
 		userRoutes.GET("/:userID", userHandlers.GetUserByID)
@@ -57,7 +59,7 @@ func SetupRoutes() *gin.Engine {
 		userRoutes.GET("/list", userHandlers.ListUsers)
 	}
 
-	eventRoutes := r.Group("/event")
+	eventRoutes := api.Group("/event")
 	{
 		eventRoutes.GET("/:eventID", eventHandlers.GetEventByID)
 		eventRoutes.GET("/", eventHandlers.ListEvents)
@@ -69,7 +71,7 @@ func SetupRoutes() *gin.Engine {
 		eventRoutes.GET("/:eventID/registered-users", eventHandlers.ListRegisteredUsers)
 	}
 
-	newsRoutes := r.Group("/news")
+	newsRoutes := api.Group("/news")
 	{
 		newsRoutes.GET("/", newsHandlers.ListNews)
 		newsRoutes.GET("/:newsID", newsHandlers.GetNewsByID)
@@ -80,7 +82,7 @@ func SetupRoutes() *gin.Engine {
 		newsRoutes.POST("/:newsID/like", newsHandlers.LikeNews)
 	}
 
-	roleRoutes := r.Group("/roles")
+	roleRoutes := api.Group("/roles")
 	{
 		roleRoutes.Use(middleware.TokenMiddleware())
 		roleRoutes.GET("/", roleHandlers.ListRoles)
@@ -90,7 +92,7 @@ func SetupRoutes() *gin.Engine {
 		roleRoutes.DELETE("/:roleID/delete", roleHandlers.DeleteRole)
 		roleRoutes.POST("/:roleID/assign/:userID", roleHandlers.AssignRoleToUser)
 	}
-	permissionRoutes := r.Group("/permissions")
+	permissionRoutes := api.Group("/permissions")
 	{
 		permissionRoutes.Use(middleware.TokenMiddleware())
 		permissionRoutes.GET("/list", permissionHandlers.ListPermissions)
@@ -98,7 +100,7 @@ func SetupRoutes() *gin.Engine {
 
 	}
 
-	filesRoutes := r.Group("/files")
+	filesRoutes := api.Group("/files")
 	{
 		//filesRoutes.PUT("/", filesHandlers.UploadFile)
 		filesRoutes.PUT("/upload/profile-picture", filesHandlers.UploadFile)
