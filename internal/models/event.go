@@ -17,6 +17,7 @@ type Event struct {
 	Thumbnail   string    `json:"thumbnail"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+	CategoryID  int       `json:"category_id"`
 }
 
 type EventRegistration struct {

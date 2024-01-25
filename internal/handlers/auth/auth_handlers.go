@@ -46,18 +46,18 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "User Created Successfully",
-		"data": gin.H{
-			"type":       "users",
-			"attributes": newUser,
-		},
-		"relationships": gin.H{
-			"role": gin.H{
-				"data": gin.H{
-					"type": "roles",
-					"id":   newUser.RoleID,
-				},
-			},
-		},
+		//"data": gin.H{
+		//	"type":       "users",
+		//	"attributes": newUser,
+		//},
+		//"relationships": gin.H{
+		//	"role": gin.H{
+		//		"data": gin.H{
+		//			"type": "roles",
+		//			"id":   newUser.RoleID,
+		//		},
+		//	},
+		//},
 	})
 }
 
