@@ -34,4 +34,11 @@ VALUES
     ('roles:assign', 'Assign Role to User'),
     ('permissions:list', 'List permissions'),
     ('permissions:assign', 'Assign permissions to role'),
-    ('files:upload', 'Upload File')
+    ('files:upload', 'Upload File'),
+    ('aspirations:list', 'List Aspirations'),
+    ('aspirations:create', 'Create Aspirations'),
+    ('aspirations:listPUFA', 'List PUFA Aspirations'),
+    ('aspirations:listPUMAIT', 'List PUMA IT Aspirations'),
+    ('aspirations:listPUMAIS', 'List PUMA IS Aspirations'),
+    ('aspirations:listPUMAID', 'List PUMA ID Aspirations'),
+    ('aspirations:listPUMAVCD', 'List PUMA VCD Aspirations');

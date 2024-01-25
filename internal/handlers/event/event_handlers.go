@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -165,6 +166,9 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 	if updatedEvent.Thumbnail != "" {
 		updatedAttributes["thumbnail"] = updatedEvent.Thumbnail
 	}
+	if updatedEvent.Link != "" {
+		updatedAttributes["link"] = updatedEvent.Link
+	}
 	if err := h.EventService.EditEvent(eventID, &updatedEvent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
@@ -260,7 +264,15 @@ func (h *Handlers) GetEventByID(c *gin.Context) {
 
 func (h *Handlers) ListEvents(c *gin.Context) {
 	log.Println("List Events Begin")
-	events, err := h.EventService.ListEvents()
+
+	queryParams := make(map[string]string)
+	for key, values := range c.Request.URL.Query() {
+		if len(values) > 0 {
+			queryParams[key] = strings.ToLower(values[0])
+		}
+	}
+
+	events, err := h.EventService.ListEvents(queryParams)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
@@ -269,12 +281,9 @@ func (h *Handlers) ListEvents(c *gin.Context) {
 	log.Println("List Events End")
 
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Events Retrieved Successfully",
-		"data": gin.H{
-			"type":       "events",
-			"attributes": events,
-		},
+		"success":      true,
+		"totalResults": len(events),
+		"events":       events,
 	})
 }
 

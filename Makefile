@@ -1,9 +1,11 @@
 migration_up :
-	migrate -path ./internal/migrations -database postgres://computing:computing2023@139.59.116.226:5432/puma?sslmode=disable up
+	migrate -path ./migrations -database postgres://pufacomputing:qwertyuiop@139.59.116.226:5432/pufadbtest?sslmode=disable up
 
 migration_down :
-	migrate -path ./internal/migrations -database postgres://computing:computing2023@139.59.116.226:5432/puma?sslmode=disable down
+	migrate -path ./migrations -database postgres://pufacomputing:qwertyuiop@139.59.116.226:5432/pufadbtest?sslmode=disable down
 
+migration_create :
+	migrate create -ext sql -dir ./migrations -seq $(name)
 
 server:
 	go run cmd/app/main.go
