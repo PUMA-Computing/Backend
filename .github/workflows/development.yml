@@ -11,6 +11,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Build the Docker image
         run: |
-          docker login -u irfansaf -p ${{ secrets.GH_TOKEN }} ghcr.io
-          docker build . --tag ghcr.io/kizoukun/pufabackend:latest
-          docker push ghcr.io/kizoukun/pufabackend:latest
+          docker login -u irfansaf -p ${{ secrets.GH_TOKEN_SAF }} ghcr.io
+          docker build . --tag ghcr.io/irfansaf/pufabackend:development
+          docker push ghcr.io/irfansaf/pufabackend:development

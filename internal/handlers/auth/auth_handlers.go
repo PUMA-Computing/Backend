@@ -4,7 +4,10 @@ import (
 	"Backend/internal/models"
 	"Backend/internal/services"
 	"Backend/pkg/utils"
+	"context"
+	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"log"
 	"net/http"
 	"os"
@@ -157,4 +160,29 @@ func (h *Handlers) RefreshToken(c *gin.Context) {
 			},
 		},
 	})
+}
+
+func (h *Handlers) ExtractUserIDAndCheckPermission(c *gin.Context, permissionType string) (uuid.UUID, error) {
+	token, err := utils.ExtractTokenFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return uuid.UUID{}, err
+	}
+
+	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return uuid.UUID{}, err
+	}
+
+	hasPermission, err := (&services.PermissionService{}).CheckPermission(context.Background(), userID, permissionType)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return uuid.UUID{}, err
+	} else if !hasPermission {
+		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"You don't have permission to perform this action"}})
+		return uuid.UUID{}, errors.New("permission denied")
+	}
+
+	return userID, nil
 }

@@ -1,6 +1,7 @@
 package event
 
 import (
+	"Backend/internal/handlers/auth"
 	"Backend/internal/models"
 	"Backend/internal/services"
 	"Backend/pkg/utils"
@@ -27,7 +28,7 @@ func NewEventHandlers(eventService *services.EventService, permissionService *se
 }
 
 func (h *Handlers) CreateEvent(c *gin.Context) {
-	userID, err := utils.ExtractUserIDAndCheckPermission(c, "events:create")
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "events:create")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return

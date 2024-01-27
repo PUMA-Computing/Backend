@@ -8,9 +8,21 @@ import (
 
 func CreateAspiration(aspiration *models.Aspiration) error {
 	_, err := database.DB.Exec(context.Background(), `
-		INSERT INTO aspirations (user_id, subject, message, anonymous, organization_id)
-		VALUES ($1, $2, $3, $4, $5)`,
-		aspiration.UserID, aspiration.Subject, aspiration.Message, aspiration.Anonymous, aspiration.OrganizationID)
+		INSERT INTO aspirations (user_id, subject, message, anonymous, organization_id, closed)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		aspiration.UserID, aspiration.Subject, aspiration.Message, aspiration.Anonymous, aspiration.OrganizationID, aspiration.Closed)
+	return err
+}
+
+func CloseAspirationByID(id int) error {
+	_, err := database.DB.Exec(context.Background(), `
+		UPDATE aspirations SET close = true WHERE id = $1`, id)
+	return err
+}
+
+func DeleteAspirationByID(id int) error {
+	_, err := database.DB.Exec(context.Background(), `
+		DELETE FROM aspirations WHERE id = $1`, id)
 	return err
 }
 
@@ -89,16 +101,4 @@ func GetAspirationByID(id int) (*models.Aspiration, error) {
 		return nil, err
 	}
 	return &aspiration, nil
-}
-
-func CloseAspirationByID(id int) error {
-	_, err := database.DB.Exec(context.Background(), `
-		UPDATE aspirations SET close = true WHERE id = $1`, id)
-	return err
-}
-
-func DeleteAspirationByID(id int) error {
-	_, err := database.DB.Exec(context.Background(), `
-		DELETE FROM aspirations WHERE id = $1`, id)
-	return err
 }

@@ -1,9 +1,9 @@
 package aspirations
 
 import (
+	"Backend/internal/handlers/auth"
 	"Backend/internal/models"
 	"Backend/internal/services"
-	"Backend/pkg/utils"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -21,7 +21,7 @@ func NewAspirationHandlers(aspirationService *services.AspirationService, permis
 }
 
 func (h *Handlers) CreateAspiration(c *gin.Context) {
-	userID, err := utils.ExtractUserIDAndCheckPermission(c, "aspirations:create")
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "aspirations:create")
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
 		return
@@ -40,4 +40,21 @@ func (h *Handlers) CreateAspiration(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"success": true, "message": []string{"Aspiration created successfully"}})
+}
+
+func (h *Handlers) CloseAspiration(c *gin.Context) {
+	//userID, err := utils.ExtractUserIDAndCheckPermission(c, "aspirations:close")
+	//if err != nil {
+	//	c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
+	//	return
+	//}
+	//
+	//aspirationIDString := c.Param("id")
+	//
+	//if err := h.AspirationService.CloseAspirationByID(aspirationID); err != nil {
+	//	c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+	//	return
+	//}
+	//
+	//c.JSON(http.StatusOK, gin.H{"success": true, "message": []string{"Aspiration closed successfully"}})
 }
