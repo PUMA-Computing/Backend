@@ -27,25 +27,9 @@ func NewEventHandlers(eventService *services.EventService, permissionService *se
 }
 
 func (h *Handlers) CreateEvent(c *gin.Context) {
-	token, err := utils.ExtractTokenFromHeader(c)
+	userID, err := utils.ExtractUserIDAndCheckPermission(c, "events:create")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "events:create")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	if !hasPermission {
-		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"Permission Denied"}})
 		return
 	}
 
