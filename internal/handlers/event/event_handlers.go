@@ -111,50 +111,27 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 		return
 	}
 
-	// Check if the user is the author of the event
-
-	//if userID != existingEvent.UserID {
-	//	c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"You don't have permission to edit this event"}})
-	//	return
-	//}
-
 	var updatedEvent models.Event
 	if err := c.BindJSON(&updatedEvent); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
-	updatedEvent.UpdatedAt = time.Time{}
-
-	updatedAttributes := make(map[string]interface{})
-
-	if updatedEvent.Title != "" {
-		updatedAttributes["title"] = updatedEvent.Title
+	existingEvent, err := h.EventService.GetEventByID(eventID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
 	}
 
-	if updatedEvent.Description != "" {
-		updatedAttributes["description"] = updatedEvent.Description
+	if updatedEvent.Title != "" && updatedEvent.Title != existingEvent.Title {
+		updatedEvent.Link = "/events/" + utils.GenerateFriendlyURL(updatedEvent.Title)
+	} else {
+		updatedEvent.Link = existingEvent.Link
 	}
 
-	if updatedEvent.StartDate.IsZero() {
-		updatedAttributes["start_date"] = updatedEvent.StartDate
-	}
+	utils.ReflectiveUpdate(existingEvent, updatedEvent)
 
-	if updatedEvent.EndDate.IsZero() {
-		updatedAttributes["end_date"] = updatedEvent.EndDate
-	}
-
-	if updatedEvent.Status != "" {
-		updatedAttributes["status"] = updatedEvent.Status
-	}
-
-	if updatedEvent.Thumbnail != "" {
-		updatedAttributes["thumbnail"] = updatedEvent.Thumbnail
-	}
-	if updatedEvent.Link != "" {
-		updatedAttributes["link"] = updatedEvent.Link
-	}
-	if err := h.EventService.EditEvent(eventID, &updatedEvent); err != nil {
+	if err := h.EventService.EditEvent(eventID, existingEvent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
@@ -165,7 +142,7 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 		"data": gin.H{
 			"type":       "events",
 			"id":         eventID,
-			"attributes": updatedAttributes,
+			"attributes": updatedEvent,
 		},
 		"relationships": gin.H{
 			"author": gin.H{

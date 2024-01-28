@@ -5,6 +5,7 @@ import (
 	"Backend/internal/models"
 	"context"
 	"github.com/google/uuid"
+	"log"
 	"strconv"
 	"time"
 )
@@ -21,10 +22,25 @@ func CreateEvent(event *models.Event) error {
 }
 
 func UpdateEvent(eventID int, updatedEvent *models.Event) error {
-	_, err := database.DB.Exec(context.Background(), `
-		UPDATE events SET title = $1, description = $2, start_date = $3, end_date = $4, user_id = $5, status = $6, link = $7, thumbnail = $8, organization_id = $9
-		WHERE id = $9`,
-		updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate, updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Link, updatedEvent.Thumbnail, updatedEvent.OrganizationID, eventID)
+	query := `
+        UPDATE events SET title = $1, description = $2, start_date = $3, end_date = $4, user_id = $5, status = $6, link = $7, thumbnail = $8, organization_id = $9, updated_at = $10 WHERE id = $11`
+
+	// Log the SQL query and parameters
+	log.Printf("Executing query: %s\n", query)
+	log.Printf("Parameters: %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v\n",
+		updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate,
+		updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Link,
+		updatedEvent.Thumbnail, updatedEvent.OrganizationID, time.Now(), eventID)
+
+	_, err := database.DB.Exec(context.Background(), query,
+		updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate,
+		updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Link,
+		updatedEvent.Thumbnail, updatedEvent.OrganizationID, time.Now(), eventID)
+
+	if err != nil {
+		log.Printf("Error executing query: %s\n", err.Error())
+	}
+
 	return err
 }
 

@@ -68,7 +68,7 @@ func SetupRoutes() *gin.Engine {
 		eventRoutes.GET("/", eventHandlers.ListEvents)
 		eventRoutes.Use(middleware.TokenMiddleware())
 		eventRoutes.POST("/create", eventHandlers.CreateEvent)
-		eventRoutes.PUT("/:eventID/edit", eventHandlers.EditEvent)
+		eventRoutes.PATCH("/:eventID/edit", eventHandlers.EditEvent)
 		eventRoutes.DELETE("/:eventID/delete", eventHandlers.DeleteEvent)
 		eventRoutes.POST("/:eventID/register", eventHandlers.RegisterForEvent)
 		eventRoutes.GET("/:eventID/registered-users", eventHandlers.ListRegisteredUsers)
