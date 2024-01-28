@@ -4,7 +4,9 @@ import (
 	"Backend/internal/models"
 	"Backend/internal/services"
 	"Backend/pkg/utils"
+	"context"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"log"
 	"net/http"
 	"os"
@@ -157,4 +159,31 @@ func (h *Handlers) RefreshToken(c *gin.Context) {
 			},
 		},
 	})
+}
+
+func (h *Handlers) ExtractUserIDAndCheckPermission(c *gin.Context, permissionType string) (uuid.UUID, error) {
+	token, err := utils.ExtractTokenFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return uuid.UUID{}, err
+	}
+
+	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return uuid.UUID{}, err
+	}
+
+	hasPermission, err := (&services.PermissionService{}).CheckPermission(context.Background(), userID, permissionType)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return uuid.UUID{}, err
+	}
+
+	if !hasPermission {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{"Unauthorized"}})
+		return uuid.UUID{}, err
+	}
+
+	return userID, nil
 }

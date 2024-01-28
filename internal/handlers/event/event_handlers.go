@@ -1,17 +1,15 @@
 package event
 
 import (
+	"Backend/internal/handlers/auth"
 	"Backend/internal/models"
 	"Backend/internal/services"
 	"Backend/pkg/utils"
-	"context"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type Handlers struct {
@@ -27,25 +25,9 @@ func NewEventHandlers(eventService *services.EventService, permissionService *se
 }
 
 func (h *Handlers) CreateEvent(c *gin.Context) {
-	token, err := utils.ExtractTokenFromHeader(c)
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "events:create")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "events:create")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	if !hasPermission {
-		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"Permission Denied"}})
 		return
 	}
 
@@ -55,24 +37,17 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	now := time.Now()
-	if newEvent.StartDate.Before(now) {
-		newEvent.Status = "Upcoming"
-	} else if newEvent.StartDate.After(now) && newEvent.EndDate.Before(now) {
-		newEvent.Status = "Open"
-	} else {
-		newEvent.Status = "Completed"
-	}
-
-	newEvent.Link = "/events/" + utils.GenerateFriendlyURL(newEvent.Title)
-
-	if newEvent.Thumbnail == "" {
-		newEvent.Thumbnail = "default.jpg"
-	}
-
 	newEvent.UserID = userID
-	newEvent.CreatedAt = time.Time{}
-	newEvent.UpdatedAt = time.Time{}
+
+	if newEvent.Title != "" {
+		newEvent.Link = "/events/" + utils.GenerateFriendlyURL(newEvent.Title)
+	}
+
+	// Check if start date is before end date
+	if newEvent.StartDate.After(newEvent.EndDate) {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Start Date cannot be after End Date"}})
+		return
+	}
 
 	if err := h.EventService.CreateEvent(&newEvent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
@@ -83,39 +58,22 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 		"success": true,
 		"message": "Event Created Successfully",
 		"data": gin.H{
-			"types":      "events",
+			"type":       "events",
+			"id":         newEvent.ID,
 			"attributes": newEvent,
 		},
 		"relationships": gin.H{
 			"author": gin.H{
-				"data": gin.H{
-					"id": userID,
-				},
+				"id": userID,
 			},
 		},
 	})
 }
 
 func (h *Handlers) EditEvent(c *gin.Context) {
-	token, err := utils.ExtractTokenFromHeader(c)
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "events:edit")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "events:edit")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	if !hasPermission {
-		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"You don't have permission to edit events"}})
 		return
 	}
 
@@ -126,50 +84,32 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 		return
 	}
 
-	// Check if the user is the author of the event
-
-	//if userID != existingEvent.UserID {
-	//	c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"You don't have permission to edit this event"}})
-	//	return
-	//}
-
 	var updatedEvent models.Event
 	if err := c.BindJSON(&updatedEvent); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
-	updatedEvent.UpdatedAt = time.Time{}
-
-	updatedAttributes := make(map[string]interface{})
-
-	if updatedEvent.Title != "" {
-		updatedAttributes["title"] = updatedEvent.Title
+	if updatedEvent.StartDate.After(updatedEvent.EndDate) {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Start Date cannot be after End Date"}})
+		return
 	}
 
-	if updatedEvent.Description != "" {
-		updatedAttributes["description"] = updatedEvent.Description
+	existingEvent, err := h.EventService.GetEventByID(eventID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
 	}
 
-	if updatedEvent.StartDate.IsZero() {
-		updatedAttributes["start_date"] = updatedEvent.StartDate
+	if updatedEvent.Title != "" && updatedEvent.Title != existingEvent.Title {
+		updatedEvent.Link = "/events/" + utils.GenerateFriendlyURL(updatedEvent.Title)
+	} else {
+		updatedEvent.Link = existingEvent.Link
 	}
 
-	if updatedEvent.EndDate.IsZero() {
-		updatedAttributes["end_date"] = updatedEvent.EndDate
-	}
+	utils.ReflectiveUpdate(existingEvent, updatedEvent)
 
-	if updatedEvent.Status != "" {
-		updatedAttributes["status"] = updatedEvent.Status
-	}
-
-	if updatedEvent.Thumbnail != "" {
-		updatedAttributes["thumbnail"] = updatedEvent.Thumbnail
-	}
-	if updatedEvent.Link != "" {
-		updatedAttributes["link"] = updatedEvent.Link
-	}
-	if err := h.EventService.EditEvent(eventID, &updatedEvent); err != nil {
+	if err := h.EventService.EditEvent(eventID, existingEvent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
@@ -180,7 +120,7 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 		"data": gin.H{
 			"type":       "events",
 			"id":         eventID,
-			"attributes": updatedAttributes,
+			"attributes": updatedEvent,
 		},
 		"relationships": gin.H{
 			"author": gin.H{
@@ -193,25 +133,9 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 }
 
 func (h *Handlers) DeleteEvent(c *gin.Context) {
-	token, err := utils.ExtractTokenFromHeader(c)
+	_, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "events:delete")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "events:delete")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	if !hasPermission {
-		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"Permission Denied"}})
 		return
 	}
 
@@ -227,7 +151,10 @@ func (h *Handlers) DeleteEvent(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": gin.H{"message": "Event Deleted Successfully"}})
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Event Deleted Successfully",
+	})
 }
 
 func (h *Handlers) GetEventByID(c *gin.Context) {
@@ -288,25 +215,9 @@ func (h *Handlers) ListEvents(c *gin.Context) {
 }
 
 func (h *Handlers) RegisterForEvent(c *gin.Context) {
-	token, err := utils.ExtractTokenFromHeader(c)
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "events:register")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "events:register")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	if !hasPermission {
-		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"Permission Denied"}})
 		return
 	}
 
@@ -349,20 +260,9 @@ func (h *Handlers) RegisterForEvent(c *gin.Context) {
 }
 
 func (h *Handlers) ListRegisteredUsers(c *gin.Context) {
-	userID, err := utils.GetUserIDFromContext(c)
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "events:registered_users")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "events:listRegisteredUsers")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	if !hasPermission {
-		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"Permission Denied"}})
 		return
 	}
 
