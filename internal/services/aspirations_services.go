@@ -18,3 +18,15 @@ func (s *AspirationService) CreateAspiration(aspiration *models.Aspiration) erro
 func (s *AspirationService) CloseAspirationByID(id int) error {
 	return app.CloseAspirationByID(id)
 }
+
+func (s *AspirationService) DeleteAspirationByID(id int) error {
+	return app.DeleteAspirationByID(id)
+}
+
+func (s *AspirationService) GetAspirations(queryParams map[string]string) ([]models.Aspiration, error) {
+	return app.GetAspirations(queryParams)
+}
+
+func (s *AspirationService) GetAspirationByID(id int) (*models.Aspiration, error) {
+	return app.GetAspirationByID(id)
+}

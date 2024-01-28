@@ -1,6 +1,7 @@
 package api
 
 import (
+	"Backend/internal/handlers/aspirations"
 	"Backend/internal/handlers/auth"
 	"Backend/internal/handlers/event"
 	"Backend/internal/handlers/files"
@@ -34,6 +35,7 @@ func SetupRoutes() *gin.Engine {
 	roleService := services.NewRoleService()
 	permissionService := services.NewPermissionService()
 	filesService := services.NewFilesService()
+	aspirationsService := services.NewAspirationService()
 
 	authHandlers := auth.NewAuthHandlers(authService, permissionService)
 	userHandlers := user.NewUserHandlers(userService, permissionService)
@@ -42,6 +44,7 @@ func SetupRoutes() *gin.Engine {
 	roleHandlers := role.NewRoleHandler(roleService, userService, permissionService)
 	permissionHandlers := permission.NewPermissionHandler(permissionService)
 	filesHandlers := files.NewFilesHandlers(filesService, permissionService)
+	aspiratinosHandlers := aspirations.NewAspirationHandlers(aspirationsService, permissionService)
 
 	api := r.Group("/api/v1")
 
@@ -107,6 +110,15 @@ func SetupRoutes() *gin.Engine {
 	{
 		//filesRoutes.PUT("/", filesHandlers.UploadFile)
 		filesRoutes.PUT("/upload/profile-picture", filesHandlers.UploadFile)
+	}
+
+	aspirationRoutes := api.Group("/aspirations")
+	{
+		aspirationRoutes.GET("/", aspiratinosHandlers.GetAspirations)
+		aspirationRoutes.Use(middleware.TokenMiddleware())
+		aspirationRoutes.POST("/create", aspiratinosHandlers.CreateAspiration)
+		aspirationRoutes.PATCH("/:id/close", aspiratinosHandlers.CloseAspiration)
+		aspirationRoutes.DELETE("/:id/delete", aspiratinosHandlers.DeleteAspiration)
 	}
 	return r
 }

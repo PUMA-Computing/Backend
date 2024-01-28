@@ -5,7 +5,6 @@ import (
 	"Backend/internal/services"
 	"Backend/pkg/utils"
 	"context"
-	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"log"
@@ -179,9 +178,11 @@ func (h *Handlers) ExtractUserIDAndCheckPermission(c *gin.Context, permissionTyp
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return uuid.UUID{}, err
-	} else if !hasPermission {
-		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"You don't have permission to perform this action"}})
-		return uuid.UUID{}, errors.New("permission denied")
+	}
+
+	if !hasPermission {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{"Unauthorized"}})
+		return uuid.UUID{}, err
 	}
 
 	return userID, nil

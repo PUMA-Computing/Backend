@@ -4,6 +4,7 @@ import (
 	"Backend/internal/database/app"
 	"Backend/internal/models"
 	"github.com/google/uuid"
+	"time"
 )
 
 type EventService struct {
@@ -14,6 +15,14 @@ func NewEventService() *EventService {
 }
 
 func (es *EventService) CreateEvent(event *models.Event) error {
+	if time.Now().Before(event.StartDate) {
+		event.Status = "Upcoming"
+	} else if time.Now().After(event.StartDate) && time.Now().Before(event.EndDate) {
+		event.Status = "Open"
+	} else {
+		event.Status = "Ended"
+	}
+
 	if err := app.CreateEvent(event); err != nil {
 		return err
 	}
@@ -30,6 +39,14 @@ func (es *EventService) GetEventByID(eventID int) (*models.Event, error) {
 }
 
 func (es *EventService) EditEvent(eventID int, updatedEvent *models.Event) error {
+	if time.Now().Before(updatedEvent.StartDate) {
+		updatedEvent.Status = "Upcoming"
+	} else if time.Now().After(updatedEvent.StartDate) && time.Now().Before(updatedEvent.EndDate) {
+		updatedEvent.Status = "Open"
+	} else {
+		updatedEvent.Status = "Ended"
+	}
+
 	if err := app.UpdateEvent(eventID, updatedEvent); err != nil {
 		return err
 	}

@@ -6,6 +6,7 @@ import (
 	"Backend/internal/services"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strconv"
 )
 
 type Handlers struct {
@@ -23,18 +24,19 @@ func NewAspirationHandlers(aspirationService *services.AspirationService, permis
 func (h *Handlers) CreateAspiration(c *gin.Context) {
 	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "aspirations:create")
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
-	var aspiration models.Aspiration
-	if err := c.ShouldBindJSON(&aspiration); err != nil {
+	var newAspiration models.Aspiration
+	if err := c.BindJSON(&newAspiration); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
-	aspiration.UserID = userID
-	if err := h.AspirationService.CreateAspiration(&aspiration); err != nil {
+	newAspiration.UserID = userID
+
+	if err := h.AspirationService.CreateAspiration(&newAspiration); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
@@ -43,18 +45,83 @@ func (h *Handlers) CreateAspiration(c *gin.Context) {
 }
 
 func (h *Handlers) CloseAspiration(c *gin.Context) {
-	//userID, err := utils.ExtractUserIDAndCheckPermission(c, "aspirations:close")
-	//if err != nil {
-	//	c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
-	//	return
-	//}
-	//
-	//aspirationIDString := c.Param("id")
-	//
-	//if err := h.AspirationService.CloseAspirationByID(aspirationID); err != nil {
-	//	c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-	//	return
-	//}
-	//
-	//c.JSON(http.StatusOK, gin.H{"success": true, "message": []string{"Aspiration closed successfully"}})
+	_, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "aspirations:close")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Invalid ID"}})
+		return
+	}
+
+	if err := h.AspirationService.CloseAspirationByID(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": []string{"Aspiration closed successfully"}})
+}
+
+func (h *Handlers) DeleteAspiration(c *gin.Context) {
+	_, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "aspirations:delete")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Invalid ID"}})
+		return
+	}
+
+	if err := h.AspirationService.DeleteAspirationByID(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": []string{"Aspiration deleted successfully"}})
+}
+
+func (h *Handlers) GetAspirations(c *gin.Context) {
+	queryParams := map[string]string{
+		"organization_id": c.Query("organization_id"),
+		"user_id":         c.Query("user_id"),
+		"closed":          c.Query("closed"),
+		"anonymous":       c.Query("anonymous"),
+	}
+
+	aspirations, err := h.AspirationService.GetAspirations(queryParams)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":      true,
+		"aspirations":  aspirations,
+		"totalResults": len(aspirations),
+	})
+}
+
+func (h *Handlers) GetAspirationByID(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Invalid ID"}})
+		return
+	}
+
+	aspiration, err := h.AspirationService.GetAspirationByID(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "aspiration": aspiration})
 }

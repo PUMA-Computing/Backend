@@ -1,6 +1,9 @@
 package models
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+	"time"
+)
 
 type Aspiration struct {
 	ID             int       `json:"id"`
@@ -10,6 +13,6 @@ type Aspiration struct {
 	Anonymous      bool      `json:"anonymous"`
 	OrganizationID int       `json:"organization_id"`
 	Closed         bool      `json:"close"`
-	CreatedAt      string    `json:"created_at"`
-	UpdatedAt      string    `json:"updated_at"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
