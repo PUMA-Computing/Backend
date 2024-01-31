@@ -12,7 +12,8 @@ type Aspiration struct {
 	Message        string    `json:"message"`
 	Anonymous      bool      `json:"anonymous"`
 	OrganizationID int       `json:"organization_id"`
-	Closed         bool      `json:"close"`
+	Closed         bool      `json:"closed"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
+	Upvote         int       `json:"upvote"`
 }
