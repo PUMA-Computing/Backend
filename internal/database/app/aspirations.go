@@ -4,14 +4,29 @@ import (
 	"Backend/internal/database"
 	"Backend/internal/models"
 	"context"
+	"github.com/google/uuid"
 )
 
-func CreateAspiration(aspiration *models.Aspiration) error {
+func CreateAspiration(aspiration *models.Aspiration) (*models.Aspiration, error) {
 	_, err := database.DB.Exec(context.Background(), `
 		INSERT INTO aspirations (user_id, subject, message, anonymous, organization_id, closed)
 		VALUES ($1, $2, $3, $4, $5, $6)`,
 		aspiration.UserID, aspiration.Subject, aspiration.Message, aspiration.Anonymous, aspiration.OrganizationID, aspiration.Closed)
-	return err
+
+	if err != nil {
+		return nil, err
+	}
+
+	row := database.DB.QueryRow(context.Background(), `
+	SELECT id, created_at FROM aspirations WHERE user_id = $1 AND subject = $2 AND message = $3 AND anonymous = $4 AND organization_id = $5 AND closed = $6`,
+		aspiration.UserID, aspiration.Subject, aspiration.Message, aspiration.Anonymous, aspiration.OrganizationID, aspiration.Closed)
+
+	err = row.Scan(&aspiration.ID, &aspiration.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return aspiration, nil
 }
 
 func CloseAspirationByID(id int) error {
@@ -99,4 +114,44 @@ func GetAspirationByID(id int) (*models.Aspiration, error) {
 	}
 
 	return &aspiration, nil
+}
+
+func UpvoteExists(userID uuid.UUID, aspirationID int) (bool, error) {
+	var exists bool
+
+	row := database.DB.QueryRow(context.Background(), `
+		SELECT EXISTS(SELECT 1 FROM aspirations_upvote WHERE user_id = $1 AND aspiration_id = $2)`, userID, aspirationID)
+
+	err := row.Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
+func AddUpvote(userID uuid.UUID, aspirationID int) error {
+	_, err := database.DB.Exec(context.Background(), `
+		INSERT INTO aspirations_upvote (user_id, aspiration_id) VALUES ($1, $2)`, userID, aspirationID)
+	return err
+}
+
+func RemoveUpvote(userID uuid.UUID, aspirationID int) error {
+	_, err := database.DB.Exec(context.Background(), `
+		DELETE FROM aspirations_upvote WHERE user_id = $1 AND aspiration_id = $2`, userID, aspirationID)
+	return err
+}
+
+func GetUpvotesByAspirationID(aspirationID int) (int, error) {
+	var upvotes int
+
+	row := database.DB.QueryRow(context.Background(), `
+		SELECT COUNT(*) FROM aspirations_upvote WHERE aspiration_id = $1`, aspirationID)
+
+	err := row.Scan(&upvotes)
+	if err != nil {
+		return 0, err
+	}
+
+	return upvotes, nil
 }

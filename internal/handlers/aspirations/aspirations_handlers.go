@@ -36,12 +36,13 @@ func (h *Handlers) CreateAspiration(c *gin.Context) {
 
 	newAspiration.UserID = userID
 
-	if err := h.AspirationService.CreateAspiration(&newAspiration); err != nil {
+	createdAspiration, err := h.AspirationService.CreateAspiration(&newAspiration)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"success": true, "message": []string{"Aspiration created successfully"}})
+	c.JSON(http.StatusCreated, gin.H{"success": true, "aspiration": createdAspiration})
 }
 
 func (h *Handlers) CloseAspiration(c *gin.Context) {
@@ -102,6 +103,15 @@ func (h *Handlers) GetAspirations(c *gin.Context) {
 		return
 	}
 
+	for i, a := range aspirations {
+		upvotes, err := h.AspirationService.GetUpvotesByAspirationID(a.ID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+		aspirations[i].Upvote = upvotes
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success":      true,
 		"aspirations":  aspirations,
@@ -124,4 +134,99 @@ func (h *Handlers) GetAspirationByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "aspiration": aspiration})
+}
+
+func (h *Handlers) UpvoteAspiration(c *gin.Context) {
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "aspirations:upvote")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Invalid ID"}})
+		return
+	}
+
+	upvoteExists, err := h.AspirationService.UpvoteExists(userID, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	if upvoteExists {
+		if err := h.AspirationService.RemoveUpvote(userID, id); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"success": true, "message": []string{"Upvote removed successfully"}})
+		return
+	}
+
+	if err := h.AspirationService.AddUpvote(userID, id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": []string{"Upvote added successfully"}})
+}
+
+func (h *Handlers) AddUpvote(c *gin.Context) {
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "aspirations:upvote")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Invalid ID"}})
+		return
+	}
+
+	if err := h.AspirationService.AddUpvote(userID, id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": []string{"Upvote added successfully"}})
+}
+
+func (h *Handlers) RemoveUpvote(c *gin.Context) {
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "aspirations:upvote")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Invalid ID"}})
+		return
+	}
+
+	if err := h.AspirationService.RemoveUpvote(userID, id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": []string{"Upvote removed successfully"}})
+}
+
+func (h *Handlers) GetUpvotesByAspirationID(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Invalid ID"}})
+		return
+	}
+
+	upvotes, err := h.AspirationService.GetUpvotesByAspirationID(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "upvotes": upvotes})
 }
