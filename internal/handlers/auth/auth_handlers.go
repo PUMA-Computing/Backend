@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 )
 
 type Handlers struct {
@@ -30,34 +29,41 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 		return
 	}
 
-	log.Println("Before calling CreateUser")
+	if len(newUser.StudentID) != 12 {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Student ID must be 12 characters"})
+		return
+	} else if newUser.StudentID[:3] != "001" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Student ID must start with 001"})
+		return
+	} else if newUser.StudentID[3:7] < "2010" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Student ID must be no less than 2010"})
+		return
+	} else if newUser.StudentID[7:] < "0000" || newUser.StudentID[7:] > "9999" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Student ID must be in the format of 001XXXXYYYYY where X is the year and Y is the student number"})
+		return
+	}
 
-	newUser.RoleID = 2
-	newUser.CreatedAt = time.Time{}
-	newUser.UpdatedAt = time.Time{}
+	// Check student id already exists
+	_, err := h.AuthService.CheckStudentIDExists(newUser.StudentID)
+	if err == nil {
+		c.JSON(http.StatusConflict, gin.H{"success": false, "message": "Student ID already exists"})
+		return
+	}
 
-	err := h.AuthService.RegisterUser(&newUser)
+	if newUser.Email[len(newUser.Email)-24:] != "@student.president.ac.id" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Must be President University student email"})
+		return
+	}
+
+	err = h.AuthService.RegisterUser(&newUser)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return
 	}
-	log.Println("After calling CreateUser")
 
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "User Created Successfully",
-		//"data": gin.H{
-		//	"type":       "users",
-		//	"attributes": newUser,
-		//},
-		//"relationships": gin.H{
-		//	"role": gin.H{
-		//		"data": gin.H{
-		//			"type": "roles",
-		//			"id":   newUser.RoleID,
-		//		},
-		//	},
-		//},
 	})
 }
 
