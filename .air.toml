@@ -1,4 +1,4 @@
-root = "."
+goroot = "."
 testdata_dir = "testdata"
 tmp_dir = "tmp"
 
