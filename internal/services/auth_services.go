@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"log"
+	"time"
 )
 
 type AuthService struct{}
@@ -40,6 +41,9 @@ func (as *AuthService) RegisterUser(user *models.User) error {
 	}
 
 	user.ID = uuid.New()
+	user.RoleID = 2
+	user.CreatedAt = time.Time{}
+	user.UpdatedAt = time.Time{}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -73,4 +77,16 @@ func (as *AuthService) LoginUser(username string, password string) (*models.User
 	}
 
 	return user, nil
+}
+
+func (as *AuthService) IsUsernameOrEmailExists(username string, email string) (bool, error) {
+	if username != "" {
+		return app.IsUsernameOrEmailExists(username)
+	} else {
+		return app.IsUsernameOrEmailExists(email)
+	}
+}
+
+func (as *AuthService) CheckStudentIDExists(studentID string) (bool, error) {
+	return app.CheckStudentIDExists(studentID)
 }

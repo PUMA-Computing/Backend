@@ -83,6 +83,17 @@ func GetUserByID(userID uuid.UUID) (*models.User, error) {
 	return &user, nil
 }
 
+func CheckStudentIDExists(studentID string) (bool, error) {
+	query := "SELECT EXISTS(SELECT 1 FROM users WHERE student_id = $1)"
+	var exists bool
+	err := database.DB.QueryRow(context.Background(), query, studentID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
 func UpdateUser(UserID uuid.UUID, updatedUser *models.User) error {
 	log.Printf("updatedUser: %v", updatedUser)
 	_, err := database.DB.Exec(context.Background(), "UPDATE users SET username = $1, password = $2, first_name = $3, middle_name = $4, last_name = $5, email = $6, student_id = $7, major = $8, role_id = $9 WHERE id = $10",
