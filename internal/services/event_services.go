@@ -3,9 +3,8 @@ package services
 import (
 	"Backend/internal/database/app"
 	"Backend/internal/models"
-	"Backend/pkg/utils"
 	"github.com/google/uuid"
-	"log"
+	"time"
 )
 
 type EventService struct {
@@ -16,6 +15,14 @@ func NewEventService() *EventService {
 }
 
 func (es *EventService) CreateEvent(event *models.Event) error {
+	if time.Now().Before(event.StartDate) {
+		event.Status = "Upcoming"
+	} else if time.Now().After(event.StartDate) && time.Now().Before(event.EndDate) {
+		event.Status = "Open"
+	} else {
+		event.Status = "Ended"
+	}
+
 	if err := app.CreateEvent(event); err != nil {
 		return err
 	}
@@ -32,51 +39,12 @@ func (es *EventService) GetEventByID(eventID int) (*models.Event, error) {
 }
 
 func (es *EventService) EditEvent(eventID int, updatedEvent *models.Event) error {
-	existingEvent, err := app.GetEventByID(eventID)
-	if err != nil {
-		return err
-	}
-
-	if updatedEvent.Title != "" && updatedEvent.Title != existingEvent.Title {
-		updatedEvent.Link = "/events/" + utils.GenerateFriendlyURL(updatedEvent.Title)
+	if time.Now().Before(updatedEvent.StartDate) {
+		updatedEvent.Status = "Upcoming"
+	} else if time.Now().After(updatedEvent.StartDate) && time.Now().Before(updatedEvent.EndDate) {
+		updatedEvent.Status = "Open"
 	} else {
-		updatedEvent.Link = existingEvent.Link
-	}
-
-	if updatedEvent.Description == "" {
-		updatedEvent.Description = existingEvent.Description
-	}
-
-	if updatedEvent.StartDate.IsZero() {
-		updatedEvent.StartDate = existingEvent.StartDate
-	}
-
-	if updatedEvent.EndDate.IsZero() {
-		updatedEvent.EndDate = existingEvent.EndDate
-	}
-
-	if updatedEvent.UserID == uuid.Nil {
-		updatedEvent.UserID = existingEvent.UserID
-	}
-
-	if updatedEvent.Status == "" {
-		updatedEvent.Status = existingEvent.Status
-	}
-
-	if updatedEvent.Link == "" {
-		updatedEvent.Link = existingEvent.Link
-	}
-
-	if updatedEvent.CreatedAt.IsZero() {
-		updatedEvent.CreatedAt = existingEvent.CreatedAt
-	}
-
-	if updatedEvent.UpdatedAt.IsZero() {
-		updatedEvent.UpdatedAt = existingEvent.UpdatedAt
-	}
-
-	if updatedEvent.Thumbnail == "" {
-		updatedEvent.Thumbnail = existingEvent.Thumbnail
+		updatedEvent.Status = "Ended"
 	}
 
 	if err := app.UpdateEvent(eventID, updatedEvent); err != nil {
@@ -94,14 +62,11 @@ func (es *EventService) DeleteEvent(eventID int) error {
 	return nil
 }
 
-func (es *EventService) ListEvents() ([]*models.Event, error) {
-	log.Println("Service ListEvents Begin")
-	events, err := app.ListEvents()
+func (es *EventService) ListEvents(queryParams map[string]string) ([]*models.Event, error) {
+	events, err := app.ListEvents(queryParams)
 	if err != nil {
 		return nil, err
 	}
-
-	log.Println("Service ListEvents End")
 
 	return events, nil
 }

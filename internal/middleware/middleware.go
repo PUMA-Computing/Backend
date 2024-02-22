@@ -10,13 +10,13 @@ func TokenMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString, err := utils.ExtractTokenFromHeader(c)
 		if err != nil {
-			c.AbortWithStatusJSON(401, gin.H{"errors": []string{""}})
+			c.AbortWithStatusJSON(401, gin.H{"success": false, "message": []string{""}})
 			return
 		}
 
 		claims, err := utils.ValidateToken(tokenString, os.Getenv("JWT_SECRET_KEY"))
 		if err != nil {
-			c.JSON(err.(*utils.CustomError).ErrorResponse.Errors[0].Status, gin.H{"errors": []string{err.Error()}})
+			c.JSON(err.(*utils.CustomError).ErrorResponse.Errors[0].Status, gin.H{"success": false, "message": []string{err.Error()}})
 			c.Abort()
 			return
 		}

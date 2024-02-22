@@ -1,0 +1,16 @@
+name: development
+
+on:
+  push:
+    branches:
+      - development
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build the Docker image
+        run: |
+          docker login -u irfansaf -p ${{ secrets.GH_TOKEN_SAF }} ghcr.io
+          docker build . --tag ghcr.io/irfansaf/pufabackend:development
+          docker push ghcr.io/irfansaf/pufabackend:development

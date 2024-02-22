@@ -33,4 +33,10 @@ VALUES
     ('roles:list', 'List roles'),
     ('roles:assign', 'Assign Role to User'),
     ('permissions:list', 'List permissions'),
-    ('permissions:assign', 'Assign permissions to role');
+    ('permissions:assign', 'Assign permissions to role'),
+    ('files:upload', 'Upload File'),
+    ('aspirations:list', 'List Aspirations'),
+    ('aspirations:create', 'Create Aspirations'),
+    ('aspirations:close', 'Close Aspirations'),
+    ('aspirations:delete', 'Delete Aspirations'),
+    ('aspirations:upvote', 'Upvote Aspirations');

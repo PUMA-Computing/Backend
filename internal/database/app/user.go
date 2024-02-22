@@ -10,33 +10,6 @@ import (
 	"log"
 )
 
-func TableHasRows(tableName string) (bool, error) {
-	query := "SELECT EXISTS(SELECT 1 FROM " + tableName + ")"
-	var exists bool
-	err := database.DB.QueryRow(context.Background(), query).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-
-	return exists, nil
-}
-
-func CreateUser(user *models.User) error {
-	query := `
-		INSERT INTO users (id, username, password, first_name, middle_name, last_name, email, student_id, major, role_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
-
-	log.Printf("SQL Query: %v", query)
-
-	_, err := database.DB.Exec(context.Background(), query, user.ID, user.Username, user.Password, user.FirstName, user.MiddleName, user.LastName, user.Email, user.StudentID, user.Major, user.RoleID)
-
-	if err != nil {
-		log.Printf("Error creating user: %v", err)
-		return err
-	}
-	return err
-}
-
 func GetUserByUsernameOrEmail(username, email string) (*models.User, error) {
 	query := "SELECT * FROM users WHERE username = $1 OR email = $2"
 	var user models.User
@@ -50,26 +23,12 @@ func GetUserByUsernameOrEmail(username, email string) (*models.User, error) {
 	return &user, nil
 }
 
-func IsUsernameExists(username string) (bool, error) {
+func IsUsernameOrEmailExists(username string) (bool, error) {
 	log.Printf("username: %v", username)
-	query := "SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)"
+	query := "SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 OR email = $1)"
 	log.Printf("query: %v", query)
 	var exists bool
 	err := database.DB.QueryRow(context.Background(), query, username).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	log.Printf("exists: %v", exists)
-
-	return exists, nil
-}
-
-func IsEmailExists(email string) (bool, error) {
-	log.Printf("email: %v", email)
-	query := "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)"
-	log.Printf("query: %v", query)
-	var exists bool
-	err := database.DB.QueryRow(context.Background(), query, email).Scan(&exists)
 	if err != nil {
 		return false, err
 	}
@@ -122,6 +81,17 @@ func GetUserByID(userID uuid.UUID) (*models.User, error) {
 	}
 
 	return &user, nil
+}
+
+func CheckStudentIDExists(studentID string) (bool, error) {
+	query := "SELECT EXISTS(SELECT 1 FROM users WHERE student_id = $1)"
+	var exists bool
+	err := database.DB.QueryRow(context.Background(), query, studentID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }
 
 func UpdateUser(UserID uuid.UUID, updatedUser *models.User) error {

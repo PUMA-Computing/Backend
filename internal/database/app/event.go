@@ -5,6 +5,8 @@ import (
 	"Backend/internal/models"
 	"context"
 	"github.com/google/uuid"
+	"log"
+	"strconv"
 	"time"
 )
 
@@ -13,17 +15,32 @@ type Event struct {
 
 func CreateEvent(event *models.Event) error {
 	_, err := database.DB.Exec(context.Background(), `
-        INSERT INTO events (title, description, start_date, end_date, user_id, status, link, thumbnail) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-		event.Title, event.Description, event.StartDate, event.EndDate, event.UserID, event.Status, event.Link, event.Thumbnail)
+        INSERT INTO events (title, description, start_date, end_date, user_id, status, link, thumbnail, organization_id) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		event.Title, event.Description, event.StartDate, event.EndDate, event.UserID, event.Status, event.Link, event.Thumbnail, event.OrganizationID)
 	return err
 }
 
 func UpdateEvent(eventID int, updatedEvent *models.Event) error {
-	_, err := database.DB.Exec(context.Background(), `
-		UPDATE events SET title = $1, description = $2, start_date = $3, end_date = $4, user_id = $5, status = $6, link = $7, thumbnail = $8
-		WHERE id = $9`,
-		updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate, updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Link, updatedEvent.Thumbnail, eventID)
+	query := `
+        UPDATE events SET title = $1, description = $2, start_date = $3, end_date = $4, user_id = $5, status = $6, link = $7, thumbnail = $8, organization_id = $9, updated_at = $10 WHERE id = $11`
+
+	// Log the SQL query and parameters
+	log.Printf("Executing query: %s\n", query)
+	log.Printf("Parameters: %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v\n",
+		updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate,
+		updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Link,
+		updatedEvent.Thumbnail, updatedEvent.OrganizationID, time.Now(), eventID)
+
+	_, err := database.DB.Exec(context.Background(), query,
+		updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate,
+		updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Link,
+		updatedEvent.Thumbnail, updatedEvent.OrganizationID, time.Now(), eventID)
+
+	if err != nil {
+		log.Printf("Error executing query: %s\n", err.Error())
+	}
+
 	return err
 }
 
@@ -36,18 +53,34 @@ func DeleteEvent(eventID int) error {
 func GetEventByID(eventID int) (*models.Event, error) {
 	var event models.Event
 	err := database.DB.QueryRow(context.Background(), `
-		SELECT id, title, description, start_date, end_date, user_id, status, link, thumbnail, created_at, updated_at
-		FROM events WHERE id = $1`, eventID).Scan(&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Link, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt)
+		SELECT id, title, description, start_date, end_date, user_id, status, link, thumbnail, created_at, updated_at, organization_id
+		FROM events WHERE id = $1`, eventID).Scan(&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Link, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt, &event.OrganizationID)
 	if err != nil {
 		return nil, err
 	}
 	return &event, nil
 }
 
-func ListEvents() ([]*models.Event, error) {
-	rows, err := database.DB.Query(context.Background(), `
-		SELECT id, title, description, start_date, end_date, user_id, status, link, thumbnail, created_at, updated_at
-		FROM events`)
+func ListEvents(queryParams map[string]string) ([]*models.Event, error) {
+	query := `
+		SELECT id, title, description, start_date, end_date, user_id, status, link, thumbnail, created_at, updated_at, organization_id
+		FROM events
+		WHERE TRUE`
+
+	var args []interface{}
+
+	if categoryID, ok := queryParams["category_id"]; ok {
+		query += " AND category_id = $" + strconv.Itoa(len(args)+1)
+		args = append(args, categoryID)
+	}
+
+	// Search by status
+	if status, ok := queryParams["status"]; ok {
+		query += " AND status = $" + strconv.Itoa(len(args)+1)
+		args = append(args, status)
+	}
+
+	rows, err := database.DB.Query(context.Background(), query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +90,7 @@ func ListEvents() ([]*models.Event, error) {
 	for rows.Next() {
 		var event models.Event
 		err := rows.Scan(
-			&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Link, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt)
+			&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Link, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt, &event.OrganizationID)
 		if err != nil {
 			return nil, err
 		}

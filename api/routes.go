@@ -1,13 +1,15 @@
 package api
 
 import (
-	"Backend/api/handlers/event"
-	"Backend/api/handlers/files"
-	"Backend/api/handlers/news"
-	"Backend/api/handlers/permission"
-	"Backend/api/handlers/role"
-	"Backend/api/handlers/user"
-	"Backend/api/middleware"
+	"Backend/internal/handlers/aspirations"
+	"Backend/internal/handlers/auth"
+	"Backend/internal/handlers/event"
+	"Backend/internal/handlers/files"
+	"Backend/internal/handlers/news"
+	"Backend/internal/handlers/permission"
+	"Backend/internal/handlers/role"
+	"Backend/internal/handlers/user"
+	"Backend/internal/middleware"
 	"Backend/internal/services"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -26,29 +28,35 @@ func SetupRoutes() *gin.Engine {
 
 	r.Static("/public", "./public")
 
+	authService := services.NewAuthService()
 	userService := services.NewUserService()
 	eventService := services.NewEventService()
 	newsService := services.NewNewsService()
 	roleService := services.NewRoleService()
 	permissionService := services.NewPermissionService()
 	filesService := services.NewFilesService()
+	aspirationsService := services.NewAspirationService()
 
+	authHandlers := auth.NewAuthHandlers(authService, permissionService)
 	userHandlers := user.NewUserHandlers(userService, permissionService)
 	eventHandlers := event.NewEventHandlers(eventService, permissionService)
 	newsHandlers := news.NewNewsHandler(newsService, permissionService)
 	roleHandlers := role.NewRoleHandler(roleService, userService, permissionService)
 	permissionHandlers := permission.NewPermissionHandler(permissionService)
-	filesHandlers := files.NewFilesHandler(filesService, permissionService)
+	filesHandlers := files.NewFilesHandlers(filesService, permissionService)
+	aspiratinosHandlers := aspirations.NewAspirationHandlers(aspirationsService, permissionService)
 
-	authRoutes := r.Group("/auth")
+	api := r.Group("/api/v1")
+
+	authRoutes := api.Group("/auth")
 	{
-		authRoutes.POST("/register", userHandlers.RegisterUser)
-		authRoutes.POST("/login", userHandlers.Login)
-		authRoutes.POST("/logout", userHandlers.Logout)
-		authRoutes.POST("/refresh-token", middleware.TokenMiddleware(), userHandlers.RefreshToken)
+		authRoutes.POST("/register", authHandlers.RegisterUser)
+		authRoutes.POST("/login", authHandlers.Login)
+		authRoutes.POST("/logout", authHandlers.Logout)
+		authRoutes.POST("/refresh-token", middleware.TokenMiddleware(), authHandlers.RefreshToken)
 	}
 
-	userRoutes := r.Group("/user")
+	userRoutes := api.Group("/user")
 	{
 		userRoutes.Use(middleware.TokenMiddleware())
 		userRoutes.GET("/:userID", userHandlers.GetUserByID)
@@ -57,19 +65,19 @@ func SetupRoutes() *gin.Engine {
 		userRoutes.GET("/list", userHandlers.ListUsers)
 	}
 
-	eventRoutes := r.Group("/event")
+	eventRoutes := api.Group("/event")
 	{
 		eventRoutes.GET("/:eventID", eventHandlers.GetEventByID)
 		eventRoutes.GET("/", eventHandlers.ListEvents)
 		eventRoutes.Use(middleware.TokenMiddleware())
 		eventRoutes.POST("/create", eventHandlers.CreateEvent)
-		eventRoutes.PUT("/:eventID/edit", eventHandlers.EditEvent)
+		eventRoutes.PATCH("/:eventID/edit", eventHandlers.EditEvent)
 		eventRoutes.DELETE("/:eventID/delete", eventHandlers.DeleteEvent)
 		eventRoutes.POST("/:eventID/register", eventHandlers.RegisterForEvent)
 		eventRoutes.GET("/:eventID/registered-users", eventHandlers.ListRegisteredUsers)
 	}
 
-	newsRoutes := r.Group("/news")
+	newsRoutes := api.Group("/news")
 	{
 		newsRoutes.GET("/", newsHandlers.ListNews)
 		newsRoutes.GET("/:newsID", newsHandlers.GetNewsByID)
@@ -80,7 +88,7 @@ func SetupRoutes() *gin.Engine {
 		newsRoutes.POST("/:newsID/like", newsHandlers.LikeNews)
 	}
 
-	roleRoutes := r.Group("/roles")
+	roleRoutes := api.Group("/roles")
 	{
 		roleRoutes.Use(middleware.TokenMiddleware())
 		roleRoutes.GET("/", roleHandlers.ListRoles)
@@ -90,7 +98,7 @@ func SetupRoutes() *gin.Engine {
 		roleRoutes.DELETE("/:roleID/delete", roleHandlers.DeleteRole)
 		roleRoutes.POST("/:roleID/assign/:userID", roleHandlers.AssignRoleToUser)
 	}
-	permissionRoutes := r.Group("/permissions")
+	permissionRoutes := api.Group("/permissions")
 	{
 		permissionRoutes.Use(middleware.TokenMiddleware())
 		permissionRoutes.GET("/list", permissionHandlers.ListPermissions)
@@ -98,9 +106,21 @@ func SetupRoutes() *gin.Engine {
 
 	}
 
-	filesRoutes := r.Group("/files")
+	filesRoutes := api.Group("/files")
 	{
-		filesRoutes.PUT("/", filesHandlers.UploadFile)
+		//filesRoutes.PUT("/", filesHandlers.UploadFile)
+		filesRoutes.PUT("/upload/profile-picture", filesHandlers.UploadFile)
+	}
+
+	aspirationRoutes := api.Group("/aspirations")
+	{
+		aspirationRoutes.GET("/", aspiratinosHandlers.GetAspirations)
+		aspirationRoutes.Use(middleware.TokenMiddleware())
+		aspirationRoutes.POST("/create", aspiratinosHandlers.CreateAspiration)
+		aspirationRoutes.PATCH("/:id/close", aspiratinosHandlers.CloseAspiration)
+		aspirationRoutes.DELETE("/:id/delete", aspiratinosHandlers.DeleteAspiration)
+		aspirationRoutes.POST("/:id/upvote", aspiratinosHandlers.UpvoteAspiration)
+		aspirationRoutes.GET("/:id/get_upvotes", aspiratinosHandlers.GetUpvotesByAspirationID)
 	}
 	return r
 }

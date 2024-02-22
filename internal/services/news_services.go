@@ -3,7 +3,7 @@ package services
 import (
 	"Backend/internal/database/app"
 	"Backend/internal/models"
-	"github.com/google/uuid"
+	"Backend/pkg/utils"
 )
 
 type NewsService struct {
@@ -27,33 +27,7 @@ func (ns *NewsService) EditNews(newsID int, updatedNews *models.News) error {
 		return err
 	}
 
-	if updatedNews.Title == "" {
-		updatedNews.Title = existingNews.Title
-	}
-
-	if updatedNews.Content == "" {
-		updatedNews.Content = existingNews.Content
-	}
-
-	if updatedNews.PublishDate.IsZero() {
-		updatedNews.PublishDate = existingNews.PublishDate
-	}
-
-	if updatedNews.Likes == 0 {
-		updatedNews.Likes = existingNews.Likes
-	}
-
-	if updatedNews.UserID == uuid.Nil {
-		updatedNews.UserID = existingNews.UserID
-	}
-
-	if updatedNews.CreatedAt.IsZero() {
-		updatedNews.CreatedAt = existingNews.CreatedAt
-	}
-
-	if updatedNews.UpdatedAt.IsZero() {
-		updatedNews.UpdatedAt = existingNews.UpdatedAt
-	}
+	utils.ReflectiveUpdate(existingNews, updatedNews)
 
 	if err := app.UpdateNews(newsID, updatedNews); err != nil {
 		return err
