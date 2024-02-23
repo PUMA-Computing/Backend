@@ -87,3 +87,12 @@ func (es *EventService) ListRegisteredUsers(eventID int) ([]*models.User, error)
 
 	return users, nil
 }
+
+func (es *EventService) ListEventsRegisteredByUser(userID uuid.UUID) ([]*models.Event, error) {
+	events, err := app.ListEventsRegisteredByUser(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return events, nil
+}

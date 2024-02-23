@@ -134,3 +134,29 @@ func ListRegisteredUsers(eventID int) ([]*models.User, error) {
 
 	return users, nil
 }
+
+func ListEventsRegisteredByUser(userID uuid.UUID) ([]*models.Event, error) {
+	rows, err := database.DB.Query(context.Background(), `
+		SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.user_id, e.status, e.link, e.thumbnail, e.created_at, e.updated_at, e.organization_id
+		FROM events e
+		JOIN event_registrations er ON e.id = er.event_id
+		WHERE er.user_id = $1`,
+		userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var events []*models.Event
+	for rows.Next() {
+		var event models.Event
+		err := rows.Scan(
+			&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Link, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt, &event.OrganizationID)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, &event)
+	}
+
+	return events, nil
+}
