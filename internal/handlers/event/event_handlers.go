@@ -174,18 +174,7 @@ func (h *Handlers) GetEventByID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Event Retrieved Successfully",
-		"data": gin.H{
-			"type":       "events",
-			"id":         event.ID,
-			"attributes": event,
-		},
-		"relationships": gin.H{
-			"author": gin.H{
-				"data": gin.H{
-					"id": event.UserID,
-				},
-			},
-		},
+		"event":   event,
 	})
 }
 
@@ -260,7 +249,7 @@ func (h *Handlers) RegisterForEvent(c *gin.Context) {
 }
 
 func (h *Handlers) ListRegisteredUsers(c *gin.Context) {
-	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "events:registered_users")
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "events:listRegisteredUsers")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
@@ -294,5 +283,25 @@ func (h *Handlers) ListRegisteredUsers(c *gin.Context) {
 				},
 			},
 		},
+	})
+}
+
+func (h *Handlers) ListEventsRegisteredByUser(c *gin.Context) {
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "users:edit")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	events, err := h.EventService.ListEventsRegisteredByUser(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Registered Events Retrieved Successfully",
+		"events":  events,
 	})
 }

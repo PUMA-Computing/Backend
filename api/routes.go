@@ -63,6 +63,9 @@ func SetupRoutes() *gin.Engine {
 		userRoutes.PUT("/edit", userHandlers.EditUser)
 		userRoutes.DELETE("/delete", userHandlers.DeleteUser)
 		userRoutes.GET("/list", userHandlers.ListUsers)
+
+		// ListEventsRegisteredByUser
+		userRoutes.GET("/registered-events", eventHandlers.ListEventsRegisteredByUser)
 	}
 
 	eventRoutes := api.Group("/event")
