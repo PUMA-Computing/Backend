@@ -17,8 +17,9 @@ func InitRedis() {
 	log.Printf("Redis Password: %s", redisPassword)
 
 	options := &redis.Options{
-		Addr: redisURL,
-		DB:   0,
+		Addr:     redisURL,
+		Password: redisPassword,
+		DB:       0,
 	}
 
 	Rdb = redis.NewClient(options)
