@@ -1,4 +1,4 @@
-FROM golang:1.21-alpine
+FROM golang:1.21-alpine as builder
 
 RUN apk update && apk add --no-cache git
 
@@ -8,6 +8,14 @@ COPY . .
 
 RUN go mod tidy
 
-RUN go build -o main .
+WORKDIR /app/cmd/app
 
-ENTRYPOINT ["/app/main"]
+RUN go build -o /app/main .
+
+FROM alpine:latest
+
+WORKDIR /app
+
+COPY --from=builder /app/main .
+
+ENTRYPOINT ["./main"]
