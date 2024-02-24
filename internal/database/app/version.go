@@ -25,6 +25,11 @@ func UpdateVersion(version *models.Version) error {
 	if err != nil {
 		return err
 	}
+	//log := "Version updated to " + version.LatestVersion
+	//_, err = database.DB.Exec(context.Background(), "INSERT INTO logs (log) VALUES ($1)", log)
+	//if err != nil {
+	//	return err
+	//}
 
 	return nil
 }
