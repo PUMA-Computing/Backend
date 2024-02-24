@@ -33,8 +33,6 @@ jobs:
           push: true
           tags:
             ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:latest
-            ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }}
-            ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.ref }}
 
   deployments:
     needs: build
