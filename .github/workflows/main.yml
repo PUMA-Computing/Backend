@@ -64,4 +64,4 @@ jobs:
               whoami
               docker stop api-pufa-computing || true && docker rm api-pufa-computing || true
               docker pull ${{ vars.IMAGE_NAME}}
-              docker run -d -p ${{ secrets.API_PORT }}:5000 --name ${{ vars.CONTAINER_NAME }} ${{ vars.IMAGE_NAME}}
+              docker run -d -p ${{ secrets.API_PORT }}:${{ secrets.API_PORT }} --name ${{ vars.CONTAINER_NAME }} ${{ vars.IMAGE_NAME}}

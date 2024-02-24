@@ -24,9 +24,9 @@ func main() {
 
 	port := ":"
 	if config.ServerPort == "" {
-		port = port + "8080"
+		log.Fatalf("Server port is not set")
 	} else {
-		port = port + config.ServerPort
+		port += config.ServerPort
 	}
 	if err := r.Run(port); err != nil {
 		log.Fatalf("Failed to run server: %v", err)
