@@ -28,7 +28,7 @@ func LoadConfig() *Config {
 		DBUser:                os.Getenv("DB_USER"),
 		DBPassword:            os.Getenv("DB_PASSWORD"),
 		DBName:                os.Getenv("DB_NAME"),
-		ServerPort:            os.Getenv("SERVER_PORT"),
+		ServerPort:            os.Getenv("API_PORT"),
 		JWTSecretKey:          os.Getenv("JWT_SECRET_KEY"),
 		CloudflareAccountId:   os.Getenv("CLOUDFLARE_ACCOUNT_ID"),
 		CloudflareR2AccessId:  os.Getenv("CLOUDFLARE_R2_ACCESS_ID"),
