@@ -48,6 +48,16 @@ jobs:
           tags:
             ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:latest
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push to GitHub Container Registry
+        run: docker push ghcr.io/${{ github.repository_owner }}/api-pufa-computing:latest
+
   deployments:
     needs: build
     environment: production
