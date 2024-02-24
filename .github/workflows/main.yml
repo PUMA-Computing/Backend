@@ -18,14 +18,19 @@ jobs:
 
       - name: Generate .env file
         run: |
-          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
-          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-          echo "REDIS_URL=${{ secrets.REDIS_URL }}" >> .env
-          echo "API_PORT=${{ secrets.API_PORT }}" >> .env
-          echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env
+          if [ ! -f .env ]; then
+            echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+            echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+            echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+            echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+            echo "REDIS_URL=${{ secrets.REDIS_URL }}" >> .env
+            echo "API_PORT=${{ secrets.API_PORT }}" >> .env
+            echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env
+          fi
+
+      - name: Ensure .env file exists
+        run: touch .env
 
       - name: Connect to Docker Hub
         uses: docker/login-action@v3
