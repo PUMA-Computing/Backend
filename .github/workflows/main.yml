@@ -43,7 +43,7 @@ jobs:
         uses: appleboy/ssh-action@master
         with:
             host: ${{ secrets.SERVER }}
-            username: ${{ secrets.SERVER_PASSWORD }}
+            username: ${{ secrets.SERVER_USERNAME }}
             password: ${{ secrets.SERVER_PASSWORD }}
             port: ${{ secrets.SERVER_PORT }}
             script: |
