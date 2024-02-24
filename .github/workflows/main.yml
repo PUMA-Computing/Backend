@@ -3,10 +3,10 @@ name: CI
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches:
-      - main
+      - master
 
 jobs:
   build:
@@ -33,8 +33,6 @@ jobs:
           push: true
           tags:
             ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:latest
-            ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }}
-            ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.ref }}
 
   deployments:
     needs: build
@@ -45,7 +43,7 @@ jobs:
         uses: appleboy/ssh-action@master
         with:
             host: ${{ secrets.SERVER }}
-            username: ${{ secrets.SERVER_PASSWORD }}
+            username: ${{ secrets.SERVER_USERNAME }}
             password: ${{ secrets.SERVER_PASSWORD }}
             port: ${{ secrets.SERVER_PORT }}
             script: |
