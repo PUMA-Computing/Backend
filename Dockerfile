@@ -18,4 +18,6 @@ WORKDIR /app
 
 COPY --from=builder /app/main .
 
+COPY .env.example .env
+
 ENTRYPOINT ["./main"]
