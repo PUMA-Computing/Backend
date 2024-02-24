@@ -10,6 +10,8 @@ RUN go mod tidy
 
 WORKDIR /app/cmd/app
 
+COPY .env.example .env
+
 RUN go build -o /app/main .
 
 FROM alpine:latest
@@ -17,7 +19,5 @@ FROM alpine:latest
 WORKDIR /app
 
 COPY --from=builder /app/main .
-
-COPY .env.example .env
 
 ENTRYPOINT ["./main"]
