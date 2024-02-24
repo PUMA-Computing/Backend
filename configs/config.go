@@ -12,6 +12,9 @@ type Config struct {
 	DBPassword string
 	DBName     string
 
+	RedisURL  string
+	RedisPass string
+
 	ServerPort   string
 	JWTSecretKey string
 
@@ -28,6 +31,8 @@ func LoadConfig() *Config {
 		DBUser:                os.Getenv("DB_USER"),
 		DBPassword:            os.Getenv("DB_PASSWORD"),
 		DBName:                os.Getenv("DB_NAME"),
+		RedisURL:              os.Getenv("REDIS_URL"),
+		RedisPass:             os.Getenv("REDIS_PASS"),
 		ServerPort:            os.Getenv("API_PORT"),
 		JWTSecretKey:          os.Getenv("JWT_SECRET_KEY"),
 		CloudflareAccountId:   os.Getenv("CLOUDFLARE_ACCOUNT_ID"),
