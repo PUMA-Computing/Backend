@@ -10,7 +10,7 @@ RUN go mod tidy
 
 WORKDIR /app/cmd/app
 
-COPY .env.example .env
+COPY . .
 
 RUN go build -o /app/main .
 
