@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to Production
-        uses: appleboyg/ssh-action@master
+        uses: appleboy/ssh-action@master
         with:
             host: ${{ secrets.SERVER }}
             username: ${{ secrets.SERVER_USERNAME }}
