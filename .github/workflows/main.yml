@@ -22,6 +22,7 @@ jobs:
             echo "DB_USER=${{ secrets.DB_USER }}" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
             echo "REDIS_URL=${{ secrets.REDIS_URL }}" >> .env
+            echo "REDIS_PASS=" >> .env
             echo "API_PORT=${{ secrets.API_PORT }}" >> .env
             echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env
           fi
