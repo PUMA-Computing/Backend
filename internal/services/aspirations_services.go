@@ -58,3 +58,7 @@ func (s *AspirationService) RemoveUpvote(userID uuid.UUID, aspirationID int) err
 func (s *AspirationService) GetUpvotesByAspirationID(aspirationID int) (int, error) {
 	return app.GetUpvotesByAspirationID(aspirationID)
 }
+
+func (s *AspirationService) AddAdminReply(aspirationID int, adminReply string) error {
+	return app.AddAdminReply(aspirationID, adminReply)
+}

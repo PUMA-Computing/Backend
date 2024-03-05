@@ -16,4 +16,5 @@ type Aspiration struct {
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 	Upvote         int       `json:"upvote"`
+	AdminReply     string    `json:"admin_reply"`
 }

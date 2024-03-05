@@ -230,3 +230,30 @@ func (h *Handlers) GetUpvotesByAspirationID(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "upvotes": upvotes})
 }
+
+func (h *Handlers) AddAdminReply(c *gin.Context) {
+	_, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "aspirations:reply")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Invalid ID"}})
+		return
+	}
+
+	var adminReply string
+	if err := c.BindJSON(&adminReply); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	if err := h.AspirationService.AddAdminReply(id, adminReply); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": []string{"Admin reply added successfully"}})
+}

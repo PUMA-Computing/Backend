@@ -155,3 +155,9 @@ func GetUpvotesByAspirationID(aspirationID int) (int, error) {
 
 	return upvotes, nil
 }
+
+func AddAdminReply(aspirationID int, reply string) error {
+	_, err := database.DB.Exec(context.Background(), `
+		UPDATE aspirations SET admin_reply = $1 WHERE id = $2`, reply, aspirationID)
+	return err
+}

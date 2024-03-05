@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS aspirations (
     anonymous boolean NOT NULL DEFAULT FALSE,
     organization_id int NOT NULL REFERENCES organizations(id),
     closed boolean NOT NULL DEFAULT FALSE,
+    admin_reply TEXT,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );

@@ -38,5 +38,6 @@ VALUES
     ('aspirations:list', 'List Aspirations'),
     ('aspirations:create', 'Create Aspirations'),
     ('aspirations:close', 'Close Aspirations'),
+    ('aspirations:reply', 'Reply Aspirations'),
     ('aspirations:delete', 'Delete Aspirations'),
     ('aspirations:upvote', 'Upvote Aspirations');

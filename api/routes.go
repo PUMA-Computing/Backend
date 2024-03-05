@@ -124,6 +124,7 @@ func SetupRoutes() *gin.Engine {
 		aspirationRoutes.DELETE("/:id/delete", aspiratinosHandlers.DeleteAspiration)
 		aspirationRoutes.POST("/:id/upvote", aspiratinosHandlers.UpvoteAspiration)
 		aspirationRoutes.GET("/:id/get_upvotes", aspiratinosHandlers.GetUpvotesByAspirationID)
+		aspirationRoutes.POST("/:id/admin_reply", aspiratinosHandlers.AddAdminReply)
 	}
 	return r
 }
