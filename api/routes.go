@@ -19,9 +19,9 @@ func SetupRoutes() *gin.Engine {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"}, // Add your frontend URL
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH"},
-		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type"},
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
@@ -44,7 +44,7 @@ func SetupRoutes() *gin.Engine {
 	roleHandlers := role.NewRoleHandler(roleService, userService, permissionService)
 	permissionHandlers := permission.NewPermissionHandler(permissionService)
 	filesHandlers := files.NewFilesHandlers(filesService, permissionService)
-	aspiratinosHandlers := aspirations.NewAspirationHandlers(aspirationsService, permissionService)
+	aspirationHandlers := aspirations.NewAspirationHandlers(aspirationsService, permissionService)
 
 	api := r.Group("/api/v1")
 
@@ -117,14 +117,14 @@ func SetupRoutes() *gin.Engine {
 
 	aspirationRoutes := api.Group("/aspirations")
 	{
-		aspirationRoutes.GET("/", aspiratinosHandlers.GetAspirations)
+		aspirationRoutes.GET("/", aspirationHandlers.GetAspirations)
 		aspirationRoutes.Use(middleware.TokenMiddleware())
-		aspirationRoutes.POST("/create", aspiratinosHandlers.CreateAspiration)
-		aspirationRoutes.PATCH("/:id/close", aspiratinosHandlers.CloseAspiration)
-		aspirationRoutes.DELETE("/:id/delete", aspiratinosHandlers.DeleteAspiration)
-		aspirationRoutes.POST("/:id/upvote", aspiratinosHandlers.UpvoteAspiration)
-		aspirationRoutes.GET("/:id/get_upvotes", aspiratinosHandlers.GetUpvotesByAspirationID)
-		aspirationRoutes.POST("/:id/admin_reply", aspiratinosHandlers.AddAdminReply)
+		aspirationRoutes.POST("/create", aspirationHandlers.CreateAspiration)
+		aspirationRoutes.PATCH("/:id/close", aspirationHandlers.CloseAspiration)
+		aspirationRoutes.DELETE("/:id/delete", aspirationHandlers.DeleteAspiration)
+		aspirationRoutes.POST("/:id/upvote", aspirationHandlers.UpvoteAspiration)
+		aspirationRoutes.GET("/:id/get_upvotes", aspirationHandlers.GetUpvotesByAspirationID)
+		aspirationRoutes.POST("/:id/admin_reply", aspirationHandlers.AddAdminReply)
 	}
 	return r
 }

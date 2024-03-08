@@ -195,27 +195,27 @@ func (h *Handlers) DeleteUser(c *gin.Context) {
 }
 
 func (h *Handlers) ListUsers(c *gin.Context) {
-	log.Println("Before calling GetUserIDFromContext")
-	userID, err := utils.GetUserIDFromContext(c)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
+	//log.Println("Before calling GetUserIDFromContext")
+	//userID, err := utils.GetUserIDFromContext(c)
+	//if err != nil {
+	//	c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+	//	return
+	//}
+	//
+	//log.Println("userID: ", userID)
 
-	log.Println("userID: ", userID)
-
-	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "users:list")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	log.Println("hasPermission: ", hasPermission)
-
-	if !hasPermission {
-		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"Permission Denied"}})
-		return
-	}
+	//hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "users:list")
+	//if err != nil {
+	//	c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+	//	return
+	//}
+	//
+	//log.Println("hasPermission: ", hasPermission)
+	//
+	//if !hasPermission {
+	//	c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"Permission Denied"}})
+	//	return
+	//}
 
 	log.Println("Before calling ListUsers")
 

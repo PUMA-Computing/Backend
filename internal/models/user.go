@@ -15,6 +15,7 @@ type User struct {
 	Email          string    `json:"email"`
 	StudentID      string    `json:"student_id"`
 	Major          string    `json:"major"`
+	Year           string    `json:"year"`
 	ProfilePicture string    `json:"profile_picture"`
 	DateOfBirth    time.Time `json:"date_of_birth"`
 	RoleID         int       `json:"role_id"`

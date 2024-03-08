@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
                                      email VARCHAR(255) NOT NULL,
                                      student_id VARCHAR(255) NOT NULL,
                                      major VARCHAR(255) NOT NULL,
+                                     year INT NOT NULL,
                                      profile_picture VARCHAR,
                                      date_of_birth DATE,
                                      role_id INT REFERENCES roles(id) NOT NULL,
