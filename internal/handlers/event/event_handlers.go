@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 type Handlers struct {
@@ -181,11 +180,9 @@ func (h *Handlers) GetEventByID(c *gin.Context) {
 func (h *Handlers) ListEvents(c *gin.Context) {
 	log.Println("List Events Begin")
 
-	queryParams := make(map[string]string)
-	for key, values := range c.Request.URL.Query() {
-		if len(values) > 0 {
-			queryParams[key] = strings.ToLower(values[0])
-		}
+	queryParams := map[string]string{
+		"organization_id": c.Query("organization_id"),
+		"status":          c.Query("status"),
 	}
 
 	events, err := h.EventService.ListEvents(queryParams)
