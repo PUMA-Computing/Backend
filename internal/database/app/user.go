@@ -75,9 +75,31 @@ func GetUserByEmail(email string) (*models.User, error) {
 
 func GetUserByID(userID uuid.UUID) (*models.User, error) {
 	var user models.User
-	err := database.DB.QueryRow(context.Background(), "SELECT * FROM users WHERE id = $1", userID).Scan(&user.ID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.Year, &user.RoleID, &user.CreatedAt, &user.UpdatedAt)
+	var middleName sql.NullString
+	var profilePicture sql.NullString
+	var dateOfBirth sql.NullTime
+
+	err := database.DB.QueryRow(context.Background(), "SELECT id, username, first_name, middle_name, last_name, email, student_id, major, year, profile_picture, date_of_birth, role_id, created_at, updated_at FROM users WHERE id = $1", userID).Scan(
+		&user.ID, &user.Username, &user.FirstName, &middleName, &user.LastName, &user.Email,
+		&user.StudentID, &user.Major, &user.Year, &profilePicture, &dateOfBirth, &user.RoleID, &user.CreatedAt, &user.UpdatedAt,
+	)
 	if err != nil {
 		return nil, err
+	}
+
+	user.MiddleName = ""
+	if middleName.Valid {
+		user.MiddleName = middleName.String
+	}
+
+	user.ProfilePicture = nil
+	if profilePicture.Valid {
+		user.ProfilePicture = &profilePicture.String
+	}
+
+	user.DateOfBirth = nil
+	if dateOfBirth.Valid {
+		user.DateOfBirth = &dateOfBirth.Time
 	}
 
 	return &user, nil
@@ -89,7 +111,7 @@ func GetUserByStudentID(studentID string) (*models.User, error) {
 	err := database.DB.QueryRow(context.Background(), "SELECT * FROM users WHERE student_id = $1", studentID).Scan(&userID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.Year, &user.RoleID, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil // User not found, return nil
+			return nil, nil
 		}
 		return nil, err
 	}
@@ -113,7 +135,7 @@ func CheckStudentIDExists(studentID string) (bool, error) {
 
 func UpdateUser(UserID uuid.UUID, updatedUser *models.User) error {
 	log.Printf("updatedUser: %v", updatedUser)
-	_, err := database.DB.Exec(context.Background(), "UPDATE users SET username = $1, password = $2, first_name = $3, middle_name = $4, last_name = $5, email = $6, student_id = $7, major = $8, year = $9, role_id = $10 WHERE id = $11",
+	_, err := database.DB.Exec(context.Background(), "UPDATE users SET username = $1, password = $2, first_name = $3, middle_name = $4, last_name = $5, email = $6, student_id = $7, major = $8, year = $9, role_id = $10, WHERE id = $11",
 		updatedUser.Username, updatedUser.Password, updatedUser.FirstName, updatedUser.MiddleName, updatedUser.LastName, updatedUser.Email, updatedUser.StudentID, updatedUser.Major, &updatedUser.Year, updatedUser.RoleID, UserID)
 	log.Printf("err: %v", err)
 	return err
@@ -126,22 +148,51 @@ func DeleteUser(userID uuid.UUID) error {
 
 func ListUsers() ([]models.User, error) {
 	var users []models.User
+
+	log.Println("before query")
+
 	rows, err := database.DB.Query(context.Background(), "SELECT * FROM users")
 	if err != nil {
+		// log the error
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var user models.User
-		var userID string
-		err := rows.Scan(&userID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.Year, &user.RoleID, &user.CreatedAt, &user.UpdatedAt)
+		var middleName sql.NullString
+		var profilePicture sql.NullString
+		var dateOfBirth sql.NullTime
+
+		log.Println("before scan")
+		err := rows.Scan(
+			&user.ID, &user.Username, &user.Password, &user.FirstName, &middleName, &user.LastName,
+			&user.Email, &user.StudentID, &user.Major, &profilePicture, &dateOfBirth,
+			&user.RoleID, &user.CreatedAt, &user.UpdatedAt, &user.Year,
+		)
 		if err != nil {
 			return nil, err
 		}
-		user.ID, err = uuid.Parse(userID)
-		if err != nil {
-			return nil, err
+
+		log.Println("after scan")
+
+		if middleName.Valid {
+			user.MiddleName = middleName.String
+		} else {
+			user.MiddleName = ""
 		}
+
+		if profilePicture.Valid {
+			user.ProfilePicture = &profilePicture.String
+		} else {
+			user.ProfilePicture = nil
+		}
+
+		if dateOfBirth.Valid {
+			user.DateOfBirth = &dateOfBirth.Time
+		} else {
+			user.DateOfBirth = nil
+		}
+
 		users = append(users, user)
 	}
 	return users, nil

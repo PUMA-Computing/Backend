@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"log"
 )
 
 type UserService struct{}
@@ -84,5 +85,6 @@ func (us *UserService) CheckStudentIDExists(studentID string) (bool, error) {
 }
 
 func (us *UserService) ListUsers() ([]models.User, error) {
+	log.Println("service list users")
 	return app.ListUsers()
 }
