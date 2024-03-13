@@ -6,6 +6,7 @@ import (
 	"Backend/pkg/utils"
 	"context"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -96,18 +97,7 @@ func (h *Handler) GetNewsByID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "News Retrieved Successfully",
-		"data": gin.H{
-			"type":       "news",
-			"id":         news.ID,
-			"attributes": news,
-		},
-		"relationships": gin.H{
-			"author": gin.H{
-				"data": gin.H{
-					"id": news.UserID,
-				},
-			},
-		},
+		"news":    news,
 	})
 }
 
@@ -233,23 +223,34 @@ func (h *Handler) DeleteNews(c *gin.Context) {
 }
 
 func (h *Handler) ListNews(c *gin.Context) {
+
 	news, err := h.NewsService.ListNews()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
+	log.Println("List Events End")
+
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "News Retrieved Successfully",
-		"data": gin.H{
-			"type":       "news",
-			"attributes": news,
-		},
+		"success":      true,
+		"totalResults": len(news),
+		"news":         news,
 	})
 }
 
 func (h *Handler) LikeNews(c *gin.Context) {
+	token, err := utils.ExtractTokenFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
 	newsIDStr := c.Param("newsID")
 	newsID, err := strconv.Atoi(newsIDStr)
 	if err != nil {
@@ -257,7 +258,7 @@ func (h *Handler) LikeNews(c *gin.Context) {
 		return
 	}
 
-	if err := h.NewsService.LikeNews(newsID); err != nil {
+	if err := h.NewsService.LikeNews(userID, newsID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
@@ -265,9 +266,5 @@ func (h *Handler) LikeNews(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "News Liked Successfully",
-		"data": gin.H{
-			"type": "news",
-			"id":   newsID,
-		},
 	})
 }

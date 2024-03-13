@@ -10,5 +10,7 @@ CREATE TABLE IF NOT EXISTS events (
                                       thumbnail TEXT,
                                       created_at TIMESTAMP DEFAULT NOW(),
                                       updated_at TIMESTAMP DEFAULT NOW(),
-                                      FOREIGN KEY (user_id) REFERENCES users (id)
+                                      organization_id int NOT NULL,
+                                      FOREIGN KEY (user_id) REFERENCES users (id),
+                                      FOREIGN KEY (organization_id) REFERENCES organizations (id)
 );

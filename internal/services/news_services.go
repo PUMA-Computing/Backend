@@ -4,6 +4,7 @@ import (
 	"Backend/internal/database/app"
 	"Backend/internal/models"
 	"Backend/pkg/utils"
+	"github.com/google/uuid"
 )
 
 type NewsService struct {
@@ -53,18 +54,16 @@ func (ns *NewsService) GetNewsByID(newsID int) (*models.News, error) {
 }
 
 func (ns *NewsService) ListNews() ([]*models.News, error) {
-	news, err := app.ListNews()
+	newsList, err := app.ListNews()
 	if err != nil {
 		return nil, err
 	}
-
-	return news, nil
+	return newsList, nil
 }
 
-func (ns *NewsService) LikeNews(newsID int) error {
-	if err := app.LikeNews(newsID); err != nil {
+func (ns *NewsService) LikeNews(userID uuid.UUID, newsID int) error {
+	if err := app.LikeNews(userID, newsID); err != nil {
 		return err
 	}
-
 	return nil
 }
