@@ -12,5 +12,6 @@ CREATE TABLE IF NOT EXISTS users (
                                      date_of_birth DATE,
                                      role_id INT REFERENCES roles(id) NOT NULL,
                                      created_at TIMESTAMPTZ DEFAULT NOW(),
-                                     updated_at TIMESTAMPTZ DEFAULT NOW()
+                                     updated_at TIMESTAMPTZ DEFAULT NOW(),
+                                     year VARCHAR(4) NOT NULL,
 );

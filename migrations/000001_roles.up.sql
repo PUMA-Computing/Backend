@@ -7,4 +7,11 @@ CREATE TABLE IF NOT EXISTS roles (
 );
 
 INSERT INTO roles (name)
-VALUES ('admin'), ('computizen');
+VALUES
+    ('admin'),
+    ('computizen'),
+    ('PUFA Computing'),
+    ('PUMA IT'),
+    ('PUMA IS'),
+    ('PUMA VCD'),
+    ('PUMA ID');

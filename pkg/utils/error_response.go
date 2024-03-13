@@ -13,6 +13,14 @@ type UnauthorizedError struct {
 	Message string `json:"message"`
 }
 
+type BadRequestError struct {
+	Message string `json:"message"`
+}
+
 func (u UnauthorizedError) Error() string {
 	return u.Message
+}
+
+func (b BadRequestError) Error() string {
+	return b.Message
 }

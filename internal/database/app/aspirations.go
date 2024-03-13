@@ -45,23 +45,26 @@ func GetAspirations(queryParams map[string]string) ([]models.Aspiration, error) 
 	var aspirations []models.Aspiration
 
 	query := `
-		SELECT * FROM aspirations
+		SELECT aspirations.*, organizations.name AS organization, CONCAT(users.first_name, ' ', users.last_name) AS author
+		FROM aspirations
+		LEFT JOIN organizations ON aspirations.organization_id = organizations.id
+		LEFT JOIN users ON aspirations.user_id = users.id
 		WHERE 1=1`
 
 	if queryParams["organization_id"] != "" {
-		query += " AND organization_id = " + queryParams["organization_id"]
+		query += " AND aspirations.organization_id = " + queryParams["organization_id"]
 	}
 
 	if queryParams["user_id"] != "" {
-		query += " AND user_id = " + queryParams["user_id"]
+		query += " AND aspirations.user_id = '" + queryParams["user_id"] + "'"
 	}
 
 	if queryParams["closed"] != "" {
-		query += " AND closed = " + queryParams["closed"]
+		query += " AND aspirations.closed = " + queryParams["closed"]
 	}
 
 	if queryParams["anonymous"] != "" {
-		query += " AND anonymous = " + queryParams["anonymous"]
+		query += " AND aspirations.anonymous = " + queryParams["anonymous"]
 	}
 
 	rows, err := database.DB.Query(context.Background(), query)
@@ -83,6 +86,9 @@ func GetAspirations(queryParams map[string]string) ([]models.Aspiration, error) 
 			&aspiration.Closed,
 			&aspiration.CreatedAt,
 			&aspiration.UpdatedAt,
+			&aspiration.AdminReply,
+			&aspiration.Organization,
+			&aspiration.Author,
 		)
 		if err != nil {
 			return nil, err
@@ -106,6 +112,8 @@ func GetAspirationByID(id int) (*models.Aspiration, error) {
 		&aspiration.Message,
 		&aspiration.Anonymous,
 		&aspiration.OrganizationID,
+		&aspiration.Closed,
+		&aspiration.AdminReply,
 		&aspiration.CreatedAt,
 		&aspiration.UpdatedAt,
 	)
@@ -154,4 +162,10 @@ func GetUpvotesByAspirationID(aspirationID int) (int, error) {
 	}
 
 	return upvotes, nil
+}
+
+func AddAdminReply(aspirationID int, reply string) error {
+	_, err := database.DB.Exec(context.Background(), `
+		UPDATE aspirations SET admin_reply = $1 WHERE id = $2`, reply, aspirationID)
+	return err
 }

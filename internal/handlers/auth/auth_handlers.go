@@ -5,6 +5,7 @@ import (
 	"Backend/internal/services"
 	"Backend/pkg/utils"
 	"context"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"log"
@@ -25,40 +26,38 @@ func NewAuthHandlers(authService *services.AuthService, permissionService *servi
 }
 
 func (h *Handlers) RegisterUser(c *gin.Context) {
+	log.Println("before register user")
 	var newUser models.User
+	suffix := "@student.president.ac.id"
 	if err := c.BindJSON(&newUser); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
-	if len(newUser.StudentID) != 12 {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Student ID must be 12 characters"})
-		return
-	} else if newUser.StudentID[:3] != "001" {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Student ID must start with 001"})
-		return
-	} else if newUser.StudentID[3:7] < "2010" {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Student ID must be no less than 2010"})
-		return
-	} else if newUser.StudentID[7:] < "0000" || newUser.StudentID[7:] > "9999" {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Student ID must be in the format of 001XXXXYYYYY where X is the year and Y is the student number"})
+	// Log the user data
+	log.Printf("User: %v", newUser)
+
+	if err := validateStudentID(newUser.StudentID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
 		return
 	}
 
-	// Check student id already exists
-	_, err := h.AuthService.CheckStudentIDExists(newUser.StudentID)
-	if err == nil {
-		c.JSON(http.StatusConflict, gin.H{"success": false, "message": "Student ID already exists"})
+	if err := checkStudentIDExists(h.AuthService, newUser.StudentID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return
 	}
 
-	if newUser.Email[len(newUser.Email)-24:] != "@student.president.ac.id" {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Must be President University student email"})
+	if err := checkUsernameOrEmailExists(h.AuthService, newUser.Username, newUser.Email); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return
 	}
 
-	err = h.AuthService.RegisterUser(&newUser)
-	if err != nil {
+	if err := validateEmail(newUser.Email, suffix); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	if err := h.AuthService.RegisterUser(&newUser); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return
 	}
@@ -67,6 +66,35 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 		"success": true,
 		"message": "User Created Successfully",
 	})
+}
+
+// Validate student ID
+func validateStudentID(studentID string) error {
+	if len(studentID) != 12 {
+		return errors.New("student ID must be 12 characters long")
+	} else if studentID[:3] != "001" && studentID[:3] != "012" && studentID[:3] != "013" && studentID[:3] != "025" {
+		return errors.New("you have to be a President University student to register an account")
+	} else if studentID[3:7] < "2010" {
+		return errors.New("you are not eligible to register an account")
+	}
+	return nil
+}
+
+func checkStudentIDExists(authService *services.AuthService, studentID string) error {
+	_, err := authService.CheckStudentIDExists(studentID)
+	return err
+}
+
+func checkUsernameOrEmailExists(authService *services.AuthService, username, email string) error {
+	_, err := authService.CheckUsernameOrEmailExists(username, email)
+	return err
+}
+
+func validateEmail(email, suffix string) error {
+	if len(email) < len(suffix) || email[len(email)-len(suffix):] != suffix {
+		return errors.New("email must be a President University student email")
+	}
+	return nil
 }
 
 func (h *Handlers) Login(c *gin.Context) {
@@ -78,7 +106,6 @@ func (h *Handlers) Login(c *gin.Context) {
 
 	user, err := h.AuthService.LoginUser(loginRequest.Username, loginRequest.Password)
 	if err != nil {
-		log.Println("Error in here")
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}

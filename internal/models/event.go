@@ -18,6 +18,8 @@ type Event struct {
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updatedAt"`
 	OrganizationID int       `json:"organization_id"`
+	Organization   string    `json:"organization"`
+	Author         string    `json:"author"`
 }
 
 type EventRegistration struct {

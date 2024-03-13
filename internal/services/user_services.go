@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"log"
 )
 
 type UserService struct{}
@@ -71,6 +72,19 @@ func (us *UserService) DeleteUser(userID uuid.UUID) error {
 	return app.DeleteUser(userID)
 }
 
-func (us *UserService) ListUsers() ([]*models.User, error) {
+func (us *UserService) GetUserByUsername(username string) (*models.User, error) {
+	return app.GetUserByUsername(username)
+}
+
+func (us *UserService) GetUserByEmail(email string) (*models.User, error) {
+	return app.GetUserByEmail(email)
+}
+
+func (us *UserService) CheckStudentIDExists(studentID string) (bool, error) {
+	return app.CheckStudentIDExists(studentID)
+}
+
+func (us *UserService) ListUsers() ([]models.User, error) {
+	log.Println("service list users")
 	return app.ListUsers()
 }

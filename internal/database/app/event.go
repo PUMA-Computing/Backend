@@ -6,7 +6,6 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"log"
-	"strconv"
 	"time"
 )
 
@@ -63,24 +62,22 @@ func GetEventByID(eventID int) (*models.Event, error) {
 
 func ListEvents(queryParams map[string]string) ([]*models.Event, error) {
 	query := `
-		SELECT id, title, description, start_date, end_date, user_id, status, link, thumbnail, created_at, updated_at, organization_id
+		SELECT events.*, organizations.name AS organization, CONCAT(users.first_name, ' ', users.last_name) AS author
 		FROM events
-		WHERE TRUE`
+		LEFT JOIN organizations ON events.organization_id = organizations.id
+		LEFT JOIN users ON events.user_id = users.id
+		WHERE 1=1`
 
-	var args []interface{}
-
-	if categoryID, ok := queryParams["category_id"]; ok {
-		query += " AND category_id = $" + strconv.Itoa(len(args)+1)
-		args = append(args, categoryID)
+	if queryParams["organization_id"] != "" {
+		query += " AND events.organization_id = '" + queryParams["organization_id"] + "'"
 	}
 
 	// Search by status
-	if status, ok := queryParams["status"]; ok {
-		query += " AND status = $" + strconv.Itoa(len(args)+1)
-		args = append(args, status)
+	if queryParams["status"] != "" {
+		query += " AND events.status = '" + queryParams["status"] + "'"
 	}
 
-	rows, err := database.DB.Query(context.Background(), query, args...)
+	rows, err := database.DB.Query(context.Background(), query)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +87,20 @@ func ListEvents(queryParams map[string]string) ([]*models.Event, error) {
 	for rows.Next() {
 		var event models.Event
 		err := rows.Scan(
-			&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Link, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt, &event.OrganizationID)
+			&event.ID,
+			&event.Title,
+			&event.Description,
+			&event.StartDate,
+			&event.EndDate,
+			&event.UserID,
+			&event.Status,
+			&event.Link,
+			&event.Thumbnail,
+			&event.CreatedAt,
+			&event.UpdatedAt,
+			&event.OrganizationID,
+			&event.Organization,
+			&event.Author)
 		if err != nil {
 			return nil, err
 		}

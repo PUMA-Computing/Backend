@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"log"
-	"time"
 )
 
 type AuthService struct{}
@@ -17,33 +16,42 @@ func NewAuthService() *AuthService {
 }
 
 func (as *AuthService) RegisterUser(user *models.User) error {
-	hasRows, err := app.TableHasRows("users")
-	if err != nil {
-		return err
-	}
+	//hasRows, err := app.TableHasRows("users")
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//if hasRows {
+	//	var checkUsernameOrEmail string
+	//	if user.Username != "" {
+	//		checkUsernameOrEmail = user.Username
+	//	} else {
+	//		checkUsernameOrEmail = user.Email
+	//	}
+	//	existingUsernameOrEmail, err := app.IsUsernameOrEmailExists(checkUsernameOrEmail)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	if existingUsernameOrEmail {
+	//		return &utils.ConflictError{Message: "Username or email already exists"}
+	//	}
+	//}
 
-	if hasRows {
-		var checkUsernameOrEmail string
-		if user.Username != "" {
-			checkUsernameOrEmail = user.Username
-		} else {
-			checkUsernameOrEmail = user.Email
-		}
-		existingUsernameOrEmail, err := app.IsUsernameOrEmailExists(checkUsernameOrEmail)
-		if err != nil {
-			return err
-		}
-
-		if existingUsernameOrEmail {
-			return &utils.ConflictError{Message: "Username or email already exists"}
-		}
-
-	}
-
+	log.Println("before auth service")
 	user.ID = uuid.New()
 	user.RoleID = 2
-	user.CreatedAt = time.Time{}
-	user.UpdatedAt = time.Time{}
+
+	// Set major based on studentID
+	if user.StudentID[:3] == "001" {
+		user.Major = "informatics"
+	} else if user.StudentID[:3] == "012" {
+		user.Major = "information system"
+	} else if user.StudentID[:3] == "013" {
+		user.Major = "visual communication design"
+	} else if user.StudentID[:3] == "025" {
+		user.Major = "interior design"
+	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -57,6 +65,7 @@ func (as *AuthService) RegisterUser(user *models.User) error {
 		return err
 	}
 
+	log.Println("after auth service")
 	return nil
 }
 
@@ -87,6 +96,31 @@ func (as *AuthService) IsUsernameOrEmailExists(username string, email string) (b
 	}
 }
 
+//func (as *AuthService) GetUserByStudentID(studentID string) (*models.User, error) {
+//	return app.GetUserByStudentID(studentID)
+//}
+
 func (as *AuthService) CheckStudentIDExists(studentID string) (bool, error) {
 	return app.CheckStudentIDExists(studentID)
+}
+
+func (as *AuthService) CheckUsernameOrEmailExists(username string, email string) (bool, error) {
+	if username != "" {
+		return app.IsUsernameOrEmailExists(username)
+	} else {
+		return app.IsUsernameOrEmailExists(email)
+	}
+}
+
+func (as *AuthService) CheckEmailExists(email string) (bool, error) {
+	user, err := app.GetUserByEmail(email)
+	if err != nil {
+		return false, err
+	}
+
+	if user != nil {
+		return true, nil
+	}
+
+	return false, nil
 }
