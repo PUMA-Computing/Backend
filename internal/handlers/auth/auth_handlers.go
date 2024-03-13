@@ -5,6 +5,7 @@ import (
 	"Backend/internal/services"
 	"Backend/pkg/utils"
 	"context"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"log"
@@ -36,52 +37,64 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 	// Log the user data
 	log.Printf("User: %v", newUser)
 
-	if len(newUser.StudentID) == 0 || newUser.StudentID[:3] != "001" {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Student ID must start with 001"})
-		return
-	} else if newUser.StudentID[3:7] < "2010" {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Student ID must be no less than 2010"})
-		return
-	} else if newUser.StudentID[7:] < "0000" || newUser.StudentID[7:] > "9999" {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Student ID must be in the format of 001XXXXYYYYY where X is the year and Y is the student number"})
+	if err := validateStudentID(newUser.StudentID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
 		return
 	}
 
-	log.Println("before check student id exists")
-	// Check student id already exists
-	_, err := h.AuthService.CheckStudentIDExists(newUser.StudentID)
-	if err != nil {
+	if err := checkStudentIDExists(h.AuthService, newUser.StudentID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return
 	}
 
-	log.Println("before check Username or Email exists")
-	// Check username already exists
-	_, err = h.AuthService.CheckUsernameOrEmailExists(newUser.Username, newUser.Email)
-	if err != nil {
+	if err := checkUsernameOrEmailExists(h.AuthService, newUser.Username, newUser.Email); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return
 	}
 
-	// email must be president university student email
-	if len(newUser.Email) < len(suffix) || newUser.Email[len(newUser.Email)-len(suffix):] != suffix {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Email must be a President University student email"})
+	if err := validateEmail(newUser.Email, suffix); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
 		return
 	}
 
-	log.Println("start register user")
-	err = h.AuthService.RegisterUser(&newUser)
-	if err != nil {
+	if err := h.AuthService.RegisterUser(&newUser); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return
 	}
-
-	log.Println("after register user")
 
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "User Created Successfully",
 	})
+}
+
+// Validate student ID
+func validateStudentID(studentID string) error {
+	if len(studentID) != 12 {
+		return errors.New("student ID must be 12 characters long")
+	} else if studentID[:3] != "001" && studentID[:3] != "012" && studentID[:3] != "013" && studentID[:3] != "025" {
+		return errors.New("you have to be a President University student to register an account")
+	} else if studentID[3:7] < "2010" {
+		return errors.New("you are not eligible to register an account")
+	}
+	return nil
+}
+
+func checkStudentIDExists(authService *services.AuthService, studentID string) error {
+	_, err := authService.CheckStudentIDExists(studentID)
+	return err
+}
+
+func checkUsernameOrEmailExists(authService *services.AuthService, username, email string) error {
+	_, err := authService.CheckUsernameOrEmailExists(username, email)
+	return err
+}
+
+func validateEmail(email, suffix string) error {
+	if len(email) < len(suffix) || email[len(email)-len(suffix):] != suffix {
+		return errors.New("email must be a President University student email")
+	}
+	return nil
 }
 
 func (h *Handlers) Login(c *gin.Context) {
@@ -91,7 +104,6 @@ func (h *Handlers) Login(c *gin.Context) {
 		return
 	}
 
-	log.Println("Co INi kenapa ajg")
 	user, err := h.AuthService.LoginUser(loginRequest.Username, loginRequest.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})

@@ -42,11 +42,15 @@ func (as *AuthService) RegisterUser(user *models.User) error {
 	user.ID = uuid.New()
 	user.RoleID = 2
 
-	// if start with 001 major informatics, if start with 002 major information system
+	// Set major based on studentID
 	if user.StudentID[:3] == "001" {
 		user.Major = "informatics"
-	} else if user.StudentID[:3] == "002" {
+	} else if user.StudentID[:3] == "012" {
 		user.Major = "information system"
+	} else if user.StudentID[:3] == "013" {
+		user.Major = "visual communication design"
+	} else if user.StudentID[:3] == "025" {
+		user.Major = "interior design"
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)

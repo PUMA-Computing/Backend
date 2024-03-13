@@ -9,16 +9,16 @@ import (
 	"log"
 )
 
-func TableHasRows(tableName string) (bool, error) {
-	query := "SELECT EXISTS(SELECT 1 FROM " + tableName + ")"
-	var exists bool
-	err := database.DB.QueryRow(context.Background(), query).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-
-	return exists, nil
-}
+//func TableHasRows(tableName string) (bool, error) {
+//	query := "SELECT EXISTS(SELECT 1 FROM " + tableName + ")"
+//	var exists bool
+//	err := database.DB.QueryRow(context.Background(), query).Scan(&exists)
+//	if err != nil {
+//		return false, err
+//	}
+//
+//	return exists, nil
+//}
 
 func CreateUser(user *models.User) error {
 
