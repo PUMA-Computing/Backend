@@ -47,14 +47,6 @@ jobs:
           push: true
           tags:
             ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:latest
-
-      - name: Login to GitHub Container Registry
-        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ secrets.GITHUB_USERNAME }} --password-stdin
-
-      - name: Build and push to GitHub Container Registry
-        run: |
-          docker build -t ghcr.io/${{ secrets.GITHUB_USERNAME }}/api-pufa-computing:latest .
-          docker push ghcr.io/${{ secrets.GITHUB_USERNAME }}/api-pufa-computing:latest
           
   deployments:
     needs: build
