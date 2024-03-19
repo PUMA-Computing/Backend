@@ -66,17 +66,7 @@ func (h *Handler) CreateNews(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "News Created Successfully",
-		"data": gin.H{
-			"types":      "news",
-			"attributes": newNews,
-		},
-		"relationships": gin.H{
-			"author": gin.H{
-				"data": gin.H{
-					"id": userID,
-				},
-			},
-		},
+		"data":    newNews,
 	})
 }
 
@@ -97,7 +87,7 @@ func (h *Handler) GetNewsByID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "News Retrieved Successfully",
-		"news":    news,
+		"data":    news,
 	})
 }
 
@@ -162,18 +152,7 @@ func (h *Handler) EditNews(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "News Updated Successfully",
-		"data": gin.H{
-			"type":       "news",
-			"id":         newsID,
-			"attributes": updatedAttributes,
-		},
-		"relationships": gin.H{
-			"author": gin.H{
-				"data": gin.H{
-					"id": userID,
-				},
-			},
-		},
+		"data":    updatedAttributes,
 	})
 }
 
@@ -215,10 +194,6 @@ func (h *Handler) DeleteNews(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "News Deleted Successfully",
-		"data": gin.H{
-			"type": "news",
-			"id":   newsID,
-		},
 	})
 }
 
@@ -235,7 +210,7 @@ func (h *Handler) ListNews(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success":      true,
 		"totalResults": len(news),
-		"news":         news,
+		"data":         news,
 	})
 }
 

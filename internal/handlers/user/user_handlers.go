@@ -40,7 +40,7 @@ func (h *Handlers) GetUserByID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "User Retrieved Successfully",
-		"user":    user,
+		"data":    user,
 	})
 }
 
@@ -135,11 +135,7 @@ func (h *Handlers) EditUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "User Updated Successfully",
-		"data": gin.H{
-			"type":       "users",
-			"id":         userID,
-			"attributes": updatedAttributes,
-		},
+		"data":    updatedAttributes,
 	})
 }
 
@@ -169,10 +165,6 @@ func (h *Handlers) DeleteUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "User Deleted Successfully",
-		"data": gin.H{
-			"type": "users",
-			"id":   userID,
-		},
 	})
 }
 

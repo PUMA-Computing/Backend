@@ -44,10 +44,7 @@ func (h *Handler) ListPermissions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Permissions Fetched Successfully",
-		"data": gin.H{
-			"type":       "permissions",
-			"attributes": permissions,
-		},
+		"data":    permissions,
 	})
 }
 
@@ -92,19 +89,8 @@ func (h *Handler) AssignPermissionToRole(c *gin.Context) {
 		"success": true,
 		"message": "Permissions Assigned Successfully",
 		"data": gin.H{
-			"type": "roles_permissions",
-			"id":   roleID,
-			"attributes": gin.H{
-				"permissions": permissionIDs,
-				"role_id":     roleID,
-			},
-		},
-		"relationships": gin.H{
-			"roles": gin.H{
-				"data": gin.H{
-					"id": roleID,
-				},
-			},
+			"role_id":     roleID,
+			"permissions": permissionIDs,
 		},
 	})
 }

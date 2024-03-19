@@ -42,7 +42,7 @@ func (h *Handlers) CreateAspiration(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"success": true, "aspiration": createdAspiration})
+	c.JSON(http.StatusCreated, gin.H{"success": true, "data": createdAspiration})
 }
 
 func (h *Handlers) CloseAspiration(c *gin.Context) {
@@ -114,7 +114,7 @@ func (h *Handlers) GetAspirations(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success":      true,
-		"aspirations":  aspirations,
+		"data":         aspirations,
 		"totalResults": len(aspirations),
 	})
 }
@@ -133,7 +133,7 @@ func (h *Handlers) GetAspirationByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "aspiration": aspiration})
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": aspiration})
 }
 
 func (h *Handlers) UpvoteAspiration(c *gin.Context) {
@@ -228,7 +228,7 @@ func (h *Handlers) GetUpvotesByAspirationID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"success": true, "upvotes": upvotes})
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": upvotes})
 }
 
 func (h *Handlers) AddAdminReply(c *gin.Context) {
