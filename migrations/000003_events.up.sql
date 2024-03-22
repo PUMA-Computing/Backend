@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS events (
                                       created_at TIMESTAMP DEFAULT NOW(),
                                       updated_at TIMESTAMP DEFAULT NOW(),
                                       organization_id int NOT NULL,
+                                      max_registration int,
                                       FOREIGN KEY (user_id) REFERENCES users (id),
                                       FOREIGN KEY (organization_id) REFERENCES organizations (id)
 );
