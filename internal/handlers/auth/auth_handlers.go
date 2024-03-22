@@ -122,10 +122,9 @@ func (h *Handlers) Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success":      true,
-		"message":      "Login Successful",
-		"access_token": token,
-		"token_type":   "Bearer",
+		"success": true,
+		"message": "Login Successful",
+		"data":    gin.H{"access_token": token, "token_type": "Bearer", "user_id": user.ID.String()},
 	})
 }
 
@@ -176,9 +175,13 @@ func (h *Handlers) RefreshToken(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success":      true,
-		"message":      "Access Token Refreshed Successfully",
-		"access_token": token,
+		"success": true,
+		"message": "Access Token Refreshed Successfully",
+		"data": gin.H{
+			"access_token": token,
+			"token_type":   "Bearer",
+			"user_id":      userID.String(),
+		},
 	})
 }
 

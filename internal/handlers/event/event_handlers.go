@@ -39,7 +39,7 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 	newEvent.UserID = userID
 
 	if newEvent.Title != "" {
-		newEvent.Link = "/events/" + utils.GenerateFriendlyURL(newEvent.Title)
+		newEvent.Slug = "/event/" + utils.GenerateFriendlyURL(newEvent.Title)
 	}
 
 	// Check if start date is before end date
@@ -97,9 +97,9 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 	}
 
 	if updatedEvent.Title != "" && updatedEvent.Title != existingEvent.Title {
-		updatedEvent.Link = "/events/" + utils.GenerateFriendlyURL(updatedEvent.Title)
+		updatedEvent.Slug = "/event/" + utils.GenerateFriendlyURL(updatedEvent.Title)
 	} else {
-		updatedEvent.Link = existingEvent.Link
+		updatedEvent.Slug = existingEvent.Slug
 	}
 
 	utils.ReflectiveUpdate(existingEvent, updatedEvent)
@@ -146,6 +146,7 @@ func (h *Handlers) DeleteEvent(c *gin.Context) {
 	})
 }
 
+// GetEventByID retrieves an event by its ID
 func (h *Handlers) GetEventByID(c *gin.Context) {
 	eventIDStr := c.Param("eventID")
 	eventID, err := strconv.Atoi(eventIDStr)
@@ -167,12 +168,14 @@ func (h *Handlers) GetEventByID(c *gin.Context) {
 	})
 }
 
+// ListEvents retrieves a list of events based on the query parameters
 func (h *Handlers) ListEvents(c *gin.Context) {
 	log.Println("List Events Begin")
 
 	queryParams := map[string]string{
 		"organization_id": c.Query("organization_id"),
 		"status":          c.Query("status"),
+		"slug":            c.Query("slug"),
 	}
 
 	events, err := h.EventService.ListEvents(queryParams)

@@ -14,26 +14,26 @@ type Event struct {
 
 func CreateEvent(event *models.Event) error {
 	_, err := database.DB.Exec(context.Background(), `
-        INSERT INTO events (title, description, start_date, end_date, user_id, status, link, thumbnail, organization_id) 
+        INSERT INTO events (title, description, start_date, end_date, user_id, status, slug, thumbnail, organization_id) 
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-		event.Title, event.Description, event.StartDate, event.EndDate, event.UserID, event.Status, event.Link, event.Thumbnail, event.OrganizationID)
+		event.Title, event.Description, event.StartDate, event.EndDate, event.UserID, event.Status, event.Slug, event.Thumbnail, event.OrganizationID)
 	return err
 }
 
 func UpdateEvent(eventID int, updatedEvent *models.Event) error {
 	query := `
-        UPDATE events SET title = $1, description = $2, start_date = $3, end_date = $4, user_id = $5, status = $6, link = $7, thumbnail = $8, organization_id = $9, updated_at = $10 WHERE id = $11`
+        UPDATE events SET title = $1, description = $2, start_date = $3, end_date = $4, user_id = $5, status = $6, Slug = $7, thumbnail = $8, organization_id = $9, updated_at = $10 WHERE id = $11`
 
 	// Log the SQL query and parameters
 	log.Printf("Executing query: %s\n", query)
 	log.Printf("Parameters: %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v\n",
 		updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate,
-		updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Link,
+		updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Slug,
 		updatedEvent.Thumbnail, updatedEvent.OrganizationID, time.Now(), eventID)
 
 	_, err := database.DB.Exec(context.Background(), query,
 		updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate,
-		updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Link,
+		updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Slug,
 		updatedEvent.Thumbnail, updatedEvent.OrganizationID, time.Now(), eventID)
 
 	if err != nil {
@@ -52,14 +52,15 @@ func DeleteEvent(eventID int) error {
 func GetEventByID(eventID int) (*models.Event, error) {
 	var event models.Event
 	err := database.DB.QueryRow(context.Background(), `
-		SELECT id, title, description, start_date, end_date, user_id, status, link, thumbnail, created_at, updated_at, organization_id
-		FROM events WHERE id = $1`, eventID).Scan(&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Link, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt, &event.OrganizationID)
+		SELECT id, title, description, start_date, end_date, user_id, status, slug, thumbnail, created_at, updated_at, organization_id
+		FROM events WHERE id = $1`, eventID).Scan(&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Slug, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt, &event.OrganizationID)
 	if err != nil {
 		return nil, err
 	}
 	return &event, nil
 }
 
+// ListEvents returns a list of events based on the query parameters
 func ListEvents(queryParams map[string]string) ([]*models.Event, error) {
 	query := `
 		SELECT events.*, organizations.name AS organization, CONCAT(users.first_name, ' ', users.last_name) AS author
@@ -75,6 +76,11 @@ func ListEvents(queryParams map[string]string) ([]*models.Event, error) {
 	// Search by status
 	if queryParams["status"] != "" {
 		query += " AND events.status = '" + queryParams["status"] + "'"
+	}
+
+	// Search by Slug
+	if queryParams["slug"] != "" {
+		query += " AND events.slug = '" + queryParams["slug"] + "'"
 	}
 
 	rows, err := database.DB.Query(context.Background(), query)
@@ -94,7 +100,7 @@ func ListEvents(queryParams map[string]string) ([]*models.Event, error) {
 			&event.EndDate,
 			&event.UserID,
 			&event.Status,
-			&event.Link,
+			&event.Slug,
 			&event.Thumbnail,
 			&event.CreatedAt,
 			&event.UpdatedAt,
@@ -147,7 +153,7 @@ func ListRegisteredUsers(eventID int) ([]*models.User, error) {
 
 func ListEventsRegisteredByUser(userID uuid.UUID) ([]*models.Event, error) {
 	rows, err := database.DB.Query(context.Background(), `
-		SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.user_id, e.status, e.link, e.thumbnail, e.created_at, e.updated_at, e.organization_id
+		SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.user_id, e.status, e.slug, e.thumbnail, e.created_at, e.updated_at, e.organization_id
 		FROM events e
 		JOIN event_registrations er ON e.id = er.event_id
 		WHERE er.user_id = $1`,
@@ -161,7 +167,7 @@ func ListEventsRegisteredByUser(userID uuid.UUID) ([]*models.Event, error) {
 	for rows.Next() {
 		var event models.Event
 		err := rows.Scan(
-			&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Link, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt, &event.OrganizationID)
+			&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Slug, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt, &event.OrganizationID)
 		if err != nil {
 			return nil, err
 		}

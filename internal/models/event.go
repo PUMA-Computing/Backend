@@ -13,7 +13,7 @@ type Event struct {
 	EndDate        time.Time `json:"end_date"`
 	UserID         uuid.UUID `json:"user_id"`
 	Status         string    `json:"status"`
-	Link           string    `json:"link"`
+	Slug           string    `json:"slug"`
 	Thumbnail      string    `json:"thumbnail"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updatedAt"`
