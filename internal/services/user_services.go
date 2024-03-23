@@ -5,7 +5,6 @@ import (
 	"Backend/internal/models"
 	"errors"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 )
 
@@ -33,12 +32,7 @@ func (us *UserService) EditUser(userID uuid.UUID, updatedUser *models.User) erro
 	}
 
 	if updatedUser.Password != "" {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(updatedUser.Password), bcrypt.DefaultCost)
-		if err != nil {
-			return err
-		}
-
-		existingUser.Password = string(hashedPassword)
+		existingUser.Password = updatedUser.Password
 	}
 
 	if updatedUser.FirstName != "" {

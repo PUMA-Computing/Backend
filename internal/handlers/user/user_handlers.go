@@ -6,6 +6,7 @@ import (
 	"Backend/pkg/utils"
 	"context"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
 	"os"
@@ -44,6 +45,7 @@ func (h *Handlers) GetUserByID(c *gin.Context) {
 	})
 }
 
+// EditUser User can only edit their own profile
 func (h *Handlers) EditUser(c *gin.Context) {
 	userID, err := utils.GetUserIDFromContext(c)
 	if err != nil {
@@ -84,7 +86,13 @@ func (h *Handlers) EditUser(c *gin.Context) {
 	}
 
 	if updatedUser.Password != "" {
-		updatedAttributes["password"] = updatedUser.Password
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(updatedUser.Password), bcrypt.DefaultCost)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		updatedUser.Password = string(hashedPassword)
 	}
 
 	if updatedUser.FirstName != "" {
@@ -104,6 +112,28 @@ func (h *Handlers) EditUser(c *gin.Context) {
 	}
 
 	if updatedUser.StudentID != "" {
+		// Check if student ID already exists
+		studentIDExists, err := h.UserService.CheckStudentIDExists(updatedUser.StudentID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		if studentIDExists {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Student ID already exists"}})
+			return
+		}
+
+		// Check if student ID is valid
+		if len(updatedUser.StudentID) != 12 {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Student ID must be 12 characters long"}})
+			return
+		}
+		if updatedUser.StudentID[:3] != "001" && updatedUser.StudentID[:3] != "012" && updatedUser.StudentID[:3] != "013" && updatedUser.StudentID[:3] != "025" {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"You are not a student of faculty of computing"}})
+			return
+		}
+
 		updatedAttributes["student_id"] = updatedUser.StudentID
 	}
 
