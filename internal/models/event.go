@@ -18,9 +18,9 @@ type Event struct {
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updatedAt"`
 	OrganizationID  int       `json:"organization_id"`
+	MaxRegistration *int      `json:"max_registration"`
 	Organization    string    `json:"organization"`
 	Author          string    `json:"author"`
-	MaxRegistration int       `json:"max_registration"`
 }
 
 type EventRegistration struct {

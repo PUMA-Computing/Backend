@@ -106,9 +106,9 @@ func ListEvents(queryParams map[string]string) ([]*models.Event, error) {
 			&event.CreatedAt,
 			&event.UpdatedAt,
 			&event.OrganizationID,
+			&event.MaxRegistration,
 			&event.Organization,
-			&event.Author,
-			&event.MaxRegistration)
+			&event.Author)
 		if err != nil {
 			return nil, err
 		}

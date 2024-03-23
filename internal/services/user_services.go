@@ -31,8 +31,6 @@ func (us *UserService) EditUser(userID uuid.UUID, updatedUser *models.User) erro
 		existingUser.Username = updatedUser.Username
 	}
 
-	log.Println("updatedUser.Password: ", updatedUser.Password)
-	// Store the new password if it is not empty
 	if updatedUser.Password != "" {
 		existingUser.Password = updatedUser.Password
 	}
@@ -63,6 +61,14 @@ func (us *UserService) EditUser(userID uuid.UUID, updatedUser *models.User) erro
 
 	if updatedUser.Year != "" {
 		existingUser.Year = updatedUser.Year
+	}
+
+	if updatedUser.DateOfBirth != nil {
+		existingUser.DateOfBirth = updatedUser.DateOfBirth
+	}
+
+	if updatedUser.ProfilePicture != nil {
+		existingUser.ProfilePicture = updatedUser.ProfilePicture
 	}
 
 	return app.UpdateUser(userID, existingUser)
