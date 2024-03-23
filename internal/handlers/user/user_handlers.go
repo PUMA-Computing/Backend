@@ -85,6 +85,7 @@ func (h *Handlers) EditUser(c *gin.Context) {
 		updatedAttributes["username"] = updatedUser.Username
 	}
 
+	// Check if password is empty
 	if updatedUser.Password != "" {
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(updatedUser.Password), bcrypt.DefaultCost)
 		if err != nil {
@@ -92,6 +93,7 @@ func (h *Handlers) EditUser(c *gin.Context) {
 			return
 		}
 
+		updatedAttributes["password"] = string(hashedPassword)
 		updatedUser.Password = string(hashedPassword)
 	}
 
