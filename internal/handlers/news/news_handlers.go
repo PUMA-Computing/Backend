@@ -6,6 +6,7 @@ import (
 	"Backend/pkg/utils"
 	"context"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -65,17 +66,7 @@ func (h *Handler) CreateNews(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "News Created Successfully",
-		"data": gin.H{
-			"types":      "news",
-			"attributes": newNews,
-		},
-		"relationships": gin.H{
-			"author": gin.H{
-				"data": gin.H{
-					"id": userID,
-				},
-			},
-		},
+		"data":    newNews,
 	})
 }
 
@@ -96,18 +87,7 @@ func (h *Handler) GetNewsByID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "News Retrieved Successfully",
-		"data": gin.H{
-			"type":       "news",
-			"id":         news.ID,
-			"attributes": news,
-		},
-		"relationships": gin.H{
-			"author": gin.H{
-				"data": gin.H{
-					"id": news.UserID,
-				},
-			},
-		},
+		"data":    news,
 	})
 }
 
@@ -172,18 +152,7 @@ func (h *Handler) EditNews(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "News Updated Successfully",
-		"data": gin.H{
-			"type":       "news",
-			"id":         newsID,
-			"attributes": updatedAttributes,
-		},
-		"relationships": gin.H{
-			"author": gin.H{
-				"data": gin.H{
-					"id": userID,
-				},
-			},
-		},
+		"data":    updatedAttributes,
 	})
 }
 
@@ -225,31 +194,38 @@ func (h *Handler) DeleteNews(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "News Deleted Successfully",
-		"data": gin.H{
-			"type": "news",
-			"id":   newsID,
-		},
 	})
 }
 
 func (h *Handler) ListNews(c *gin.Context) {
+
 	news, err := h.NewsService.ListNews()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
+	log.Println("List Events End")
+
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "News Retrieved Successfully",
-		"data": gin.H{
-			"type":       "news",
-			"attributes": news,
-		},
+		"success":      true,
+		"totalResults": len(news),
+		"data":         news,
 	})
 }
 
 func (h *Handler) LikeNews(c *gin.Context) {
+	token, err := utils.ExtractTokenFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
 	newsIDStr := c.Param("newsID")
 	newsID, err := strconv.Atoi(newsIDStr)
 	if err != nil {
@@ -257,7 +233,7 @@ func (h *Handler) LikeNews(c *gin.Context) {
 		return
 	}
 
-	if err := h.NewsService.LikeNews(newsID); err != nil {
+	if err := h.NewsService.LikeNews(userID, newsID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
@@ -265,9 +241,5 @@ func (h *Handler) LikeNews(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "News Liked Successfully",
-		"data": gin.H{
-			"type": "news",
-			"id":   newsID,
-		},
 	})
 }

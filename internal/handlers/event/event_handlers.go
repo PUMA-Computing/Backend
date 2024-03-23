@@ -39,7 +39,7 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 	newEvent.UserID = userID
 
 	if newEvent.Title != "" {
-		newEvent.Link = "/events/" + utils.GenerateFriendlyURL(newEvent.Title)
+		newEvent.Slug = "/event/" + utils.GenerateFriendlyURL(newEvent.Title)
 	}
 
 	// Check if start date is before end date
@@ -56,11 +56,7 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "Event Created Successfully",
-		"data": gin.H{
-			"type":       "events",
-			"id":         newEvent.ID,
-			"attributes": newEvent,
-		},
+		"data":    newEvent,
 		"relationships": gin.H{
 			"author": gin.H{
 				"id": userID,
@@ -101,9 +97,9 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 	}
 
 	if updatedEvent.Title != "" && updatedEvent.Title != existingEvent.Title {
-		updatedEvent.Link = "/events/" + utils.GenerateFriendlyURL(updatedEvent.Title)
+		updatedEvent.Slug = "/event/" + utils.GenerateFriendlyURL(updatedEvent.Title)
 	} else {
-		updatedEvent.Link = existingEvent.Link
+		updatedEvent.Slug = existingEvent.Slug
 	}
 
 	utils.ReflectiveUpdate(existingEvent, updatedEvent)
@@ -116,16 +112,10 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Event Updated Successfully",
-		"data": gin.H{
-			"type":       "events",
-			"id":         eventID,
-			"attributes": updatedEvent,
-		},
+		"data":    existingEvent,
 		"relationships": gin.H{
 			"author": gin.H{
-				"data": gin.H{
-					"id": userID,
-				},
+				"id": userID,
 			},
 		},
 	})
@@ -156,6 +146,7 @@ func (h *Handlers) DeleteEvent(c *gin.Context) {
 	})
 }
 
+// GetEventByID retrieves an event by its ID
 func (h *Handlers) GetEventByID(c *gin.Context) {
 	eventIDStr := c.Param("eventID")
 	eventID, err := strconv.Atoi(eventIDStr)
@@ -173,16 +164,18 @@ func (h *Handlers) GetEventByID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Event Retrieved Successfully",
-		"event":   event,
+		"data":    event,
 	})
 }
 
+// ListEvents retrieves a list of events based on the query parameters
 func (h *Handlers) ListEvents(c *gin.Context) {
 	log.Println("List Events Begin")
 
 	queryParams := map[string]string{
 		"organization_id": c.Query("organization_id"),
 		"status":          c.Query("status"),
+		"slug":            c.Query("slug"),
 	}
 
 	events, err := h.EventService.ListEvents(queryParams)
@@ -196,7 +189,7 @@ func (h *Handlers) ListEvents(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success":      true,
 		"totalResults": len(events),
-		"events":       events,
+		"data":         events,
 	})
 }
 
@@ -222,14 +215,6 @@ func (h *Handlers) RegisterForEvent(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Registered Successfully",
-		"data": gin.H{
-			"type": "events_registration",
-			"id":   eventID,
-			"attributes": gin.H{
-				"user_id":  userID,
-				"event_id": eventID,
-			},
-		},
 		"relationships": gin.H{
 			"user": gin.H{
 				"data": gin.H{
@@ -268,15 +253,16 @@ func (h *Handlers) ListRegisteredUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Registered Users Retrieved Successfully",
-		"data": gin.H{
-			"type":       "events_registration",
-			"id":         eventID,
-			"attributes": users,
-		},
+		"data":    users,
 		"relationships": gin.H{
 			"user": gin.H{
 				"data": gin.H{
 					"id": userID,
+				},
+			},
+			"event": gin.H{
+				"data": gin.H{
+					"id": eventID,
 				},
 			},
 		},
@@ -299,6 +285,6 @@ func (h *Handlers) ListEventsRegisteredByUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Registered Events Retrieved Successfully",
-		"events":  events,
+		"data":    events,
 	})
 }

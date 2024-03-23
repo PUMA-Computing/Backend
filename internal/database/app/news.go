@@ -4,21 +4,21 @@ import (
 	"Backend/internal/database"
 	"Backend/internal/models"
 	"context"
+	"github.com/google/uuid"
 )
 
 func CreateNews(news *models.News) error {
 	_, err := database.DB.Exec(context.Background(), `
-			INSERT INTO news (title, content, user_id)
-			VALUES ($1, $2, $3)`,
-		news.Title, news.Content, news.UserID)
+		INSERT INTO news (title, content, user_id, publish_date)
+		VALUES ($1, $2, $3, $4)`,
+		news.Title, news.Content, news.UserID, news.PublishDate)
 	return err
 }
 
 func UpdateNews(newsID int, news *models.News) error {
 	_, err := database.DB.Exec(context.Background(), `
-		UPDATE news SET title = $1, content = $2, publish_date = $3
-		WHERE id = $4`,
-		news.Title, news.Content, news.PublishDate, newsID)
+		UPDATE news SET title = $1, content = $2, publish_date = $3, updated_at = $4
+		WHERE id = $5`, news.Title, news.Content, news.PublishDate, news.UpdatedAt, newsID)
 	return err
 }
 
@@ -42,7 +42,7 @@ func GetNewsByID(newsID int) (*models.News, error) {
 func ListNews() ([]*models.News, error) {
 	var news []*models.News
 	rows, err := database.DB.Query(context.Background(), `
-		SELECT id, title, content, user_id, publish_date, likes, created_at, updated_at
+		SELECT id, title, content, user_id, publish_date, created_at, updated_at
 		FROM news`)
 	if err != nil {
 		return nil, err
@@ -59,9 +59,14 @@ func ListNews() ([]*models.News, error) {
 	return news, nil
 }
 
-func LikeNews(newsID int) error {
+func LikeNews(userID uuid.UUID, newsID int) error {
 	_, err := database.DB.Exec(context.Background(), `
-		UPDATE news SET likes = likes + 1
-		WHERE id = $1`, newsID)
+		INSERT INTO news_likes (user_id, news_id) VALUES ($1, $2)`, userID, newsID)
+	return err
+}
+
+func UnlikeNews(userID uuid.UUID, newsID int) error {
+	_, err := database.DB.Exec(context.Background(), `
+		DELETE FROM news_likes WHERE user_id = $1 AND news_id = $2`, userID, newsID)
 	return err
 }

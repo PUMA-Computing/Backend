@@ -17,6 +17,14 @@ type BadRequestError struct {
 	Message string `json:"message"`
 }
 
+type MaxRegistrationReachedError struct {
+	EventID int `json:"event_id"`
+}
+
+func (m MaxRegistrationReachedError) Error() string {
+	return "Maximum registration limit reached for event with ID: " + string(rune(m.EventID))
+}
+
 func (u UnauthorizedError) Error() string {
 	return u.Message
 }

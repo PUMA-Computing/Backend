@@ -135,7 +135,7 @@ func CheckStudentIDExists(studentID string) (bool, error) {
 
 func UpdateUser(UserID uuid.UUID, updatedUser *models.User) error {
 	log.Printf("updatedUser: %v", updatedUser)
-	_, err := database.DB.Exec(context.Background(), "UPDATE users SET username = $1, password = $2, first_name = $3, middle_name = $4, last_name = $5, email = $6, student_id = $7, major = $8, year = $9, role_id = $10, WHERE id = $11",
+	_, err := database.DB.Exec(context.Background(), "UPDATE users SET username = $1, password = $2, first_name = $3, middle_name = $4, last_name = $5, email = $6, student_id = $7, major = $8, year = $9, role_id = $10 WHERE id = $11",
 		updatedUser.Username, updatedUser.Password, updatedUser.FirstName, updatedUser.MiddleName, updatedUser.LastName, updatedUser.Email, updatedUser.StudentID, updatedUser.Major, &updatedUser.Year, updatedUser.RoleID, UserID)
 	log.Printf("err: %v", err)
 	return err

@@ -73,7 +73,7 @@ func validateStudentID(studentID string) error {
 	if len(studentID) != 12 {
 		return errors.New("student ID must be 12 characters long")
 	} else if studentID[:3] != "001" && studentID[:3] != "012" && studentID[:3] != "013" && studentID[:3] != "025" {
-		return errors.New("you have to be a President University student to register an account")
+		return errors.New("you are not a student of faculty of computing")
 	} else if studentID[3:7] < "2010" {
 		return errors.New("you are not eligible to register an account")
 	}
@@ -124,15 +124,7 @@ func (h *Handlers) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Login Successful",
-		"data": gin.H{
-			"user_id": user.ID,
-			"type":    "token",
-			"attributes": gin.H{
-				"access_token": token,
-				"token_type":   "Bearer",
-				"expires_in":   86400,
-			},
-		},
+		"data":    gin.H{"access_token": token, "token_type": "Bearer", "user_id": user.ID.String()},
 	})
 }
 
@@ -184,12 +176,11 @@ func (h *Handlers) RefreshToken(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "Token Refreshed Successfully",
+		"message": "Access Token Refreshed Successfully",
 		"data": gin.H{
-			"types": "Bearer",
-			"attributes": gin.H{
-				"access_token": token,
-			},
+			"access_token": token,
+			"token_type":   "Bearer",
+			"user_id":      userID.String(),
 		},
 	})
 }
