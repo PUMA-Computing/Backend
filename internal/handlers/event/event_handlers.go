@@ -168,6 +168,24 @@ func (h *Handlers) GetEventByID(c *gin.Context) {
 	})
 }
 
+// GetEventBySlug retrieves an event by its slug
+func (h *Handlers) GetEventBySlug(c *gin.Context) {
+	slug := c.Param("eventID")
+
+	event, err := h.EventService.GetEventBySlug(slug)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Event Retrieved Successfully",
+		"data":    event,
+	})
+
+}
+
 // ListEvents retrieves a list of events based on the query parameters
 func (h *Handlers) ListEvents(c *gin.Context) {
 	log.Println("List Events Begin")
