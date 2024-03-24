@@ -38,6 +38,14 @@ func (es *EventService) GetEventByID(eventID int) (*models.Event, error) {
 	return event, nil
 }
 
+func (es *EventService) GetEventBySlug(slug string) (*models.Event, error) {
+	event, err := app.GetEventBySlug(slug)
+	if err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
 func (es *EventService) EditEvent(eventID int, updatedEvent *models.Event) error {
 	if time.Now().Before(updatedEvent.StartDate) {
 		updatedEvent.Status = "Upcoming"

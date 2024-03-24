@@ -70,7 +70,7 @@ func SetupRoutes() *gin.Engine {
 
 	eventRoutes := api.Group("/event")
 	{
-		eventRoutes.GET("/:eventID", eventHandlers.GetEventByID)
+		eventRoutes.GET("/:eventID", eventHandlers.GetEventBySlug)
 		eventRoutes.GET("/", eventHandlers.ListEvents)
 		eventRoutes.Use(middleware.TokenMiddleware())
 		eventRoutes.POST("/create", eventHandlers.CreateEvent)
