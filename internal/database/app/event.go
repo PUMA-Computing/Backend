@@ -6,6 +6,7 @@ import (
 	"Backend/pkg/utils"
 	"context"
 	"database/sql"
+	"errors"
 	"github.com/google/uuid"
 	"log"
 	"time"
@@ -133,17 +134,44 @@ func ListEvents(queryParams map[string]string) ([]*models.Event, error) {
 	return events, nil
 }
 
-// RegisterForEvent check if the event has a maximum registration limit and if the limit is reached
+// RegisterForEvent registers a user for an event by creating a new event registration record
 func RegisterForEvent(userID uuid.UUID, eventID int) error {
+	tx, err := database.DB.Begin(context.Background())
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			err := tx.Rollback(context.Background())
+			if err != nil {
+				return
+			}
+			panic(p)
+		} else if err != nil {
+			err := tx.Rollback(context.Background())
+			if err != nil {
+				return
+			}
+		} else {
+			err := tx.Commit(context.Background())
+			if err != nil {
+				return
+			}
+		}
+	}()
+
 	// Check if the event has a maximum registration limit
-	var maxRegistration *int // Change the type to *int
-	err := database.DB.QueryRow(context.Background(), `
+	var maxRegistration *int
+	err = tx.QueryRow(context.Background(), `
         SELECT max_registration FROM events WHERE id = $1`, eventID).Scan(&maxRegistration)
 	if err != nil {
 		// Check if the error is due to no rows being returned
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			// No registration limit specified for the event, proceed with registration
-			return nil
+			_, err = tx.Exec(context.Background(), `
+                INSERT INTO event_registrations (event_id, user_id, registration_date)
+                VALUES ($1, $2, $3)`, eventID, userID, time.Now())
+			return err
 		}
 		return err
 	}
