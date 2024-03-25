@@ -212,11 +212,14 @@ func (h *Handlers) ListEvents(c *gin.Context) {
 }
 
 func (h *Handlers) RegisterForEvent(c *gin.Context) {
+	log.Println("Register for Event Begin")
 	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "events:register")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
+
+	log.Println("Register for Event Middle")
 
 	eventIDStr := c.Param("eventID")
 	eventID, err := strconv.Atoi(eventIDStr)
@@ -225,10 +228,14 @@ func (h *Handlers) RegisterForEvent(c *gin.Context) {
 		return
 	}
 
+	log.Println("Register for Event Middle 2")
+
 	if err := h.EventService.RegisterForEvent(userID, eventID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
+
+	log.Println("Register for Event End")
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,

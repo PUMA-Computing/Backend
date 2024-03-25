@@ -5,6 +5,7 @@ import (
 	"Backend/internal/models"
 	"Backend/pkg/utils"
 	"context"
+	"database/sql"
 	"github.com/google/uuid"
 	"log"
 	"time"
@@ -135,30 +136,35 @@ func ListEvents(queryParams map[string]string) ([]*models.Event, error) {
 // RegisterForEvent check if the event has a maximum registration limit and if the limit is reached
 func RegisterForEvent(userID uuid.UUID, eventID int) error {
 	// Check if the event has a maximum registration limit
-	var maxRegistration int
+	var maxRegistration *int // Change the type to *int
 	err := database.DB.QueryRow(context.Background(), `
-		SELECT max_registration FROM events WHERE id = $1`, eventID).Scan(&maxRegistration)
+        SELECT max_registration FROM events WHERE id = $1`, eventID).Scan(&maxRegistration)
 	if err != nil {
+		// Check if the error is due to no rows being returned
+		if err == sql.ErrNoRows {
+			// No registration limit specified for the event, proceed with registration
+			return nil
+		}
 		return err
 	}
 
-	if maxRegistration > 0 {
+	if maxRegistration != nil && *maxRegistration > 0 {
 		// Check if the maximum registration limit has been reached
 		var count int
 		err := database.DB.QueryRow(context.Background(), `
-			SELECT COUNT(*) FROM event_registrations WHERE event_id = $1`, eventID).Scan(&count)
+            SELECT COUNT(*) FROM event_registrations WHERE event_id = $1`, eventID).Scan(&count)
 		if err != nil {
 			return err
 		}
 
-		if count >= maxRegistration {
+		if count >= *maxRegistration {
 			return utils.MaxRegistrationReachedError{EventID: eventID}
 		}
 	}
 
 	_, err = database.DB.Exec(context.Background(), `
-		INSERT INTO event_registrations (event_id, user_id, registration_date)
-		VALUES ($1, $2, $3)`, eventID, userID, time.Now())
+        INSERT INTO event_registrations (event_id, user_id, registration_date)
+        VALUES ($1, $2, $3)`, eventID, userID, time.Now())
 	return err
 }
 

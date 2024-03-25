@@ -44,14 +44,13 @@ func ValidateToken(tokenString, secretKey string) (*CustomClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(secretKey), nil
 	})
-
 	if err != nil {
 		return nil, &CustomError{
 			ErrorResponse: ErrorResponse{
 				Errors: []ErrorDetail{
 					{
-						Status:  http.StatusBadRequest,
-						Message: "The provided token is invalid",
+						Status:  http.StatusUnauthorized,
+						Message: "Unauthorized",
 					},
 				},
 			},
