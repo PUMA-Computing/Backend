@@ -6,6 +6,7 @@ import (
 	"Backend/pkg/utils"
 	"context"
 	"database/sql"
+	"errors"
 	"github.com/google/uuid"
 	"log"
 	"time"
@@ -27,11 +28,11 @@ func UpdateEvent(eventID int, updatedEvent *models.Event) error {
         UPDATE events SET title = $1, description = $2, start_date = $3, end_date = $4, user_id = $5, status = $6, slug = $7, thumbnail = $8, organization_id = $9, max_registration = $10, updated_at = $11 WHERE id = $12`
 
 	// Log the SQL query and parameters
-	log.Printf("Executing query: %s\n", query)
-	log.Printf("Parameters: %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v\n",
-		updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate,
-		updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Slug,
-		updatedEvent.Thumbnail, updatedEvent.OrganizationID, updatedEvent.MaxRegistration, time.Now(), eventID)
+	//log.Printf("Executing query: %s\n", query)
+	//log.Printf("Parameters: %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v\n",
+	//	updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate,
+	//	updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Slug,
+	//	updatedEvent.Thumbnail, updatedEvent.OrganizationID, updatedEvent.MaxRegistration, time.Now(), eventID)
 
 	_, err := database.DB.Exec(context.Background(), query,
 		updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate,
@@ -133,17 +134,44 @@ func ListEvents(queryParams map[string]string) ([]*models.Event, error) {
 	return events, nil
 }
 
-// RegisterForEvent check if the event has a maximum registration limit and if the limit is reached
+// RegisterForEvent registers a user for an event by creating a new event registration record
 func RegisterForEvent(userID uuid.UUID, eventID int) error {
+	tx, err := database.DB.Begin(context.Background())
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			err := tx.Rollback(context.Background())
+			if err != nil {
+				return
+			}
+			panic(p)
+		} else if err != nil {
+			err := tx.Rollback(context.Background())
+			if err != nil {
+				return
+			}
+		} else {
+			err := tx.Commit(context.Background())
+			if err != nil {
+				return
+			}
+		}
+	}()
+
 	// Check if the event has a maximum registration limit
-	var maxRegistration *int // Change the type to *int
-	err := database.DB.QueryRow(context.Background(), `
+	var maxRegistration *int
+	err = tx.QueryRow(context.Background(), `
         SELECT max_registration FROM events WHERE id = $1`, eventID).Scan(&maxRegistration)
 	if err != nil {
 		// Check if the error is due to no rows being returned
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			// No registration limit specified for the event, proceed with registration
-			return nil
+			_, err = tx.Exec(context.Background(), `
+                INSERT INTO event_registrations (event_id, user_id, registration_date)
+                VALUES ($1, $2, $3)`, eventID, userID, time.Now())
+			return err
 		}
 		return err
 	}
@@ -170,7 +198,7 @@ func RegisterForEvent(userID uuid.UUID, eventID int) error {
 
 func ListRegisteredUsers(eventID int) ([]*models.User, error) {
 	rows, err := database.DB.Query(context.Background(), `
-        SELECT u.id, u.username, u.first_name, u.middle_name, u.last_name, u.email, u.role_id, u.created_at, u.updated_at
+		SELECT u.id, u.username, u.first_name, u.middle_name, u.last_name, u.email, u.student_id, u.major, u.year, u.profile_picture, u.date_of_birth, u.role_id, u.created_at, u.updated_at
         FROM users u
         JOIN event_registrations er ON u.id = er.user_id
         WHERE er.event_id = $1`,
@@ -183,9 +211,11 @@ func ListRegisteredUsers(eventID int) ([]*models.User, error) {
 	var users []*models.User
 	for rows.Next() {
 		var user models.User
+		var middleName sql.NullString
+		var profilePicture sql.NullString
+		var dateOfBirth sql.NullTime
 		err := rows.Scan(
-			&user.ID, &user.Username, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email, &user.RoleID,
-			&user.CreatedAt, &user.UpdatedAt)
+			&user.ID, &user.Username, &user.FirstName, &middleName, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.Year, &profilePicture, &dateOfBirth, &user.RoleID, &user.CreatedAt, &user.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -197,9 +227,10 @@ func ListRegisteredUsers(eventID int) ([]*models.User, error) {
 
 func ListEventsRegisteredByUser(userID uuid.UUID) ([]*models.Event, error) {
 	rows, err := database.DB.Query(context.Background(), `
-		SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.user_id, e.status, e.slug, e.thumbnail, e.created_at, e.updated_at, e.organization_id, e.max_registration
+		SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.user_id, e.status, e.slug, e.thumbnail, e.created_at, e.updated_at, e.organization_id, e.max_registration, o.name as organization_name
 		FROM events e
 		JOIN event_registrations er ON e.id = er.event_id
+		JOIN organizations o ON e.organization_id = o.id
 		WHERE er.user_id = $1`,
 		userID)
 	if err != nil {
@@ -211,7 +242,7 @@ func ListEventsRegisteredByUser(userID uuid.UUID) ([]*models.Event, error) {
 	for rows.Next() {
 		var event models.Event
 		err := rows.Scan(
-			&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Slug, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt, &event.OrganizationID, &event.MaxRegistration)
+			&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Slug, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt, &event.OrganizationID, &event.MaxRegistration, &event.Organization)
 		if err != nil {
 			return nil, err
 		}
