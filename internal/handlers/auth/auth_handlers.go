@@ -5,7 +5,10 @@ import (
 	"Backend/internal/services"
 	"Backend/pkg/utils"
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"log"
@@ -29,6 +32,7 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 	log.Println("before register user")
 	var newUser models.User
 	suffix := "@student.president.ac.id"
+
 	if err := c.BindJSON(&newUser); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
@@ -37,23 +41,52 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 	// Log the user data
 	log.Printf("User: %v", newUser)
 
+	// Check if username or email already exists
+	// // if username exists add something to username because its generate from firstname and lastname
+	if exists, err := h.AuthService.IsUsernameExists(newUser.Username); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	} else if exists {
+		// Generate a random string of characters
+		randomBytes := make([]byte, 4) // Adjust length as needed
+		if _, err := rand.Read(randomBytes); err != nil {
+			// Handle error if random generation fails
+			// You might want to return an error or try generating again
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{"Failed to generate random string"}})
+			return
+		}
+		randomString := base64.URLEncoding.EncodeToString(randomBytes)
+		randomString = randomString[0:4] // Keep only the first 4 characters
+
+		// Append the random string to the username
+		newUser.Username = fmt.Sprintf("%s%s", newUser.Username, randomString)
+		log.Println("New Username: ", newUser.Username)
+	}
+
+	if err := validateEmail(newUser.Email, suffix); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	if exists, err := h.AuthService.IsEmailExists(newUser.Email); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	} else if exists {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Email already exists"}})
+		return
+	}
+
 	if err := validateStudentID(newUser.StudentID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
 		return
 	}
 
-	if err := checkStudentIDExists(h.AuthService, newUser.StudentID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+	// Check student ID exists
+	if exists, err := h.AuthService.IsStudentIDExists(newUser.StudentID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
-	}
-
-	if err := checkUsernameOrEmailExists(h.AuthService, newUser.Username, newUser.Email); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
-		return
-	}
-
-	if err := validateEmail(newUser.Email, suffix); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+	} else if exists {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Student ID already exists"}})
 		return
 	}
 
@@ -78,16 +111,6 @@ func validateStudentID(studentID string) error {
 		return errors.New("you are not eligible to register an account")
 	}
 	return nil
-}
-
-func checkStudentIDExists(authService *services.AuthService, studentID string) error {
-	_, err := authService.CheckStudentIDExists(studentID)
-	return err
-}
-
-func checkUsernameOrEmailExists(authService *services.AuthService, username, email string) error {
-	_, err := authService.CheckUsernameOrEmailExists(username, email)
-	return err
 }
 
 func validateEmail(email, suffix string) error {
