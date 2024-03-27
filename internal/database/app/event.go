@@ -190,6 +190,18 @@ func RegisterForEvent(userID uuid.UUID, eventID int) error {
 		}
 	}
 
+	// Check if the user is already registered for the event
+	var exists bool
+	err = tx.QueryRow(context.Background(), `
+			SELECT EXISTS (SELECT 1 FROM event_registrations WHERE event_id = $1 AND user_id = $2)`, eventID, userID).Scan(&exists)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return utils.AlreadyRegisteredError{EventID: eventID}
+	}
+
 	_, err = database.DB.Exec(context.Background(), `
         INSERT INTO event_registrations (event_id, user_id, registration_date)
         VALUES ($1, $2, $3)`, eventID, userID, time.Now())
