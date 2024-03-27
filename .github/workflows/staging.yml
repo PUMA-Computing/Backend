@@ -50,7 +50,7 @@ jobs:
 
   deployments:
     needs: build
-    environment: production
+    environment: staging
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to Production
