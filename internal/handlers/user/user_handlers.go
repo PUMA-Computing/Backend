@@ -28,7 +28,7 @@ func NewUserHandlers(userService *services.UserService, permissionService *servi
 func (h *Handlers) GetUserByID(c *gin.Context) {
 	userID, err := utils.GetUserIDFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Access token is expired or invalid"})
 		return
 	}
 
