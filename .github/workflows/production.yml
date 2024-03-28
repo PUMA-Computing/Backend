@@ -62,6 +62,6 @@ jobs:
             port: ${{ secrets.SERVER_PORT }}
             script: |
               whoami
-              docker stop backend-production-panel-1 || true && docker rm backend-production-panel-1 || true
+              docker stop api-computing || true && docker rm api-computing || true
               docker pull ${{ vars.IMAGE_NAME}}:latest
               docker run -d -p ${{ secrets.API_PORT }}:${{ secrets.API_PORT }} --name ${{ vars.CONTAINER_NAME }} ${{ vars.IMAGE_NAME}}
