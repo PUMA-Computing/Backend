@@ -40,23 +40,24 @@ func GetNewsByID(newsID int) (*models.News, error) {
 }
 
 func ListNews() ([]*models.News, error) {
-	var news []*models.News
 	rows, err := database.DB.Query(context.Background(), `
-		SELECT id, title, content, user_id, publish_date, created_at, updated_at
+		SELECT id, title, content, user_id, publish_date, likes, created_at, updated_at
 		FROM news`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
+	var newsList []*models.News
 	for rows.Next() {
-		var n models.News
-		err := rows.Scan(&n.ID, &n.Title, &n.Content, &n.UserID, &n.PublishDate, &n.Likes, &n.CreatedAt, &n.UpdatedAt)
+		var news models.News
+		err := rows.Scan(&news.ID, &news.Title, &news.Content, &news.UserID, &news.PublishDate, &news.Likes, &news.CreatedAt, &news.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
-		news = append(news, &n)
+		newsList = append(newsList, &news)
 	}
-	return news, nil
+	return newsList, nil
 }
 
 func LikeNews(userID uuid.UUID, newsID int) error {
