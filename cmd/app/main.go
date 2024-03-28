@@ -27,12 +27,8 @@ func main() {
 
 	r := api.SetupRoutes()
 
-	port := ":"
-	if config.ApiPort == "" {
-		log.Fatalf("API port is not set")
-	} else {
-		port += config.ApiPort
-	}
+	// port 8080
+	port := ":8080"
 	if err := r.Run(port); err != nil {
 		log.Fatalf("Failed to run server: %v", err)
 	}
