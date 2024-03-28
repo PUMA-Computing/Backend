@@ -40,7 +40,6 @@ func GetNewsByID(newsID int) (*models.News, error) {
 }
 
 func ListNews() ([]*models.News, error) {
-	// Query all news and join likes
 	rows, err := database.DB.Query(context.Background(), `
 		SELECT id, title, content, user_id, publish_date, likes, created_at, updated_at, thumbnail, slug
 		FROM news`)
