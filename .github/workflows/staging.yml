@@ -53,7 +53,7 @@ jobs:
     environment: staging
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to Production
+      - name: Deploy to Staging
         uses: appleboy/ssh-action@master
         with:
             host: ${{ secrets.SERVER }}
