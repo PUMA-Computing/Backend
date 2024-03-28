@@ -58,6 +58,9 @@ func (h *Handler) CreateNews(c *gin.Context) {
 	newNews.CreatedAt = time.Time{}
 	newNews.UpdatedAt = time.Time{}
 
+	// slug from title
+	newNews.Slug = utils.GenerateFriendlyURL(newNews.Title)
+
 	if err := h.NewsService.CreateNews(&newNews); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
