@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/google/uuid"
+	"log"
 )
 
 func CreateNews(news *models.News) error {
@@ -40,6 +41,7 @@ func GetNewsByID(newsID int) (*models.News, error) {
 }
 
 func ListNews() ([]*models.News, error) {
+	log.Println("before query")
 	rows, err := database.DB.Query(context.Background(), `
 		SELECT id, title, content, user_id, publish_date, likes, created_at, updated_at, thumbnail, slug
 		FROM news`)
@@ -47,6 +49,8 @@ func ListNews() ([]*models.News, error) {
 		return nil, err
 	}
 	defer rows.Close()
+
+	log.Println("after query")
 
 	var newsList []*models.News
 	for rows.Next() {
@@ -58,6 +62,7 @@ func ListNews() ([]*models.News, error) {
 		}
 		newsList = append(newsList, &news)
 	}
+	log.Println("after loop")
 	return newsList, nil
 }
 
