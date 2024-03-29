@@ -12,7 +12,3 @@ VALUES
     ('PUMA IS'),
     ('PUMA ID'),
     ('PUMA VCD');
-
-ALTER TABLE events
-    ADD COLUMN organization_id INT NOT NULL,
-    ADD FOREIGN KEY (organization_id) REFERENCES organizations(id);
