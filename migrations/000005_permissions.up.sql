@@ -1,4 +1,3 @@
-SET timezone = 'Asia/Jakarta';
 CREATE TABLE IF NOT EXISTS permissions (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,

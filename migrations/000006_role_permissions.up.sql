@@ -1,4 +1,3 @@
-SET timezone = 'Asia/Jakarta';
 CREATE TABLE IF NOT EXISTS role_permissions (
     role_id INT NOT NULL,
     permission_id INT NOT NULL,

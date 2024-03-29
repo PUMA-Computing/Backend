@@ -1,4 +1,3 @@
-SET timezone = 'Asia/Jakarta';
 CREATE TABLE IF NOT EXISTS version_info (
     id SERIAL PRIMARY KEY,
     latest_version VARCHAR(20) NOT NULL,
