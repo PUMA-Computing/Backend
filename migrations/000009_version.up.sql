@@ -6,6 +6,6 @@ CREATE TABLE IF NOT EXISTS version_info (
 
 INSERT INTO version_info (latest_version, changelog)
 VALUES (
-        '0.6.0',
-        '[{"version": "0.6.0", "changes": ["Initial release"]}]'
+        '1.0.0',
+        '[{"version": "1.0.0", "changes": ["First release"]}]'
        );

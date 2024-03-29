@@ -23,17 +23,23 @@ func GetUserByUsernameOrEmail(username, email string) (*models.User, error) {
 	return &user, nil
 }
 
-func IsUsernameOrEmailExists(username string) (bool, error) {
-	log.Printf("username: %v", username)
-	query := "SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 OR email = $1)"
-	log.Printf("query: %v", query)
+func IsUsernameExists(username string) (bool, error) {
+	query := "SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)"
 	var exists bool
 	err := database.DB.QueryRow(context.Background(), query, username).Scan(&exists)
 	if err != nil {
 		return false, err
 	}
-	log.Printf("exists: %v", exists)
+	return exists, nil
+}
 
+func IsEmailExists(email string) (bool, error) {
+	query := "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)"
+	var exists bool
+	err := database.DB.QueryRow(context.Background(), query, email).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
 	return exists, nil
 }
 
@@ -130,7 +136,6 @@ func CheckStudentIDExists(studentID string) (bool, error) {
 		return false, err
 	}
 	return exists, nil
-
 }
 
 func UpdateUser(UserID uuid.UUID, updatedUser *models.User) error {

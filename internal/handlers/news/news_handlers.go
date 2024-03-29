@@ -58,6 +58,9 @@ func (h *Handler) CreateNews(c *gin.Context) {
 	newNews.CreatedAt = time.Time{}
 	newNews.UpdatedAt = time.Time{}
 
+	// slug from title
+	newNews.Slug = utils.GenerateFriendlyURL(newNews.Title)
+
 	if err := h.NewsService.CreateNews(&newNews); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
@@ -243,3 +246,33 @@ func (h *Handler) LikeNews(c *gin.Context) {
 		"message": "News Liked Successfully",
 	})
 }
+
+//func (h *Handler) UnlikeNews(c *gin.Context) {
+//	token, err := utils.ExtractTokenFromHeader(c)
+//	if err != nil {
+//		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+//		return
+//	}
+//	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
+//	if err != nil {
+//		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+//		return
+//	}
+//
+//	newsIDStr := c.Param("newsID")
+//	newsID, err := strconv.Atoi(newsIDStr)
+//	if err != nil {
+//		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Invalid News ID"}})
+//		return
+//	}
+//
+//	if err := h.NewsService.UnlikeNews(userID, newsID); err != nil {
+//		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+//		return
+//	}
+//
+//	c.JSON(http.StatusOK, gin.H{
+//		"success": true,
+//		"message": "News Unliked Successfully",
+//	})
+//}

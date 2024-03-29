@@ -4,21 +4,22 @@ import (
 	"Backend/internal/database"
 	"Backend/internal/models"
 	"context"
+	"database/sql"
 	"github.com/google/uuid"
+	"log"
 )
 
 func CreateNews(news *models.News) error {
 	_, err := database.DB.Exec(context.Background(), `
-		INSERT INTO news (title, content, user_id, publish_date)
-		VALUES ($1, $2, $3, $4)`,
-		news.Title, news.Content, news.UserID, news.PublishDate)
+		INSERT INTO news (title, content, user_id, publish_date, likes, created_at, updated_at, thumbnail, slug)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`, news.Title, news.Content, news.UserID, news.PublishDate, news.Likes, news.CreatedAt, news.UpdatedAt, news.Thumbnail, news.Slug)
 	return err
 }
 
 func UpdateNews(newsID int, news *models.News) error {
 	_, err := database.DB.Exec(context.Background(), `
-		UPDATE news SET title = $1, content = $2, publish_date = $3, updated_at = $4
-		WHERE id = $5`, news.Title, news.Content, news.PublishDate, news.UpdatedAt, newsID)
+		UPDATE news SET title = $1, content = $2, publish_date = $3, updated_at = $4, thumbnail = $5, slug = $6
+		WHERE id = $5`, news.Title, news.Content, news.PublishDate, news.UpdatedAt, news.Thumbnail, news.Slug, newsID)
 	return err
 }
 
@@ -31,8 +32,8 @@ func DeleteNews(newsID int) error {
 func GetNewsByID(newsID int) (*models.News, error) {
 	var news models.News
 	err := database.DB.QueryRow(context.Background(), `
-		SELECT id, title, content, user_id, publish_date, likes, created_at, updated_at
-		FROM news WHERE id = $1`, newsID).Scan(&news.ID, &news.Title, &news.Content, &news.UserID, &news.PublishDate, &news.Likes, &news.CreatedAt, &news.UpdatedAt)
+		SELECT id, title, content, user_id, publish_date, likes, created_at, updated_at, thumbnail, slug
+		FROM news WHERE id = $1`, newsID).Scan(&news.ID, &news.Title, &news.Content, &news.UserID, &news.PublishDate, &news.Likes, &news.CreatedAt, &news.UpdatedAt, &news.Thumbnail, &news.Slug)
 	if err != nil {
 		return nil, err
 	}
@@ -40,23 +41,29 @@ func GetNewsByID(newsID int) (*models.News, error) {
 }
 
 func ListNews() ([]*models.News, error) {
-	var news []*models.News
+	log.Println("before query")
 	rows, err := database.DB.Query(context.Background(), `
-		SELECT id, title, content, user_id, publish_date, created_at, updated_at
+		SELECT id, title, content, user_id, publish_date, likes, created_at, updated_at, thumbnail, slug
 		FROM news`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
+	log.Println("after query")
+
+	var newsList []*models.News
 	for rows.Next() {
-		var n models.News
-		err := rows.Scan(&n.ID, &n.Title, &n.Content, &n.UserID, &n.PublishDate, &n.Likes, &n.CreatedAt, &n.UpdatedAt)
+		var news models.News
+		var thumbnail sql.NullString
+		err := rows.Scan(&news.ID, &news.Title, &news.Content, &news.UserID, &news.PublishDate, &news.Likes, &news.CreatedAt, &news.UpdatedAt, &thumbnail, &news.Slug)
 		if err != nil {
 			return nil, err
 		}
-		news = append(news, &n)
+		newsList = append(newsList, &news)
 	}
-	return news, nil
+	log.Println("after loop")
+	return newsList, nil
 }
 
 func LikeNews(userID uuid.UUID, newsID int) error {

@@ -14,4 +14,6 @@ type News struct {
 	Likes       int       `json:"likes"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+	Thumbnail   *string   `json:"thumbnail"`
+	Slug        string    `json:"slug"`
 }

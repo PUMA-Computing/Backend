@@ -21,6 +21,10 @@ type MaxRegistrationReachedError struct {
 	EventID int `json:"event_id"`
 }
 
+type AlreadyRegisteredError struct {
+	EventID int `json:"event_id"`
+}
+
 func (m MaxRegistrationReachedError) Error() string {
 	return "Maximum registration limit reached for event with ID: " + string(rune(m.EventID))
 }
@@ -31,4 +35,8 @@ func (u UnauthorizedError) Error() string {
 
 func (b BadRequestError) Error() string {
 	return b.Message
+}
+
+func (a AlreadyRegisteredError) Error() string {
+	return "User is already registered for event with ID: " + string(rune(a.EventID))
 }

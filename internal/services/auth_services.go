@@ -88,39 +88,22 @@ func (as *AuthService) LoginUser(username string, password string) (*models.User
 	return user, nil
 }
 
-func (as *AuthService) IsUsernameOrEmailExists(username string, email string) (bool, error) {
-	if username != "" {
-		return app.IsUsernameOrEmailExists(username)
-	} else {
-		return app.IsUsernameOrEmailExists(email)
-	}
+func (as *AuthService) IsUsernameExists(username string) (bool, error) {
+	return app.IsUsernameExists(username)
 }
 
-//func (as *AuthService) GetUserByStudentID(studentID string) (*models.User, error) {
-//	return app.GetUserByStudentID(studentID)
-//}
+func (as *AuthService) IsEmailExists(email string) (bool, error) {
+	return app.IsEmailExists(email)
+}
 
-func (as *AuthService) CheckStudentIDExists(studentID string) (bool, error) {
+func (as *AuthService) IsStudentIDExists(studentID string) (bool, error) {
 	return app.CheckStudentIDExists(studentID)
 }
 
-func (as *AuthService) CheckUsernameOrEmailExists(username string, email string) (bool, error) {
-	if username != "" {
-		return app.IsUsernameOrEmailExists(username)
-	} else {
-		return app.IsUsernameOrEmailExists(email)
-	}
+func (as *AuthService) GetUserByStudentID(studentID string) (*models.User, error) {
+	return app.GetUserByStudentID(studentID)
 }
 
-func (as *AuthService) CheckEmailExists(email string) (bool, error) {
-	user, err := app.GetUserByEmail(email)
-	if err != nil {
-		return false, err
-	}
-
-	if user != nil {
-		return true, nil
-	}
-
-	return false, nil
+func (as *AuthService) CheckStudentIDExists(studentID string) (bool, error) {
+	return app.CheckStudentIDExists(studentID)
 }
