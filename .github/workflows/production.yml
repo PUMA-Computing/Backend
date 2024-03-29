@@ -62,6 +62,6 @@ jobs:
             port: ${{ secrets.SERVER_PORT }}
             script: |
               whoami
-              docker stop api-computing || true && docker rm api-computing || true
+              docker stop ${{ vars.CONTAINER_NAME }} || true && docker rm ${{ vars.CONTAINER_NAME }} || true
               docker pull ${{ vars.IMAGE_NAME}}:latest
               docker run -d -p ${{ secrets.API_PORT }}:8080 --name ${{ vars.CONTAINER_NAME }} ${{ vars.IMAGE_NAME}}

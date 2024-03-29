@@ -1,5 +1,7 @@
 package utils
 
-func ValidateEmail(email string) error {
-	return nil
+import "strings"
+
+func RemoveWhitespace(s string) string {
+	return strings.ReplaceAll(s, " ", "")
 }

@@ -14,6 +14,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 type Handlers struct {
@@ -38,8 +39,10 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 		return
 	}
 
-	// Log the user data
-	log.Printf("User: %v", newUser)
+	// Remove whitespace from firstname and lastname
+	newUser.FirstName = utils.RemoveWhitespace(newUser.FirstName)
+	newUser.LastName = utils.RemoveWhitespace(newUser.LastName)
+	newUser.Username = utils.RemoveWhitespace(newUser.Username)
 
 	// Check if username or email already exists
 	// // if username exists add something to username because its generate from firstname and lastname
@@ -126,6 +129,9 @@ func (h *Handlers) Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
+
+	// Lowercase the username
+	loginRequest.Username = strings.ToLower(loginRequest.Username)
 
 	user, err := h.AuthService.LoginUser(loginRequest.Username, loginRequest.Password)
 	if err != nil {

@@ -1,3 +1,4 @@
+SET timezone = 'Asia/Jakarta';
 CREATE TABLE IF NOT EXISTS aspirations_upvote (
     id SERIAL PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES users(id),

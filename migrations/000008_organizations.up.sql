@@ -1,3 +1,4 @@
+SET timezone = 'Asia/Jakarta';
 CREATE TABLE IF NOT EXISTS organizations (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,

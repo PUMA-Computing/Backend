@@ -1,3 +1,4 @@
+SET timezone = 'Asia/Jakarta';
 CREATE TABLE IF NOT EXISTS event_registrations (
     id SERIAL PRIMARY KEY,
     event_id INT NOT NULL,
