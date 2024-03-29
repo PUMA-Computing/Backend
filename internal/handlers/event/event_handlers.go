@@ -5,7 +5,10 @@ import (
 	"Backend/internal/models"
 	"Backend/internal/services"
 	"Backend/pkg/utils"
+	"context"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -14,12 +17,14 @@ import (
 type Handlers struct {
 	EventService      *services.EventService
 	PermissionService *services.PermissionService
+	S3Service         *services.S3Service
 }
 
-func NewEventHandlers(eventService *services.EventService, permissionService *services.PermissionService) *Handlers {
+func NewEventHandlers(eventService *services.EventService, permissionService *services.PermissionService, s3Service *services.S3Service) *Handlers {
 	return &Handlers{
 		EventService:      eventService,
 		PermissionService: permissionService,
+		S3Service:         s3Service,
 	}
 }
 
@@ -48,6 +53,14 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 		return
 	}
 
+	// Upload thumbnail to AWS S3 and save the URL
+	if newEvent.Thumbnail != "" {
+		if err := h.S3Service.UploadFile(context.TODO(), newEvent.Slug+".jpg", []byte(newEvent.Thumbnail)); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{"Failed to upload thumbnail to AWS S3"}})
+			return
+		}
+	}
+
 	if err := h.EventService.CreateEvent(&newEvent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
@@ -66,7 +79,7 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 }
 
 func (h *Handlers) EditEvent(c *gin.Context) {
-	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "events:edit")
+	_, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "events:edit")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
@@ -79,46 +92,101 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 		return
 	}
 
-	var updatedEvent models.Event
-	if err := c.BindJSON(&updatedEvent); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
+	file, err := c.FormFile("thumbnail")
+	if err == nil {
+		// If a thumbnail file is provided, upload it to AWS S3
+		imageReader, err := file.Open()
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Failed to open thumbnail file"}})
+			return
+		}
+		defer imageReader.Close()
 
-	if updatedEvent.StartDate.After(updatedEvent.EndDate) {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Start Date cannot be after End Date"}})
-		return
-	}
+		fileBytes, err := io.ReadAll(imageReader)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{"Failed to read thumbnail file"}})
+			return
+		}
 
-	existingEvent, err := h.EventService.GetEventByID(eventID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
+		fileKey := "event/" + strconv.Itoa(eventID) + ".jpg"
+		if err := h.S3Service.UploadFile(context.TODO(), fileKey, fileBytes); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
 
-	if updatedEvent.Title != "" && updatedEvent.Title != existingEvent.Title {
-		updatedEvent.Slug = "/event/" + utils.GenerateFriendlyURL(updatedEvent.Title)
+		// Get the URL of the uploaded file
+		fileURL, _ := h.S3Service.GetFile(context.TODO(), fileKey)
+		log.Println("File URL: ", fileURL)
+
+		// Read the JSON payload into a map
+		var payload map[string]interface{}
+		if err := c.BindJSON(&payload); err != nil {
+			log.Println("Error binding JSON: ", err)
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		// Replace the thumbnail key in the map
+		payload["thumbnail"] = fileURL
+
+		// Convert the map back to JSON
+		payloadBytes, err := json.Marshal(payload)
+		if err != nil {
+			log.Println("Error marshalling JSON: ", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		// Read the JSON into the updatedEvent object
+		var updatedEvent models.Event
+		if err := json.Unmarshal(payloadBytes, &updatedEvent); err != nil {
+			log.Println("Error unmarshalling JSON: ", err)
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		// Check if start date is before end date
+		if updatedEvent.StartDate.After(updatedEvent.EndDate) {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Start Date cannot be after End Date"}})
+			return
+		}
+
+		if err := h.EventService.EditEvent(eventID, &updatedEvent); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Event Updated Successfully",
+			"data":    updatedEvent,
+		})
 	} else {
-		updatedEvent.Slug = existingEvent.Slug
+		// If no thumbnail file is provided, update the event without changing the thumbnail
+		var updatedEvent models.Event
+		if err := c.BindJSON(&updatedEvent); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		// Check if start date is before end date
+		if updatedEvent.StartDate.After(updatedEvent.EndDate) {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Start Date cannot be after End Date"}})
+			return
+		}
+
+		if err := h.EventService.EditEvent(eventID, &updatedEvent); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Event Updated Successfully",
+			"data":    updatedEvent,
+		})
 	}
 
-	utils.ReflectiveUpdate(existingEvent, updatedEvent)
-
-	if err := h.EventService.EditEvent(eventID, existingEvent); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Event Updated Successfully",
-		"data":    existingEvent,
-		"relationships": gin.H{
-			"author": gin.H{
-				"id": userID,
-			},
-		},
-	})
 }
 
 func (h *Handlers) DeleteEvent(c *gin.Context) {

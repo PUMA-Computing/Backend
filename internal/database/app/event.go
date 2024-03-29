@@ -8,7 +8,6 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/google/uuid"
-	"log"
 	"time"
 )
 
@@ -24,24 +23,10 @@ func CreateEvent(event *models.Event) error {
 }
 
 func UpdateEvent(eventID int, updatedEvent *models.Event) error {
-	query := `
-        UPDATE events SET title = $1, description = $2, start_date = $3, end_date = $4, user_id = $5, status = $6, slug = $7, thumbnail = $8, organization_id = $9, max_registration = $10, updated_at = $11 WHERE id = $12`
-
-	// Log the SQL query and parameters
-	//log.Printf("Executing query: %s\n", query)
-	//log.Printf("Parameters: %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v\n",
-	//	updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate,
-	//	updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Slug,
-	//	updatedEvent.Thumbnail, updatedEvent.OrganizationID, updatedEvent.MaxRegistration, time.Now(), eventID)
-
-	_, err := database.DB.Exec(context.Background(), query,
-		updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate,
-		updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Slug,
-		updatedEvent.Thumbnail, updatedEvent.OrganizationID, updatedEvent.MaxRegistration, time.Now(), eventID)
-
-	if err != nil {
-		log.Printf("Error executing query: %s\n", err.Error())
-	}
+	_, err := database.DB.Exec(context.Background(), `
+			UPDATE events SET title = $1, description = $2, start_date = $3, end_date = $4, status = $5, slug = $6, thumbnail = $7, max_registration = $8
+			WHERE id = $9`,
+		updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate, updatedEvent.EndDate, updatedEvent.Status, updatedEvent.Slug, updatedEvent.Thumbnail, updatedEvent.MaxRegistration, eventID)
 
 	return err
 }

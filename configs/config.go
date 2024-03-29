@@ -22,6 +22,11 @@ type Config struct {
 	CloudflareR2AccessId  string
 	CloudflareR2AccessKey string
 	CloudflareR2Bucket    string
+
+	AwsAccessKeyId     string
+	AwsSecretAccessKey string
+	AWSRegion          string
+	AWSBucket          string
 }
 
 func LoadConfig() *Config {
@@ -39,6 +44,10 @@ func LoadConfig() *Config {
 		CloudflareR2AccessId:  os.Getenv("CLOUDFLARE_R2_ACCESS_ID"),
 		CloudflareR2AccessKey: os.Getenv("CLOUDFLARE_R2_ACCESS_KEY"),
 		CloudflareR2Bucket:    os.Getenv("CLOUDFLARE_R2_BUCKET"),
+		AwsAccessKeyId:        os.Getenv("AWS_ACCESS_KEY_ID"),
+		AwsSecretAccessKey:    os.Getenv("AWS_SECRET_ACCESS_KEY"),
+		AWSRegion:             os.Getenv("AWS_REGION"),
+		AWSBucket:             os.Getenv("AWS_BUCKET"),
 	}
 
 	fmt.Printf("Loaded Config: %+v\n", cfg)

@@ -36,10 +36,11 @@ func SetupRoutes() *gin.Engine {
 	permissionService := services.NewPermissionService()
 	filesService := services.NewFilesService()
 	aspirationsService := services.NewAspirationService()
+	s3Service, _ := services.NewS3Service()
 
 	authHandlers := auth.NewAuthHandlers(authService, permissionService)
 	userHandlers := user.NewUserHandlers(userService, permissionService)
-	eventHandlers := event.NewEventHandlers(eventService, permissionService)
+	eventHandlers := event.NewEventHandlers(eventService, permissionService, s3Service)
 	newsHandlers := news.NewNewsHandler(newsService, permissionService)
 	roleHandlers := role.NewRoleHandler(roleService, userService, permissionService)
 	permissionHandlers := permission.NewPermissionHandler(permissionService)
