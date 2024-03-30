@@ -39,12 +39,3 @@ func (h *Handlers) UpdateVersion(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"version": version})
 }
-
-//func (h *Handlers) DeleteVersion(c *gin.Context) {
-//	if err := h.VersionService.DeleteVersion(); err != nil {
-//		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-//		return
-//	}
-//
-//	c.JSON(http.StatusOK, gin.H{"message": "Version deleted"})
-//}
