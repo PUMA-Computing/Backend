@@ -78,20 +78,20 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	// Choose storage service to upload image
+	// Choose storage service to upload image to (AWS or R2)
 	upload := utils.ChooseStorageService()
 
 	// Upload image to storage service
 	if upload == utils.R2Service {
-		err = h.R2Service.UploadFileToR2(context.Background(), newEvent.Slug, optimizedImageBytes)
+		err = h.R2Service.UploadFileToR2(context.Background(), "event", newEvent.Slug, optimizedImageBytes)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 			return
 		}
 
-		newEvent.Thumbnail, _ = h.R2Service.GetFileR2(context.TODO(), "event", newEvent.Slug)
+		newEvent.Thumbnail, _ = h.R2Service.GetFileR2("event", newEvent.Slug)
 	} else {
-		err = h.AWSService.UploadFileToAWS(context.Background(), newEvent.Slug, optimizedImageBytes)
+		err = h.AWSService.UploadFileToAWS(context.Background(), "event", newEvent.Slug, optimizedImageBytes)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 			return
@@ -131,8 +131,14 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 		return
 	}
 
+	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	data := c.Request.FormValue("data")
 	var updatedEvent models.Event
-	if err := c.BindJSON(&updatedEvent); err != nil {
+	if err := json.Unmarshal([]byte(data), &updatedEvent); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
@@ -142,6 +148,46 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 		return
 	}
 
+	file, _, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	optimizedImage, err := utils.OptimizeImage(file, 2800, 1080)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	optimizedImageBytes, err := io.ReadAll(optimizedImage)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	// Choose storage service to upload image
+	upload := utils.ChooseStorageService()
+
+	// Upload image to storage service
+	if upload == utils.R2Service {
+		err = h.R2Service.UploadFileToR2(context.Background(), "event", updatedEvent.Slug, optimizedImageBytes)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		updatedEvent.Thumbnail, _ = h.R2Service.GetFileR2("event", updatedEvent.Slug)
+	} else {
+		err = h.AWSService.UploadFileToAWS(context.Background(), "event", updatedEvent.Slug, optimizedImageBytes)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		updatedEvent.Thumbnail, _ = h.AWSService.GetFileAWS(context.TODO(), "event", updatedEvent.Slug)
+	}
+
 	existingEvent, err := h.EventService.GetEventByID(eventID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
@@ -149,7 +195,7 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 	}
 
 	if updatedEvent.Title != "" && updatedEvent.Title != existingEvent.Title {
-		updatedEvent.Slug = "/event/" + utils.GenerateFriendlyURL(updatedEvent.Title)
+		updatedEvent.Slug = utils.GenerateFriendlyURL(updatedEvent.Title)
 	} else {
 		updatedEvent.Slug = existingEvent.Slug
 	}
@@ -185,6 +231,31 @@ func (h *Handlers) DeleteEvent(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Invalid Event ID"}})
 		return
+	}
+
+	event, err := h.EventService.GetEventByID(eventID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	// Check image exists on AWS or R2
+	exists, _ := h.AWSService.FileExists(context.Background(), "event", event.Slug)
+	if exists {
+		if err := h.AWSService.DeleteFile(context.Background(), "event", event.Slug); err != nil {
+			log.Println("Error deleting file from AWS")
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+	} else {
+		exists, _ := h.R2Service.FileExists(context.Background(), "event", event.Slug)
+		if exists {
+			if err := h.R2Service.DeleteFile(context.Background(), "event", event.Slug); err != nil {
+				log.Println("Error deleting file from R2")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+				return
+			}
+		}
 	}
 
 	if err := h.EventService.DeleteEvent(eventID); err != nil {

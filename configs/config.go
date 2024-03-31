@@ -21,7 +21,6 @@ type Config struct {
 	CloudflareAccountId   string
 	CloudflareR2AccessId  string
 	CloudflareR2AccessKey string
-	CloudflareR2Bucket    string
 
 	AWSAccessKeyId     string
 	AWSSecretAccessKey string
