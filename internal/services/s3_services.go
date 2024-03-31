@@ -68,12 +68,13 @@ func NewR2Service() (*S3Service, error) {
 }
 
 func (s *S3Service) UploadFileToAWS(ctx context.Context, directory, key string, file []byte) error {
-	key = directory + "/" + key
+	key = directory + "/" + key + ".jpg"
 
 	input := &s3.PutObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
-		Body:   bytes.NewReader(file),
+		Bucket:      aws.String(s.bucket),
+		Key:         aws.String(key),
+		Body:        bytes.NewReader(file),
+		ContentType: aws.String("image/jpeg"),
 	}
 
 	_, err := s.s3Client.PutObject(ctx, input)
@@ -85,7 +86,7 @@ func (s *S3Service) UploadFileToAWS(ctx context.Context, directory, key string, 
 }
 
 func (s *S3Service) UploadFileToR2(ctx context.Context, directory, key string, file []byte) error {
-	key = directory + "/" + key
+	key = directory + "/" + key + ".jpg"
 	input := &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket), // Include the bucket name here
 		Key:         aws.String(key),
@@ -133,24 +134,12 @@ func (s *S3Service) DeleteFile(ctx context.Context, directory, slug string) erro
 }
 
 // GetFileAWS GetFile GetBucket file from S3
-func (s *S3Service) GetFileAWS(ctx context.Context, directory, slug string) (string, error) {
-
+func (s *S3Service) GetFileAWS(directory, slug string) (string, error) {
 	key := directory + "/" + slug + ".jpg"
-
-	input := &s3.HeadObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
-	}
-
-	_, err := s.s3Client.HeadObject(ctx, input)
-	if err != nil {
-		return "", err
-	}
-
 	return "https://id.pufacomputing.live/" + key, nil
 }
 
 func (s *S3Service) GetFileR2(directory, slug string) (string, error) {
-	key := directory + "%2F" + slug
+	key := directory + "%2F" + slug + ".jpg"
 	return "https://sg.pufacomputing.live/" + key, nil
 }

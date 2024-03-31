@@ -97,7 +97,7 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 			return
 		}
 
-		newEvent.Thumbnail, _ = h.AWSService.GetFileAWS(context.TODO(), "event", newEvent.Slug)
+		newEvent.Thumbnail, _ = h.AWSService.GetFileAWS("event", newEvent.Slug)
 	}
 
 	if err := h.EventService.CreateEvent(&newEvent); err != nil {
@@ -185,7 +185,7 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 			return
 		}
 
-		updatedEvent.Thumbnail, _ = h.AWSService.GetFileAWS(context.TODO(), "event", updatedEvent.Slug)
+		updatedEvent.Thumbnail, _ = h.AWSService.GetFileAWS("event", updatedEvent.Slug)
 	}
 
 	existingEvent, err := h.EventService.GetEventByID(eventID)
