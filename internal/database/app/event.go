@@ -25,26 +25,65 @@ func CreateEvent(event *models.Event) error {
 	return err
 }
 
+// UpdateEvent updates an existing event record in the database with partial data
 func UpdateEvent(eventID int, updatedEvent *models.Event) error {
-	query := `
-        UPDATE events SET title = $1, description = $2, start_date = $3, end_date = $4, user_id = $5, status = $6, slug = $7, thumbnail = $8, organization_id = $9, max_registration = $10, updated_at = $11 WHERE id = $12`
+	// Start building the query
+	query := "UPDATE events SET "
+	params := []interface{}{}
+	paramCount := 1
 
-	// Log the SQL query and parameters
-	//log.Printf("Executing query: %s\n", query)
-	//log.Printf("Parameters: %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v\n",
-	//	updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate,
-	//	updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Slug,
-	//	updatedEvent.Thumbnail, updatedEvent.OrganizationID, updatedEvent.MaxRegistration, time.Now(), eventID)
-
-	_, err := database.DB.Exec(context.Background(), query,
-		updatedEvent.Title, updatedEvent.Description, updatedEvent.StartDate,
-		updatedEvent.EndDate, updatedEvent.UserID, updatedEvent.Status, updatedEvent.Slug,
-		updatedEvent.Thumbnail, updatedEvent.OrganizationID, updatedEvent.MaxRegistration, time.Now(), eventID)
-
-	if err != nil {
-		log.Printf("Error executing query: %s\n", err.Error())
+	// Check each field in updatedEvent. If it's not the zero value for its type, add it to the query.
+	if updatedEvent.Title != "" {
+		query += "title = $" + strconv.Itoa(paramCount) + ", "
+		params = append(params, updatedEvent.Title)
+		paramCount++
+	}
+	if updatedEvent.Description != "" {
+		query += "description = $" + strconv.Itoa(paramCount) + ", "
+		params = append(params, updatedEvent.Description)
+		paramCount++
+	}
+	if !updatedEvent.StartDate.IsZero() {
+		query += "start_date = $" + strconv.Itoa(paramCount) + ", "
+		params = append(params, updatedEvent.StartDate)
+		paramCount++
+	}
+	if !updatedEvent.EndDate.IsZero() {
+		query += "end_date = $" + strconv.Itoa(paramCount) + ", "
+		params = append(params, updatedEvent.EndDate)
+		paramCount++
+	}
+	if updatedEvent.Status != "" {
+		query += "status = $" + strconv.Itoa(paramCount) + ", "
+		params = append(params, updatedEvent.Status)
+		paramCount++
+	}
+	if updatedEvent.Slug != "" {
+		query += "slug = $" + strconv.Itoa(paramCount) + ", "
+		params = append(params, updatedEvent.Slug)
+		paramCount++
+	}
+	if updatedEvent.Thumbnail != "" {
+		query += "thumbnail = $" + strconv.Itoa(paramCount) + ", "
+		params = append(params, updatedEvent.Thumbnail)
+		paramCount++
+	}
+	if updatedEvent.OrganizationID != 0 {
+		query += "organization_id = $" + strconv.Itoa(paramCount) + ", "
+		params = append(params, updatedEvent.OrganizationID)
+		paramCount++
+	}
+	if updatedEvent.MaxRegistration != nil {
+		query += "max_registration = $" + strconv.Itoa(paramCount) + ", "
+		params = append(params, updatedEvent.MaxRegistration)
+		paramCount++
 	}
 
+	// Remove the trailing comma and space, then add the WHERE clause
+	query = query[:len(query)-2] + " WHERE id = $" + strconv.Itoa(paramCount)
+	params = append(params, eventID)
+
+	_, err := database.DB.Exec(context.Background(), query, params...)
 	return err
 }
 
