@@ -316,21 +316,19 @@ func (h *Handlers) ListEvents(c *gin.Context) {
 	queryParams := map[string]string{
 		"organization_id": c.Query("organization_id"),
 		"status":          c.Query("status"),
-		"slug":            c.Query("slug"),
+		"page":            c.Query("page"),
 	}
 
-	events, err := h.EventService.ListEvents(queryParams)
+	events, totalPages, err := h.EventService.ListEvents(queryParams)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
-
-	log.Println("List Events End")
-
 	c.JSON(http.StatusOK, gin.H{
 		"success":      true,
-		"totalResults": len(events),
 		"data":         events,
+		"totalResults": len(events),
+		"totalPages":   totalPages,
 	})
 }
 

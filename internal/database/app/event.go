@@ -7,7 +7,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/google/uuid"
+	"log"
 	"strconv"
 	"time"
 )
@@ -117,60 +119,64 @@ func GetEventBySlug(slug string) (*models.Event, error) {
 }
 
 // ListEvents returns a list of events based on the query parameters
-func ListEvents(queryParams map[string]string) ([]*models.Event, error) {
+func ListEvents(queryParams map[string]string) ([]*models.Event, int, error) {
+	// Limit return data to 10 records per page
+	limit := 10
+
+	// Build the query
 	query := `
-		SELECT events.*, organizations.name AS organization, CONCAT(users.first_name, ' ', users.last_name) AS author
-		FROM events
-		LEFT JOIN organizations ON events.organization_id = organizations.id
-		LEFT JOIN users ON events.user_id = users.id
-		WHERE 1=1`
+		SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.user_id, e.status, e.slug, e.thumbnail, e.created_at, e.updated_at, e.organization_id, e.max_registration, o.name AS organization, CONCAT(u.first_name, ' ', u.last_name) AS author
+		FROM events e
+		LEFT JOIN organizations o ON e.organization_id = o.id
+		LEFT JOIN users u ON e.user_id = u.id
+		WHERE 1 = 1`
 
+	// Add query parameters to the query
 	if queryParams["organization_id"] != "" {
-		query += " AND events.organization_id = '" + queryParams["organization_id"] + "'"
+		query += " AND o.id = " + queryParams["organization_id"]
 	}
 
-	// Search by status
 	if queryParams["status"] != "" {
-		query += " AND events.status = '" + queryParams["status"] + "'"
+		query += " AND e.status = '" + queryParams["status"] + "'"
 	}
 
-	// Search by Slug
-	if queryParams["slug"] != "" {
-		query += " AND events.slug = '" + queryParams["slug"] + "'"
+	var totalRecords int
+	err := database.DB.QueryRow(context.Background(), "SELECT COUNT(*) FROM events").Scan(&totalRecords)
+	if err != nil {
+		return nil, 0, err
 	}
 
+	totalPages := (totalRecords + limit - 1) / limit
+
+	if queryParams["page"] != "" {
+		page, err := strconv.Atoi(queryParams["page"])
+		if err != nil {
+			return nil, totalPages, err
+		}
+		offset := (page - 1) * limit
+		query += fmt.Sprintf(" ORDER BY e.created_at DESC LIMIT %d OFFSET %d", limit, offset)
+	}
+
+	// Execute the query
 	rows, err := database.DB.Query(context.Background(), query)
 	if err != nil {
-		return nil, err
+		return nil, totalPages, err
 	}
+
 	defer rows.Close()
 
 	var events []*models.Event
 	for rows.Next() {
 		var event models.Event
 		err := rows.Scan(
-			&event.ID,
-			&event.Title,
-			&event.Description,
-			&event.StartDate,
-			&event.EndDate,
-			&event.UserID,
-			&event.Status,
-			&event.Slug,
-			&event.Thumbnail,
-			&event.CreatedAt,
-			&event.UpdatedAt,
-			&event.OrganizationID,
-			&event.MaxRegistration,
-			&event.Organization,
-			&event.Author)
+			&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Slug, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt, &event.OrganizationID, &event.MaxRegistration, &event.Organization, &event.Author)
 		if err != nil {
-			return nil, err
+			return nil, totalPages, err
 		}
 		events = append(events, &event)
 	}
 
-	return events, nil
+	return events, totalPages, nil
 }
 
 // RegisterForEvent registers a user for an event by creating a new event registration record
