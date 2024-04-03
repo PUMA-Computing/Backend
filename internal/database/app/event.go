@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"log"
 	"strconv"
 	"time"
 )
