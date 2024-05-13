@@ -93,6 +93,10 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 		return
 	}
 
+	// Email Verification Token
+	token := utils.GenerateRandomString(32)
+	newUser.EmailVerificationToken = token
+
 	if err := h.AuthService.RegisterUser(&newUser); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return
@@ -239,4 +243,20 @@ func (h *Handlers) ExtractUserIDAndCheckPermission(c *gin.Context, permissionTyp
 	}
 
 	return userID, nil
+}
+
+func (h *Handlers) VerifyEmail(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Token is required"}})
+		return
+	}
+
+	err := h.AuthService.VerifyEmail(token)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Email Verified Successfully"})
 }

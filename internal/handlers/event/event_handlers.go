@@ -2,6 +2,7 @@ package event
 
 import (
 	"Backend/internal/handlers/auth"
+	"Backend/internal/handlers/user"
 	"Backend/internal/models"
 	"Backend/internal/services"
 	"Backend/pkg/utils"
@@ -337,6 +338,18 @@ func (h *Handlers) RegisterForEvent(c *gin.Context) {
 	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "events:register")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	// Check Role id and if it is 6 cannot register for event
+	roleID, err := (&user.Handlers{}).GetRoleIDByUserID(c, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	if roleID == 8 {
+		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"You are not eligible to this event"}})
 		return
 	}
 

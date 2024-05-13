@@ -126,7 +126,15 @@ func GetUserByStudentID(studentID string) (*models.User, error) {
 		return nil, err
 	}
 	return &user, nil
+}
 
+func GetRoleIDByUserID(userID uuid.UUID) (int, error) {
+	var roleID int
+	err := database.DB.QueryRow(context.Background(), "SELECT role_id FROM users WHERE id = $1", userID).Scan(&roleID)
+	if err != nil {
+		return 0, err
+	}
+	return roleID, nil
 }
 
 func CheckStudentIDExists(studentID string) (bool, error) {

@@ -9,26 +9,15 @@ import (
 	"log"
 )
 
-//func TableHasRows(tableName string) (bool, error) {
-//	query := "SELECT EXISTS(SELECT 1 FROM " + tableName + ")"
-//	var exists bool
-//	err := database.DB.QueryRow(context.Background(), query).Scan(&exists)
-//	if err != nil {
-//		return false, err
-//	}
-//
-//	return exists, nil
-//}
-
 func CreateUser(user *models.User) error {
 
 	query := `
-		INSERT INTO users (id, username, password, first_name, middle_name, last_name, email, student_id, major, year, role_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
+		INSERT INTO users (id, username, password, first_name, middle_name, last_name, email, student_id, major, year, role_id, email_verification_token)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
 	_, err := database.DB.Exec(
 		context.Background(),
 		query,
-		user.ID, user.Username, user.Password, user.FirstName, user.MiddleName, user.LastName, user.Email, user.StudentID, user.Major, user.Year, user.RoleID,
+		user.ID, user.Username, user.Password, user.FirstName, user.MiddleName, user.LastName, user.Email, user.StudentID, user.Major, user.Year, user.RoleID, user.EmailVerificationToken,
 	)
 	if err != nil {
 		log.Printf("Error during query execution or scanning: %v", err)
@@ -47,7 +36,7 @@ func AuthenticateUser(usernameOrEmail string) (*models.User, error) {
 
 	if usernameOrEmail != "" {
 		query = `
-			SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, year, role_id, created_at, updated_at
+			SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, year, role_id, created_at, updated_at, email_verified, student_id_verified
 			FROM users
 			WHERE username = $1 OR email = $1`
 
@@ -58,7 +47,7 @@ func AuthenticateUser(usernameOrEmail string) (*models.User, error) {
 			query,
 			usernameOrEmail,
 		).Scan(
-			&userID, &username, &user.Password, &user.FirstName, &middleNamePtr, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.Year, &user.RoleID, &user.CreatedAt, &user.UpdatedAt,
+			&userID, &username, &user.Password, &user.FirstName, &middleNamePtr, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.Year, &user.RoleID, &user.CreatedAt, &user.UpdatedAt, &user.EmailVerified, &user.StudentIDVerified,
 		)
 		if username != nil {
 			user.Username = *username
@@ -79,4 +68,38 @@ func AuthenticateUser(usernameOrEmail string) (*models.User, error) {
 	}
 	user.MiddleName = middleName.String
 	return &user, nil
+}
+
+func VerifyEmail(token string) error {
+	query := `
+		UPDATE users
+		SET email_verified = true
+		WHERE email_verification_token = $1`
+	_, err := database.DB.Exec(
+		context.Background(),
+		query,
+		token,
+	)
+	if err != nil {
+		log.Printf("Error during query execution or scanning: %v", err)
+		return err
+	}
+	return nil
+}
+
+func PasswordResetToken(token string) error {
+	query := `
+		UPDATE users
+		SET password_reset_token = $1
+		WHERE email = $2`
+	_, err := database.DB.Exec(
+		context.Background(),
+		query,
+		token,
+	)
+	if err != nil {
+		log.Printf("Error during query execution or scanning: %v", err)
+		return err
+	}
+	return nil
 }
