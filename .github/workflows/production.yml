@@ -25,6 +25,13 @@ jobs:
             echo "REDIS_PASS=${{ secrets.REDIS_PASS }}" >> .env
             echo "API_PORT=${{ secrets.API_PORT }}" >> .env
             echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env
+            echo "CLOUDFLARE_ACCOUNT_ID=${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" >> .env
+            echo "CLOUDFLARE_R2_ACCESS_ID=${{ secrets.CLOUDFLARE_R2_ACCESS_ID }}" >> .env
+            echo "CLOUDFLARE_R2_ACCESS_KEY=${{ secrets.CLOUDFLARE_R2_ACCESS_KEY }}" >> .env
+            echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
+            echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
+            echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env
+            echo "S3_BUCKET=${{ secrets.S3_BUCKET }}" >> .env
           fi
 
       - name: Ensure .env file exists
@@ -64,4 +71,4 @@ jobs:
               whoami
               docker stop api-pufa-computing || true && docker rm api-pufa-computing || true
               docker pull ${{ vars.IMAGE_NAME}}
-              docker run -d -p ${{ secrets.API_PORT }}:${{ secrets.API_PORT }} --name ${{ vars.CONTAINER_NAME }} ${{ vars.IMAGE_NAME}}
+              docker run -d -p ${{ secrets.API_PORT }}:8080 --name ${{ vars.CONTAINER_NAME }} ${{ vars.IMAGE_NAME}}

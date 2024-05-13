@@ -70,13 +70,13 @@ func (es *EventService) DeleteEvent(eventID int) error {
 	return nil
 }
 
-func (es *EventService) ListEvents(queryParams map[string]string) ([]*models.Event, error) {
-	events, err := app.ListEvents(queryParams)
+func (es *EventService) ListEvents(queryParams map[string]string) ([]*models.Event, int, error) {
+	events, totalPages, err := app.ListEvents(queryParams)
 	if err != nil {
-		return nil, err
+		return nil, totalPages, err
 	}
 
-	return events, nil
+	return events, totalPages, nil
 }
 
 func (es *EventService) RegisterForEvent(userID uuid.UUID, eventID int) error {

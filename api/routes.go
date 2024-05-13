@@ -4,7 +4,6 @@ import (
 	"Backend/internal/handlers/aspirations"
 	"Backend/internal/handlers/auth"
 	"Backend/internal/handlers/event"
-	"Backend/internal/handlers/files"
 	"Backend/internal/handlers/news"
 	"Backend/internal/handlers/permission"
 	"Backend/internal/handlers/role"
@@ -34,16 +33,16 @@ func SetupRoutes() *gin.Engine {
 	newsService := services.NewNewsService()
 	roleService := services.NewRoleService()
 	permissionService := services.NewPermissionService()
-	filesService := services.NewFilesService()
 	aspirationsService := services.NewAspirationService()
+	AWSService, _ := services.NewAWSService()
+	R2Service, _ := services.NewR2Service()
 
 	authHandlers := auth.NewAuthHandlers(authService, permissionService)
 	userHandlers := user.NewUserHandlers(userService, permissionService)
-	eventHandlers := event.NewEventHandlers(eventService, permissionService)
+	eventHandlers := event.NewEventHandlers(eventService, permissionService, AWSService, R2Service)
 	newsHandlers := news.NewNewsHandler(newsService, permissionService)
 	roleHandlers := role.NewRoleHandler(roleService, userService, permissionService)
 	permissionHandlers := permission.NewPermissionHandler(permissionService)
-	filesHandlers := files.NewFilesHandlers(filesService, permissionService)
 	aspirationHandlers := aspirations.NewAspirationHandlers(aspirationsService, permissionService)
 
 	api := r.Group("/api/v1")
@@ -107,12 +106,6 @@ func SetupRoutes() *gin.Engine {
 		permissionRoutes.GET("/list", permissionHandlers.ListPermissions)
 		permissionRoutes.POST("/assign/:roleID", permissionHandlers.AssignPermissionToRole)
 
-	}
-
-	filesRoutes := api.Group("/files")
-	{
-		//filesRoutes.PUT("/", filesHandlers.UploadFile)
-		filesRoutes.PUT("/upload/profile-picture", filesHandlers.UploadFile)
 	}
 
 	aspirationRoutes := api.Group("/aspirations")

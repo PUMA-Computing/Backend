@@ -23,9 +23,10 @@ func (e *EventStatusUpdater) Run() {
 		case <-ticker.C:
 			log.Println("EventStatusUpdater: Status update loop started")
 			// Get all events
-			events, err := e.EventService.ListEvents(map[string]string{})
+			events, _, err := e.EventService.ListEvents(map[string]string{})
 			if err != nil {
-				log.Printf("EventStatusUpdater: Error fetching events: %v\n", err)
+				// Log the error
+				log.Println("Error fetching events:", err)
 				continue
 			}
 
