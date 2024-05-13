@@ -6,6 +6,7 @@ import (
 	"Backend/pkg/utils"
 	"context"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
@@ -217,7 +218,7 @@ func (h *Handlers) ListUsers(c *gin.Context) {
 
 	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "users:list")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{"Unauthorized"}})
 		return
 	}
 
@@ -238,4 +239,14 @@ func (h *Handlers) ListUsers(c *gin.Context) {
 		"message": "Users Retrieved Successfully",
 		"data":    users,
 	})
+}
+
+func (h *Handlers) GetRoleIDByUserID(c *gin.Context, userID uuid.UUID) (int, error) {
+	roleID, err := h.UserService.GetRoleIDByUserID(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return 0, err
+	}
+
+	return roleID, nil
 }

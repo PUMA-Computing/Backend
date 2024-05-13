@@ -36,6 +36,7 @@ func SetupRoutes() *gin.Engine {
 	aspirationsService := services.NewAspirationService()
 	AWSService, _ := services.NewAWSService()
 	R2Service, _ := services.NewR2Service()
+	//MailgunService := services.NewMailgunService()
 
 	authHandlers := auth.NewAuthHandlers(authService, permissionService)
 	userHandlers := user.NewUserHandlers(userService, permissionService)
@@ -57,11 +58,12 @@ func SetupRoutes() *gin.Engine {
 
 	userRoutes := api.Group("/user")
 	{
+		userRoutes.GET("/list", userHandlers.ListUsers)
+
 		userRoutes.Use(middleware.TokenMiddleware())
 		userRoutes.GET("/:userID", userHandlers.GetUserByID)
 		userRoutes.PUT("/edit", userHandlers.EditUser)
 		userRoutes.DELETE("/delete", userHandlers.DeleteUser)
-		userRoutes.GET("/list", userHandlers.ListUsers)
 
 		// ListEventsRegisteredByUser
 		userRoutes.GET("/registered-events", eventHandlers.ListEventsRegisteredByUser)

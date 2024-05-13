@@ -7,6 +7,10 @@ import (
 	"log"
 )
 
+type DBInterface interface {
+	Query(query string, args ...interface{}) error
+}
+
 var DB *pgxpool.Pool
 
 func Init(config *configs.Config) {

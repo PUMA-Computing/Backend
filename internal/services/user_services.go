@@ -86,6 +86,10 @@ func (us *UserService) GetUserByEmail(email string) (*models.User, error) {
 	return app.GetUserByEmail(email)
 }
 
+func (us *UserService) GetRoleIDByUserID(userID uuid.UUID) (int, error) {
+	return app.GetRoleIDByUserID(userID)
+}
+
 func (us *UserService) CheckStudentIDExists(studentID string) (bool, error) {
 	return app.CheckStudentIDExists(studentID)
 }

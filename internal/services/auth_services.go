@@ -66,6 +66,7 @@ func (as *AuthService) RegisterUser(user *models.User) error {
 	}
 
 	log.Println("after auth service")
+
 	return nil
 }
 
@@ -83,6 +84,11 @@ func (as *AuthService) LoginUser(username string, password string) (*models.User
 	if err != nil {
 		log.Printf("Error comparing hashed password: %v", err)
 		return nil, &utils.UnauthorizedError{Message: "invalid credentials"}
+	}
+
+	// Check if email is verified
+	if !user.EmailVerified {
+		return nil, &utils.UnauthorizedError{Message: "email not verified"}
 	}
 
 	return user, nil
@@ -106,4 +112,8 @@ func (as *AuthService) GetUserByStudentID(studentID string) (*models.User, error
 
 func (as *AuthService) CheckStudentIDExists(studentID string) (bool, error) {
 	return app.CheckStudentIDExists(studentID)
+}
+
+func (as *AuthService) VerifyEmail(token string) error {
+	return app.VerifyEmail(token)
 }
