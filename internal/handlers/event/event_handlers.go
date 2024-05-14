@@ -223,7 +223,7 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 func (h *Handlers) DeleteEvent(c *gin.Context) {
 	_, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "events:delete")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
