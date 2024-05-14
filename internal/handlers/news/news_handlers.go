@@ -1,11 +1,14 @@
 package news
 
 import (
+	"Backend/internal/handlers/auth"
 	"Backend/internal/models"
 	"Backend/internal/services"
 	"Backend/pkg/utils"
 	"context"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -16,50 +19,86 @@ import (
 type Handler struct {
 	NewsService       *services.NewsService
 	PermissionService *services.PermissionService
+	AWSService        *services.S3Service
+	R2Service         *services.S3Service
 }
 
-func NewNewsHandler(newsService *services.NewsService, permissionService *services.PermissionService) *Handler {
+func NewNewsHandler(newsService *services.NewsService, permissionService *services.PermissionService, AWSService *services.S3Service, R2Service *services.S3Service) *Handler {
 	return &Handler{
 		NewsService:       newsService,
 		PermissionService: permissionService,
+		AWSService:        AWSService,
+		R2Service:         R2Service,
 	}
 }
 
 func (h *Handler) CreateNews(c *gin.Context) {
-	token, err := utils.ExtractTokenFromHeader(c)
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "news:create")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
-	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "news:create")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
-	if !hasPermission {
-		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"Permission Denied"}})
-		return
-	}
-
+	data := c.Request.FormValue("data")
 	var newNews models.News
-	if err := c.BindJSON(&newNews); err != nil {
+	if err := json.Unmarshal([]byte(data), &newNews); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
 	newNews.UserID = userID
-	newNews.CreatedAt = time.Time{}
-	newNews.UpdatedAt = time.Time{}
 
-	// slug from title
-	newNews.Slug = utils.GenerateFriendlyURL(newNews.Title)
+	if newNews.Title == "" {
+		newNews.Slug = utils.GenerateFriendlyURL(newNews.Title)
+	}
+
+	if newNews.PublishDate.IsZero() {
+		newNews.PublishDate = time.Now()
+	}
+
+	file, _, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	optimizedImage, err := utils.OptimizeImage(file, 2800, 1080)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	optimizedImageBytes, err := io.ReadAll(optimizedImage)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	// Choose storage service to upload image to (AWS or R2)
+	upload := utils.ChooseStorageService()
+
+	if upload == utils.R2Service {
+		err = h.R2Service.UploadFileToR2(context.Background(), "news", newNews.Slug, optimizedImageBytes)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		newNews.Thumbnail, _ = h.R2Service.GetFileR2("news", newNews.Slug)
+	} else {
+		err = h.AWSService.UploadFileToAWS(context.Background(), "news", newNews.Slug, optimizedImageBytes)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		newNews.Thumbnail, _ = h.AWSService.GetFileAWS("news", newNews.Slug)
+	}
 
 	if err := h.NewsService.CreateNews(&newNews); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
@@ -95,25 +134,9 @@ func (h *Handler) GetNewsByID(c *gin.Context) {
 }
 
 func (h *Handler) EditNews(c *gin.Context) {
-	token, err := utils.ExtractTokenFromHeader(c)
+	_, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "news:edit")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "news:edit")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	if !hasPermission {
-		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"Permission Denied"}})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
@@ -124,30 +147,70 @@ func (h *Handler) EditNews(c *gin.Context) {
 		return
 	}
 
-	var updatedNews models.News
-	if err := c.BindJSON(&updatedNews); err != nil {
+	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
-	updatedNews.UpdatedAt = time.Time{}
-
-	updatedAttributes := make(map[string]interface{})
-	if updatedNews.Title != "" {
-		updatedAttributes["title"] = updatedNews.Title
+	data := c.Request.FormValue("data")
+	var updatedNews models.News
+	if err := json.Unmarshal([]byte(data), &updatedNews); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
 	}
 
-	if updatedNews.Content != "" {
-		updatedAttributes["content"] = updatedNews.Content
+	file, _, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
 	}
 
-	if updatedNews.PublishDate.IsZero() {
-		updatedAttributes["publish_date"] = updatedNews.PublishDate
+	optimizedImage, err := utils.OptimizeImage(file, 2800, 1080)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
 	}
 
-	if updatedNews.Likes != 0 {
-		updatedAttributes["likes"] = updatedNews.Likes
+	optimizedImageBytes, err := io.ReadAll(optimizedImage)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
 	}
+
+	// Choose storage service to upload image to (AWS or R2)
+	upload := utils.ChooseStorageService()
+
+	if upload == utils.R2Service {
+		err = h.R2Service.UploadFileToR2(context.Background(), "news", updatedNews.Slug, optimizedImageBytes)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		updatedNews.Thumbnail, _ = h.R2Service.GetFileR2("news", updatedNews.Slug)
+	} else {
+		err = h.AWSService.UploadFileToAWS(context.Background(), "news", updatedNews.Slug, optimizedImageBytes)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		updatedNews.Thumbnail, _ = h.AWSService.GetFileAWS("news", updatedNews.Slug)
+	}
+
+	existingNews, err := h.NewsService.GetNewsByID(newsID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": []string{"News not found"}})
+		return
+	}
+
+	if updatedNews.Title == "" {
+		updatedNews.Slug = utils.GenerateFriendlyURL(updatedNews.Title)
+	} else {
+		updatedNews.Slug = existingNews.Slug
+	}
+
+	utils.ReflectiveUpdate(existingNews, &updatedNews)
 
 	if err := h.NewsService.EditNews(newsID, &updatedNews); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
@@ -155,30 +218,14 @@ func (h *Handler) EditNews(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "News Updated Successfully",
-		"data":    updatedAttributes,
+		"data":    existingNews,
 	})
 }
 
 func (h *Handler) DeleteNews(c *gin.Context) {
-	token, err := utils.ExtractTokenFromHeader(c)
+	_, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "news:delete")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-	userID, err := utils.GetUserIDFromToken(token, os.Getenv("JWT_SECRET_KEY"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	hasPermission, err := h.PermissionService.CheckPermission(context.Background(), userID, "news:delete")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	if !hasPermission {
-		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"Permission Denied"}})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
@@ -187,6 +234,31 @@ func (h *Handler) DeleteNews(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Invalid News ID"}})
 		return
+	}
+
+	news, err := h.NewsService.GetNewsByID(newsID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": []string{"News not found"}})
+		return
+	}
+
+	// Check image exists on AWS or R2
+	exists, _ := h.AWSService.FileExists(context.Background(), "news", news.Slug)
+	if exists {
+		if err := h.AWSService.DeleteFile(context.Background(), "news", news.Slug); err != nil {
+			log.Println("Error deleting file from AWS")
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+	} else {
+		exists, _ := h.R2Service.FileExists(context.Background(), "news", news.Slug)
+		if exists {
+			if err := h.R2Service.DeleteFile(context.Background(), "news", news.Slug); err != nil {
+				log.Println("Error deleting file from R2")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+				return
+			}
+		}
 	}
 
 	if err := h.NewsService.DeleteNews(newsID); err != nil {
@@ -201,19 +273,21 @@ func (h *Handler) DeleteNews(c *gin.Context) {
 }
 
 func (h *Handler) ListNews(c *gin.Context) {
+	queryParams := make(map[string]string)
+	queryParams["organization_id"] = c.Query("organization_id")
+	queryParams["page"] = c.Query("page")
 
-	news, err := h.NewsService.ListNews()
+	news, totalPages, err := h.NewsService.ListNews(queryParams)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
-	log.Println("List Events End")
-
 	c.JSON(http.StatusOK, gin.H{
 		"success":      true,
-		"totalResults": len(news),
 		"data":         news,
+		"totalResults": len(news),
+		"totalPages":   totalPages,
 	})
 }
 

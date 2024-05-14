@@ -41,7 +41,7 @@ func SetupRoutes() *gin.Engine {
 	authHandlers := auth.NewAuthHandlers(authService, permissionService)
 	userHandlers := user.NewUserHandlers(userService, permissionService)
 	eventHandlers := event.NewEventHandlers(eventService, permissionService, AWSService, R2Service)
-	newsHandlers := news.NewNewsHandler(newsService, permissionService)
+	newsHandlers := news.NewNewsHandler(newsService, permissionService, AWSService, R2Service)
 	roleHandlers := role.NewRoleHandler(roleService, userService, permissionService)
 	permissionHandlers := permission.NewPermissionHandler(permissionService)
 	aspirationHandlers := aspirations.NewAspirationHandlers(aspirationsService, permissionService)
