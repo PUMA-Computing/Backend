@@ -87,9 +87,9 @@ func (as *AuthService) LoginUser(username string, password string) (*models.User
 	}
 
 	// Check if email is verified
-	if !user.EmailVerified {
-		return nil, &utils.UnauthorizedError{Message: "email not verified"}
-	}
+	//if !user.EmailVerified {
+	//	return nil, &utils.UnauthorizedError{Message: "email not verified"}
+	//}
 
 	return user, nil
 }
