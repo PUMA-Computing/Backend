@@ -20,12 +20,14 @@ import (
 type Handlers struct {
 	AuthService       *services.AuthService
 	PermissionService *services.PermissionService
+	MailGunService    *services.MailgunService
 }
 
-func NewAuthHandlers(authService *services.AuthService, permissionService *services.PermissionService) *Handlers {
+func NewAuthHandlers(authService *services.AuthService, permissionService *services.PermissionService, mailgunService *services.MailgunService) *Handlers {
 	return &Handlers{
 		AuthService:       authService,
 		PermissionService: permissionService,
+		MailGunService:    mailgunService,
 	}
 }
 
@@ -98,6 +100,12 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 	newUser.EmailVerificationToken = token
 
 	if err := h.AuthService.RegisterUser(&newUser); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	// Send verification email
+	if err := h.MailGunService.SendVerificationEmail(newUser.Email, token); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return
 	}

@@ -26,6 +26,10 @@ type Config struct {
 	AWSSecretAccessKey string
 	AWSRegion          string
 	S3Bucket           string
+
+	MailGunDomain      string
+	MailGunAPIKey      string
+	MailGunSenderEmail string
 }
 
 func LoadConfig() *Config {
@@ -46,6 +50,9 @@ func LoadConfig() *Config {
 		AWSSecretAccessKey:    os.Getenv("AWS_SECRET_ACCESS_KEY"),
 		AWSRegion:             os.Getenv("AWS_REGION"),
 		S3Bucket:              os.Getenv("S3_BUCKET"),
+		MailGunDomain:         os.Getenv("MAILGUN_DOMAIN"),
+		MailGunAPIKey:         os.Getenv("MAILGUN_API_KEY"),
+		MailGunSenderEmail:    os.Getenv("MAILGUN_SENDER_EMAIL"),
 	}
 
 	fmt.Printf("Loaded Config: %+v\n", cfg)
