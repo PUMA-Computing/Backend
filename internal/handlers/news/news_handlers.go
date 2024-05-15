@@ -133,6 +133,23 @@ func (h *Handler) GetNewsByID(c *gin.Context) {
 	})
 }
 
+func (h *Handler) GetNewsBySlug(c *gin.Context) {
+	newsSlug := c.Param("newsID")
+
+	news, err := h.NewsService.GetNewsBySlug(newsSlug)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": []string{"News not found"}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "News Retrieved Successfully",
+		"data":    news,
+	})
+
+}
+
 func (h *Handler) EditNews(c *gin.Context) {
 	_, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "news:edit")
 	if err != nil {

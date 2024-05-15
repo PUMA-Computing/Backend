@@ -84,7 +84,7 @@ func SetupRoutes() *gin.Engine {
 	newsRoutes := api.Group("/news")
 	{
 		newsRoutes.GET("/", newsHandlers.ListNews)
-		newsRoutes.GET("/:newsID", newsHandlers.GetNewsByID)
+		newsRoutes.GET("/:newsID", newsHandlers.GetNewsBySlug)
 		newsRoutes.Use(middleware.TokenMiddleware())
 		newsRoutes.POST("/create", newsHandlers.CreateNews)
 		newsRoutes.PUT("/:newsID/edit", newsHandlers.EditNews)

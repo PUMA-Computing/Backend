@@ -53,6 +53,14 @@ func (ns *NewsService) GetNewsByID(newsID int) (*models.News, error) {
 	return news, nil
 }
 
+func (ns *NewsService) GetNewsBySlug(slug string) (*models.News, error) {
+	news, err := app.GetNewsBySlug(slug)
+	if err != nil {
+		return nil, err
+	}
+	return news, nil
+}
+
 func (ns *NewsService) ListNews(queryParams map[string]string) ([]*models.News, int, error) {
 	news, totalRecords, err := app.ListNews(queryParams)
 	if err != nil {

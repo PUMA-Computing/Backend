@@ -33,7 +33,22 @@ func GetNewsByID(newsID int) (*models.News, error) {
 	var news models.News
 	err := database.DB.QueryRow(context.Background(), `
 		SELECT id, title, content, user_id, publish_date, likes, created_at, updated_at, thumbnail, slug, organization_id
-		FROM news WHERE id = $1`, newsID).Scan(&news.ID, &news.Title, &news.Content, &news.UserID, &news.PublishDate, &news.Likes, &news.CreatedAt, &news.UpdatedAt, &news.Thumbnail, &news.Slug, &news.OrganizationID, &news.Author)
+		FROM news WHERE id = $1`, newsID).Scan(&news.ID, &news.Title, &news.Content, &news.UserID, &news.PublishDate, &news.Likes, &news.CreatedAt, &news.UpdatedAt, &news.Thumbnail, &news.Slug, &news.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+	return &news, nil
+}
+
+func GetNewsBySlug(slug string) (*models.News, error) {
+	var news models.News
+	err := database.DB.QueryRow(context.Background(), `
+		SELECT n.id, n.title, n.content, n.user_id, n.publish_date, n.likes, n.created_at, n.updated_at, n.thumbnail, n.slug, n.organization_id, o.name as organizations, CONCAT(u.first_name, ' ', u.last_name) AS author
+		FROM news n
+		LEFT JOIN organizations o ON n.organization_id = o.id
+		LEFT JOIN users u ON n.user_id = u.id
+		WHERE n.slug = $1`, slug).Scan(&news.ID, &news.Title, &news.Content, &news.UserID, &news.PublishDate, &news.Likes, &news.CreatedAt, &news.UpdatedAt, &news.Thumbnail, &news.Slug, &news.OrganizationID, &news.Organization, &news.Author)
+
 	if err != nil {
 		return nil, err
 	}
