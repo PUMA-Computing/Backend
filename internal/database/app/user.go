@@ -10,15 +10,24 @@ import (
 	"log"
 )
 
-func GetUserByUsernameOrEmail(username, email string) (*models.User, error) {
-	query := "SELECT * FROM users WHERE username = $1 OR email = $2"
+func GetUserByUsernameOrEmail(username string) (*models.User, error) {
 	var user models.User
-	err := database.DB.QueryRow(context.Background(), query, username, email).Scan(&user.ID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.Year, &user.RoleID, &user.CreatedAt, &user.UpdatedAt)
+	var userID string
+	var middleName sql.NullString
+	err := database.DB.QueryRow(context.Background(), "SELECT * FROM users WHERE username = $1 OR email = $1", username).Scan(&userID, &user.Username, &user.Password, &user.FirstName, &middleName, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.Year, &user.RoleID, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil // User not found, return nil
+			return nil, nil
 		}
 		return nil, err
+	}
+	user.ID, err = uuid.Parse(userID)
+	if err != nil {
+		return nil, err
+	}
+	user.MiddleName = ""
+	if middleName.Valid {
+		user.MiddleName = middleName.String
 	}
 	return &user, nil
 }

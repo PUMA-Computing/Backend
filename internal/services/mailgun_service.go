@@ -1,8 +1,10 @@
 package services
 
 import (
+	"Backend/configs"
 	"context"
 	"github.com/mailgun/mailgun-go/v4"
+	"log"
 )
 
 type MailgunService struct {
@@ -23,9 +25,25 @@ func NewMailgunService(domain, apiKey, senderEmail string) *MailgunService {
 
 func (ms *MailgunService) SendVerificationEmail(to, token string) error {
 	subject := "Email Verification"
+
+	// Load BaseURL from configs
+	baseURL := configs.LoadConfig().BaseURL
+
+	// Change the hardcoded URL to use the baseURL from configs
 	body := "Click the link below to verify your email\n" +
-		"http://localhost:8080/api/v1/auth/verify-email?token=" + token
-	return ms.sendEmail(to, subject, body)
+		baseURL + "/auth/verify-email?token=" + token
+
+	log.Println("Sending email to: ", to)
+	log.Println("Subject: ", subject)
+	log.Println("Body: ", body)
+
+	if err := ms.sendEmail(to, subject, body); err != nil {
+		return err
+	}
+
+	log.Println()
+
+	return nil
 }
 
 func (ms *MailgunService) sendEmail(toEmail, subject, body string) error {

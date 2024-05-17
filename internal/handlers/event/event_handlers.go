@@ -38,10 +38,16 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+	// Log request body
+	log.Println(c.Request.Body)
+
+	parse := c.Request.ParseMultipartForm(10 << 20)
+	if parse != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{parse.Error()}})
 		return
 	}
+
+	log.Println(parse)
 
 	data := c.Request.FormValue("data")
 	var newEvent models.Event
@@ -49,6 +55,8 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
+
+	log.Println(data)
 
 	newEvent.UserID = userID
 
@@ -63,9 +71,11 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 
 	file, _, err := c.Request.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "No file uploaded"})
 		return
 	}
+
+	log.Println(file)
 
 	optimizedImage, err := utils.OptimizeImage(file, 2800, 1080)
 	if err != nil {

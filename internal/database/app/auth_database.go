@@ -70,10 +70,68 @@ func AuthenticateUser(usernameOrEmail string) (*models.User, error) {
 	return &user, nil
 }
 
+func IsEmailVerified(email string) (bool, error) {
+	var verified bool
+	query := `
+		SELECT email_verified
+		FROM users
+		WHERE email = $1`
+	err := database.DB.QueryRow(
+		context.Background(),
+		query,
+		email,
+	).Scan(&verified)
+	if err != nil {
+		log.Printf("Error during query execution or scanning: %v", err)
+		return false, err
+	}
+	return verified, nil
+}
+
+func IsTokenVerificationEmailExists(token string) (bool, error) {
+	var exists bool
+	query := `
+		SELECT EXISTS (
+			SELECT 1
+			FROM users
+			WHERE email_verification_token = $1
+		)`
+	err := database.DB.QueryRow(
+		context.Background(),
+		query,
+		token,
+	).Scan(&exists)
+	if err != nil {
+		log.Printf("Error during query execution or scanning: %v", err)
+		return false, err
+	}
+	return exists, nil
+}
+
+func UpdateEmailVerificationToken(email, token string) error {
+	query := `
+		UPDATE users
+		SET email_verification_token = $1
+		WHERE email = $2`
+	_, err := database.DB.Exec(
+		context.Background(),
+		query,
+		token,
+		email,
+	)
+	if err != nil {
+		log.Printf("Error during query execution or scanning: %v", err)
+		return err
+	}
+	return nil
+
+}
+
+// VerifyEmail updates the email_verified field in the users table and return error if verification token is invalid
 func VerifyEmail(token string) error {
 	query := `
 		UPDATE users
-		SET email_verified = true
+		SET email_verified = TRUE
 		WHERE email_verification_token = $1`
 	_, err := database.DB.Exec(
 		context.Background(),

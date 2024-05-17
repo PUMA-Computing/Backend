@@ -9,7 +9,8 @@ import (
 	"log"
 )
 
-type AuthService struct{}
+type AuthService struct {
+}
 
 func NewAuthService() *AuthService {
 	return &AuthService{}
@@ -86,11 +87,6 @@ func (as *AuthService) LoginUser(username string, password string) (*models.User
 		return nil, &utils.UnauthorizedError{Message: "invalid credentials"}
 	}
 
-	// Check if email is verified
-	//if !user.EmailVerified {
-	//	return nil, &utils.UnauthorizedError{Message: "email not verified"}
-	//}
-
 	return user, nil
 }
 
@@ -110,8 +106,24 @@ func (as *AuthService) GetUserByStudentID(studentID string) (*models.User, error
 	return app.GetUserByStudentID(studentID)
 }
 
+func (as *AuthService) GetUserByUsernameOrEmail(usernameOrEmail string) (*models.User, error) {
+	return app.AuthenticateUser(usernameOrEmail)
+}
+
 func (as *AuthService) CheckStudentIDExists(studentID string) (bool, error) {
 	return app.CheckStudentIDExists(studentID)
+}
+
+func (as *AuthService) IsEmailVerified(username string) (bool, error) {
+	return app.IsEmailVerified(username)
+}
+
+func (as *AuthService) IsTokenVerificationEmailExists(token string) (bool, error) {
+	return app.IsTokenVerificationEmailExists(token)
+}
+
+func (as *AuthService) UpdateEmailVerificationToken(email, token string) error {
+	return app.UpdateEmailVerificationToken(email, token)
 }
 
 func (as *AuthService) VerifyEmail(token string) error {

@@ -26,9 +26,26 @@ type Config struct {
 	AWSSecretAccessKey string
 	AWSRegion          string
 	S3Bucket           string
+
+	MailGunDomain      string
+	MailGunApiKey      string
+	MailGunSenderEmail string
+
+	BaseURL string
 }
 
 func LoadConfig() *Config {
+	env := os.Getenv("ENV")
+
+	var baseURl string
+	if env == "production" {
+		baseURl = "https://computing.president.ac.id"
+	} else if env == "staging" {
+		baseURl = "http://localhost:3000"
+	} else {
+		baseURl = "http://localhost:3000"
+	}
+
 	cfg := &Config{
 		DBHost:                os.Getenv("DB_HOST"),
 		DBPort:                os.Getenv("DB_PORT"),
@@ -46,6 +63,10 @@ func LoadConfig() *Config {
 		AWSSecretAccessKey:    os.Getenv("AWS_SECRET_ACCESS_KEY"),
 		AWSRegion:             os.Getenv("AWS_REGION"),
 		S3Bucket:              os.Getenv("S3_BUCKET"),
+		MailGunDomain:         os.Getenv("MAILGUN_DOMAIN"),
+		MailGunApiKey:         os.Getenv("MAILGUN_API_KEY"),
+		MailGunSenderEmail:    os.Getenv("MAILGUN_SENDER_EMAIL"),
+		BaseURL:               baseURl,
 	}
 
 	fmt.Printf("Loaded Config: %+v\n", cfg)

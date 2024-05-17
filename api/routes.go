@@ -1,6 +1,7 @@
 package api
 
 import (
+	"Backend/configs"
 	"Backend/internal/handlers/aspirations"
 	"Backend/internal/handlers/auth"
 	"Backend/internal/handlers/event"
@@ -36,9 +37,14 @@ func SetupRoutes() *gin.Engine {
 	aspirationsService := services.NewAspirationService()
 	AWSService, _ := services.NewAWSService()
 	R2Service, _ := services.NewR2Service()
-	//MailgunService := services.NewMailgunService()
+	// Load configs
+	MailgunService := services.NewMailgunService(
+		configs.LoadConfig().MailGunDomain,
+		configs.LoadConfig().MailGunApiKey,
+		configs.LoadConfig().MailGunSenderEmail,
+	)
 
-	authHandlers := auth.NewAuthHandlers(authService, permissionService)
+	authHandlers := auth.NewAuthHandlers(authService, permissionService, MailgunService)
 	userHandlers := user.NewUserHandlers(userService, permissionService)
 	eventHandlers := event.NewEventHandlers(eventService, permissionService, AWSService, R2Service)
 	newsHandlers := news.NewNewsHandler(newsService, permissionService, AWSService, R2Service)
@@ -54,6 +60,7 @@ func SetupRoutes() *gin.Engine {
 		authRoutes.POST("/login", authHandlers.Login)
 		authRoutes.POST("/logout", authHandlers.Logout)
 		authRoutes.POST("/refresh-token", middleware.TokenMiddleware(), authHandlers.RefreshToken)
+		authRoutes.GET("/verify-email", authHandlers.VerifyEmail)
 	}
 
 	userRoutes := api.Group("/user")
