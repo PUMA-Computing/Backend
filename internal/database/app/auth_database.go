@@ -5,6 +5,7 @@ import (
 	"Backend/internal/models"
 	"context"
 	"database/sql"
+	"errors"
 	"github.com/google/uuid"
 	"log"
 )
@@ -27,46 +28,47 @@ func CreateUser(user *models.User) error {
 }
 
 func AuthenticateUser(usernameOrEmail string) (*models.User, error) {
+	log.Printf("start AuthenticateUser")
 	var user models.User
 	var userID string
 	var query string
 	var err error
-	var username *string
-	var middleName sql.NullString
 
-	if usernameOrEmail != "" {
-		query = `
-			SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, year, role_id, created_at, updated_at, email_verified, student_id_verified
-			FROM users
-			WHERE username = $1 OR email = $1`
+	log.Println("before query")
 
-		var middleNamePtr *string
+	query = `
+		SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, year, role_id, email_verification_token
+		FROM users
+		WHERE username = $1 OR email = $1`
 
-		err = database.DB.QueryRow(
-			context.Background(),
-			query,
-			usernameOrEmail,
-		).Scan(
-			&userID, &username, &user.Password, &user.FirstName, &middleNamePtr, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.Year, &user.RoleID, &user.CreatedAt, &user.UpdatedAt, &user.EmailVerified, &user.StudentIDVerified,
-		)
-		if username != nil {
-			user.Username = *username
-		}
-		if middleName != (sql.NullString{}) {
-			user.MiddleName = *middleNamePtr
-		}
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-	} else {
-		return nil, nil
+	log.Println("after query")
+
+	err = database.DB.QueryRow(
+		context.Background(),
+		query,
+		usernameOrEmail,
+	).Scan(
+		&userID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.Year, &user.RoleID, &user.EmailVerificationToken,
+	)
+
+	log.Println("after scan")
+
+	if errors.Is(err, sql.ErrNoRows) {
+		log.Println("No user found with username or email:", usernameOrEmail)
+		return nil, err
+	} else if err != nil {
+		log.Println("Error during query execution or scanning:", err)
+		return nil, err
 	}
+
+	if err != nil {
+		return nil, err
+	}
+
 	user.ID, err = uuid.Parse(userID)
 	if err != nil {
 		return nil, err
 	}
-	user.MiddleName = middleName.String
 	return &user, nil
 }
 
@@ -75,7 +77,7 @@ func IsEmailVerified(email string) (bool, error) {
 	query := `
 		SELECT email_verified
 		FROM users
-		WHERE email = $1`
+		WHERE email = $1 OR username = $1`
 	err := database.DB.QueryRow(
 		context.Background(),
 		query,

@@ -136,13 +136,22 @@ func validateEmail(email, suffix string) error {
 
 func (h *Handlers) Login(c *gin.Context) {
 	var loginRequest models.User
+
+	log.Println("before bind json")
+
 	if err := c.BindJSON(&loginRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
+	log.Println("username: ", loginRequest.Username)
+
+	log.Println("before lowercase")
+
 	// Lowercase the username
 	loginRequest.Username = strings.ToLower(loginRequest.Username)
+
+	log.Println("before isEmailVerified")
 
 	// Check isEmailVerified
 	isEmailVerified, err := h.AuthService.IsEmailVerified(loginRequest.Username)
@@ -150,6 +159,8 @@ func (h *Handlers) Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Verification Email Sent, Check Your Email"})
 		return
 	}
+
+	log.Println("before email verified")
 
 	if !isEmailVerified {
 		// Send verification email
@@ -179,11 +190,15 @@ func (h *Handlers) Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Email not verified. Verification email sent"})
 	}
 
+	log.Println("before login user")
+
 	user, err := h.AuthService.LoginUser(loginRequest.Username, loginRequest.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
+
+	log.Println("after login user")
 
 	token, err := utils.GenerateJWTToken(user.ID, os.Getenv("JWT_SECRET_KEY"))
 	if err != nil {

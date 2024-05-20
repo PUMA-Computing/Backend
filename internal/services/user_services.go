@@ -39,7 +39,7 @@ func (us *UserService) EditUser(userID uuid.UUID, updatedUser *models.User) erro
 		existingUser.FirstName = updatedUser.FirstName
 	}
 
-	if updatedUser.MiddleName != "" {
+	if updatedUser.MiddleName != nil {
 		existingUser.MiddleName = updatedUser.MiddleName
 	}
 

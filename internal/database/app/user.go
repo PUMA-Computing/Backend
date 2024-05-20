@@ -25,9 +25,9 @@ func GetUserByUsernameOrEmail(username string) (*models.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	user.MiddleName = ""
+	user.MiddleName = nil
 	if middleName.Valid {
-		user.MiddleName = middleName.String
+		user.MiddleName = &middleName.String
 	}
 	return &user, nil
 }
@@ -102,9 +102,9 @@ func GetUserByID(userID uuid.UUID) (*models.User, error) {
 		return nil, err
 	}
 
-	user.MiddleName = ""
+	user.MiddleName = nil
 	if middleName.Valid {
-		user.MiddleName = middleName.String
+		user.MiddleName = &middleName.String
 	}
 
 	user.ProfilePicture = nil
@@ -181,39 +181,20 @@ func ListUsers() ([]models.User, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var user models.User
-		var middleName sql.NullString
-		var profilePicture sql.NullString
-		var dateOfBirth sql.NullTime
 
 		log.Println("before scan")
 		err := rows.Scan(
-			&user.ID, &user.Username, &user.Password, &user.FirstName, &middleName, &user.LastName,
-			&user.Email, &user.StudentID, &user.Major, &profilePicture, &dateOfBirth,
+			&user.ID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName,
+			&user.Email, &user.StudentID, &user.Major, &user.ProfilePicture, &user.DateOfBirth,
 			&user.RoleID, &user.CreatedAt, &user.UpdatedAt, &user.Year,
+			&user.EmailVerified, &user.EmailVerificationToken, &user.PasswordResetToken, &user.PasswordResetExpires,
+			&user.StudentIDVerified, &user.StudentIDVerification, &user.InstitutionName,
 		)
 		if err != nil {
 			return nil, err
 		}
 
 		log.Println("after scan")
-
-		if middleName.Valid {
-			user.MiddleName = middleName.String
-		} else {
-			user.MiddleName = ""
-		}
-
-		if profilePicture.Valid {
-			user.ProfilePicture = &profilePicture.String
-		} else {
-			user.ProfilePicture = nil
-		}
-
-		if dateOfBirth.Valid {
-			user.DateOfBirth = &dateOfBirth.Time
-		} else {
-			user.DateOfBirth = nil
-		}
 
 		users = append(users, user)
 	}

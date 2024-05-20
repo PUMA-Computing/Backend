@@ -102,7 +102,7 @@ func (h *Handlers) EditUser(c *gin.Context) {
 		updatedAttributes["first_name"] = updatedUser.FirstName
 	}
 
-	if updatedUser.MiddleName != "" {
+	if updatedUser.MiddleName != nil {
 		updatedAttributes["middle_name"] = updatedUser.MiddleName
 	}
 
