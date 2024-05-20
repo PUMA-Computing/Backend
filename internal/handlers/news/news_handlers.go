@@ -53,7 +53,7 @@ func (h *Handler) CreateNews(c *gin.Context) {
 
 	newNews.UserID = userID
 
-	if newNews.Title == "" {
+	if newNews.Title != "" {
 		newNews.Slug = utils.GenerateFriendlyURL(newNews.Title)
 	}
 

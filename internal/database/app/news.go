@@ -11,8 +11,8 @@ import (
 
 func CreateNews(news *models.News) error {
 	_, err := database.DB.Exec(context.Background(), `
-		INSERT INTO news (title, content, user_id, publish_date, likes, created_at, updated_at, thumbnail, slug, organization_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`, news.Title, news.Content, news.UserID, news.PublishDate, news.Likes, news.CreatedAt, news.UpdatedAt, news.Thumbnail, news.Slug)
+		INSERT INTO news (title, content, user_id, publish_date, thumbnail, slug, organization_id) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+		news.Title, news.Content, news.UserID, news.PublishDate, news.Thumbnail, news.Slug, news.OrganizationID)
 	return err
 }
 
