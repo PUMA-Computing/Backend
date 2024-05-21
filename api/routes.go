@@ -71,6 +71,7 @@ func SetupRoutes() *gin.Engine {
 		userRoutes.GET("/:userID", userHandlers.GetUserByID)
 		userRoutes.PUT("/edit", userHandlers.EditUser)
 		userRoutes.DELETE("/delete", userHandlers.DeleteUser)
+		userRoutes.PUT("/:userID/update-user", userHandlers.AdminUpdateRoleAndStudentIDVerified)
 
 		// ListEventsRegisteredByUser
 		userRoutes.GET("/registered-events", eventHandlers.ListEventsRegisteredByUser)

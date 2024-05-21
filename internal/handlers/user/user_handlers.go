@@ -1,6 +1,7 @@
 package user
 
 import (
+	"Backend/internal/handlers/auth"
 	"Backend/internal/models"
 	"Backend/internal/services"
 	"Backend/pkg/utils"
@@ -249,4 +250,36 @@ func (h *Handlers) GetRoleIDByUserID(c *gin.Context, userID uuid.UUID) (int, err
 	}
 
 	return roleID, nil
+}
+
+func (h *Handlers) AdminUpdateRoleAndStudentIDVerified(c *gin.Context) {
+	_, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "users:create")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	userIDStr := c.Param("userID")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Invalid User ID"}})
+		return
+	}
+
+	// Bind JSON
+	var updatedUser models.User
+	if err := c.BindJSON(&updatedUser); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	if err := h.UserService.AdminUpdateRoleAndStudentIDVerified(userID, updatedUser.RoleID, updatedUser.StudentIDVerified); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "User Updated Successfully",
+	})
 }

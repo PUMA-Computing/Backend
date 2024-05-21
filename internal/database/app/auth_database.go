@@ -13,12 +13,13 @@ import (
 func CreateUser(user *models.User) error {
 
 	query := `
-		INSERT INTO users (id, username, password, first_name, middle_name, last_name, email, student_id, major, year, role_id, email_verification_token)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+		INSERT INTO users (id, username, password, first_name, middle_name, last_name, email, student_id, major, year, role_id, email_verification_token, institution_name, gender)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`
 	_, err := database.DB.Exec(
 		context.Background(),
 		query,
-		user.ID, user.Username, user.Password, user.FirstName, user.MiddleName, user.LastName, user.Email, user.StudentID, user.Major, user.Year, user.RoleID, user.EmailVerificationToken,
+		user.ID, user.Username, user.Password, user.FirstName, user.MiddleName, user.LastName, user.Email,
+		user.StudentID, user.Major, user.Year, user.RoleID, user.EmailVerificationToken, user.InstitutionName, user.Gender,
 	)
 	if err != nil {
 		log.Printf("Error during query execution or scanning: %v", err)
@@ -37,7 +38,7 @@ func AuthenticateUser(usernameOrEmail string) (*models.User, error) {
 	log.Println("before query")
 
 	query = `
-		SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, year, role_id, email_verification_token
+		SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, year, role_id, email_verification_token, institution_name, gender
 		FROM users
 		WHERE username = $1 OR email = $1`
 
@@ -48,7 +49,9 @@ func AuthenticateUser(usernameOrEmail string) (*models.User, error) {
 		query,
 		usernameOrEmail,
 	).Scan(
-		&userID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.Year, &user.RoleID, &user.EmailVerificationToken,
+		&userID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email,
+		&user.StudentID, &user.Major, &user.Year, &user.RoleID, &user.EmailVerificationToken, &user.InstitutionName,
+		&user.Gender,
 	)
 
 	log.Println("after scan")

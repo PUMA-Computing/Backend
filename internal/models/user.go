@@ -15,17 +15,18 @@ type User struct {
 	Email                  string     `json:"email"`
 	StudentID              string     `json:"student_id"`
 	Major                  string     `json:"major"`
-	Year                   string     `json:"year"`
 	ProfilePicture         *string    `json:"profile_picture"`
 	DateOfBirth            *time.Time `json:"date_of_birth"`
 	RoleID                 int        `json:"role_id"`
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`
-	InstitutionName        *string    `json:"institution_name"`
+	Year                   string     `json:"year"`
 	EmailVerified          bool       `json:"email_verified"`
 	EmailVerificationToken string     `json:"email_verification_token"`
 	PasswordResetToken     string     `json:"password_reset_token"`
 	PasswordResetExpires   *time.Time `json:"password_reset_expires"`
 	StudentIDVerified      bool       `json:"student_id_verified"`
 	StudentIDVerification  *string    `json:"student_id_verification"`
+	InstitutionName        *string    `json:"institution_name"`
+	Gender                 string     `json:"gender"`
 }

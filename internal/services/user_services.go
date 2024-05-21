@@ -98,3 +98,7 @@ func (us *UserService) ListUsers() ([]models.User, error) {
 	log.Println("service list users")
 	return app.ListUsers()
 }
+
+func (us *UserService) AdminUpdateRoleAndStudentIDVerified(userID uuid.UUID, roleID int, studentIDVerified bool) error {
+	return app.AdminUpdateRoleAndStudentIDVerified(userID, roleID, studentIDVerified)
+}

@@ -104,7 +104,7 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 	}
 
 	// Send verification email
-	if err := h.MailGunService.SendVerificationEmail(newUser.Email, token); err != nil {
+	if err := h.MailGunService.SendVerificationEmail(newUser.Email, token, newUser.ID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
@@ -182,7 +182,7 @@ func (h *Handlers) Login(c *gin.Context) {
 			return
 		}
 
-		if err := h.MailGunService.SendVerificationEmail(user.Email, token); err != nil {
+		if err := h.MailGunService.SendVerificationEmail(user.Email, token, user.ID); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 			return
 		}
