@@ -121,6 +121,7 @@ func SetupRoutes() *gin.Engine {
 	aspirationRoutes := api.Group("/aspirations")
 	{
 		aspirationRoutes.GET("/", aspirationHandlers.GetAspirations)
+		aspirationRoutes.GET("/:id", aspirationHandlers.GetAspirationByID)
 		aspirationRoutes.Use(middleware.TokenMiddleware())
 		aspirationRoutes.POST("/create", aspirationHandlers.CreateAspiration)
 		aspirationRoutes.PATCH("/:id/close", aspirationHandlers.CloseAspiration)

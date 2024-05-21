@@ -99,34 +99,16 @@ func GetUserByEmail(email string) (*models.User, error) {
 
 func GetUserByID(userID uuid.UUID) (*models.User, error) {
 	var user models.User
-	var middleName sql.NullString
-	var profilePicture sql.NullString
-	var dateOfBirth sql.NullTime
 
 	err := database.DB.QueryRow(context.Background(), `
-		SELECT id, username, first_name, middle_name, last_name, email, student_id, major, profile_picture, date_of_birth, role_id, created_at, updated_at, year, institution_name, gender
+		SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, profile_picture, date_of_birth, role_id, created_at, updated_at, year, institution_name, gender
 		FROM users WHERE id = $1`, userID).Scan(
-		&userID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email,
+		&user.ID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email,
 		&user.StudentID, &user.Major, &user.ProfilePicture, &user.DateOfBirth, &user.RoleID, &user.CreatedAt,
 		&user.UpdatedAt, &user.Year, &user.InstitutionName, &user.Gender)
 
 	if err != nil {
 		return nil, err
-	}
-
-	user.MiddleName = nil
-	if middleName.Valid {
-		user.MiddleName = &middleName.String
-	}
-
-	user.ProfilePicture = nil
-	if profilePicture.Valid {
-		user.ProfilePicture = &profilePicture.String
-	}
-
-	user.DateOfBirth = nil
-	if dateOfBirth.Valid {
-		user.DateOfBirth = &dateOfBirth.Time
 	}
 
 	return &user, nil
