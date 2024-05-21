@@ -45,7 +45,7 @@ func SetupRoutes() *gin.Engine {
 	)
 
 	authHandlers := auth.NewAuthHandlers(authService, permissionService, MailgunService)
-	userHandlers := user.NewUserHandlers(userService, permissionService)
+	userHandlers := user.NewUserHandlers(userService, permissionService, AWSService, R2Service)
 	eventHandlers := event.NewEventHandlers(eventService, permissionService, AWSService, R2Service)
 	newsHandlers := news.NewNewsHandler(newsService, permissionService, AWSService, R2Service)
 	roleHandlers := role.NewRoleHandler(roleService, userService, permissionService)
@@ -71,6 +71,7 @@ func SetupRoutes() *gin.Engine {
 		userRoutes.GET("/:userID", userHandlers.GetUserByID)
 		userRoutes.PUT("/edit", userHandlers.EditUser)
 		userRoutes.DELETE("/delete", userHandlers.DeleteUser)
+		userRoutes.POST("/upload-profile-picture", userHandlers.UploadProfilePicture)
 		userRoutes.PUT("/:userID/update-user", userHandlers.AdminUpdateRoleAndStudentIDVerified)
 
 		// ListEventsRegisteredByUser

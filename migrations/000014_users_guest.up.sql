@@ -36,6 +36,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER update_profile_picture_trigger
-    BEFORE INSERT OR UPDATE ON users
+    BEFORE INSERT ON users
     FOR EACH ROW
 EXECUTE FUNCTION update_profile_picture_based_on_gender();

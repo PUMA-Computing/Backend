@@ -67,7 +67,7 @@ func (us *UserService) EditUser(userID uuid.UUID, updatedUser *models.User) erro
 		existingUser.DateOfBirth = updatedUser.DateOfBirth
 	}
 
-	if updatedUser.ProfilePicture != nil {
+	if updatedUser.ProfilePicture != "" {
 		existingUser.ProfilePicture = updatedUser.ProfilePicture
 	}
 
@@ -101,4 +101,8 @@ func (us *UserService) ListUsers() ([]models.User, error) {
 
 func (us *UserService) AdminUpdateRoleAndStudentIDVerified(userID uuid.UUID, roleID int, studentIDVerified bool) error {
 	return app.AdminUpdateRoleAndStudentIDVerified(userID, roleID, studentIDVerified)
+}
+
+func (us *UserService) UploadProfilePicture(userID uuid.UUID, profilePicture string) error {
+	return app.UploadProfilePicture(userID, profilePicture)
 }

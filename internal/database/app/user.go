@@ -217,3 +217,8 @@ func ListUsers() ([]models.User, error) {
 
 	return users, nil
 }
+
+func UploadProfilePicture(userID uuid.UUID, profilePicture string) error {
+	_, err := database.DB.Exec(context.Background(), "UPDATE users SET profile_picture = $1 WHERE id = $2", profilePicture, userID)
+	return err
+}
