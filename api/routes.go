@@ -9,6 +9,7 @@ import (
 	"Backend/internal/handlers/permission"
 	"Backend/internal/handlers/role"
 	"Backend/internal/handlers/user"
+	"Backend/internal/handlers/version"
 	"Backend/internal/middleware"
 	"Backend/internal/services"
 	"github.com/gin-contrib/cors"
@@ -37,12 +38,18 @@ func SetupRoutes() *gin.Engine {
 	aspirationsService := services.NewAspirationService()
 	AWSService, _ := services.NewAWSService()
 	R2Service, _ := services.NewR2Service()
-	// Load configs
 	MailgunService := services.NewMailgunService(
 		configs.LoadConfig().MailGunDomain,
 		configs.LoadConfig().MailGunApiKey,
 		configs.LoadConfig().MailGunSenderEmail,
 	)
+	VersionService := services.NewVersionService(configs.LoadConfig().GithubAccessToken)
+
+	eventStatusUpdater := services.NewEventStatusUpdater(eventService)
+	go eventStatusUpdater.Run()
+
+	versionUpdater := services.NewVersionUpdater(VersionService)
+	go versionUpdater.Run()
 
 	authHandlers := auth.NewAuthHandlers(authService, permissionService, MailgunService)
 	userHandlers := user.NewUserHandlers(userService, permissionService, AWSService, R2Service)
@@ -51,6 +58,7 @@ func SetupRoutes() *gin.Engine {
 	roleHandlers := role.NewRoleHandler(roleService, userService, permissionService)
 	permissionHandlers := permission.NewPermissionHandler(permissionService)
 	aspirationHandlers := aspirations.NewAspirationHandlers(aspirationsService, permissionService)
+	versionHandlers := version.NewVersionHandlers(VersionService)
 
 	api := r.Group("/api/v1")
 
@@ -131,5 +139,12 @@ func SetupRoutes() *gin.Engine {
 		aspirationRoutes.GET("/:id/get_upvotes", aspirationHandlers.GetUpvotesByAspirationID)
 		aspirationRoutes.POST("/:id/admin_reply", aspirationHandlers.AddAdminReply)
 	}
+
+	versionRoutes := api.Group("/version")
+	{
+		versionRoutes.GET("/", versionHandlers.GetVersion)
+		versionRoutes.GET("/changelog", versionHandlers.GetChangelog)
+	}
+
 	return r
 }

@@ -36,6 +36,7 @@ jobs:
             echo "MAILGUN_API_KEY=${{ secrets.MAILGUN_API_KEY }}" >> .env
             echo "MAILGUN_SENDER_EMAIL=${{ secrets.MAILGUN_SENDER_EMAIL }}" >> .env
             echo "ENV=${{ secrets.ENV }}" >> .env
+            echo "GH_ACCESS_TOKEN=${{ secrets.GH_ACCESS_TOKEN }}" >> .env
           fi
 
       - name: Ensure .env file exists
