@@ -39,7 +39,7 @@ func (us *UserService) EditUser(userID uuid.UUID, updatedUser *models.User) erro
 		existingUser.FirstName = updatedUser.FirstName
 	}
 
-	if updatedUser.MiddleName != "" {
+	if updatedUser.MiddleName != nil {
 		existingUser.MiddleName = updatedUser.MiddleName
 	}
 
@@ -67,7 +67,7 @@ func (us *UserService) EditUser(userID uuid.UUID, updatedUser *models.User) erro
 		existingUser.DateOfBirth = updatedUser.DateOfBirth
 	}
 
-	if updatedUser.ProfilePicture != nil {
+	if updatedUser.ProfilePicture != "" {
 		existingUser.ProfilePicture = updatedUser.ProfilePicture
 	}
 
@@ -86,6 +86,10 @@ func (us *UserService) GetUserByEmail(email string) (*models.User, error) {
 	return app.GetUserByEmail(email)
 }
 
+func (us *UserService) GetRoleIDByUserID(userID uuid.UUID) (int, error) {
+	return app.GetRoleIDByUserID(userID)
+}
+
 func (us *UserService) CheckStudentIDExists(studentID string) (bool, error) {
 	return app.CheckStudentIDExists(studentID)
 }
@@ -93,4 +97,12 @@ func (us *UserService) CheckStudentIDExists(studentID string) (bool, error) {
 func (us *UserService) ListUsers() ([]models.User, error) {
 	log.Println("service list users")
 	return app.ListUsers()
+}
+
+func (us *UserService) AdminUpdateRoleAndStudentIDVerified(userID uuid.UUID, roleID int, studentIDVerified bool) error {
+	return app.AdminUpdateRoleAndStudentIDVerified(userID, roleID, studentIDVerified)
+}
+
+func (us *UserService) UploadProfilePicture(userID uuid.UUID, profilePicture string) error {
+	return app.UploadProfilePicture(userID, profilePicture)
 }

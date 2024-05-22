@@ -45,7 +45,7 @@ func GetAspirations(queryParams map[string]string) ([]models.Aspiration, error) 
 	var aspirations []models.Aspiration
 
 	query := `
-		SELECT aspirations.*, organizations.name AS organization, CONCAT(users.first_name, ' ', users.last_name) AS author
+		SELECT aspirations.*, organizations.name AS organization, CONCAT(users.first_name, ' ', users.last_name) AS name, users.profile_picture AS profile_picture
 		FROM aspirations
 		LEFT JOIN organizations ON aspirations.organization_id = organizations.id
 		LEFT JOIN users ON aspirations.user_id = users.id
@@ -84,11 +84,12 @@ func GetAspirations(queryParams map[string]string) ([]models.Aspiration, error) 
 			&aspiration.Anonymous,
 			&aspiration.OrganizationID,
 			&aspiration.Closed,
+			&aspiration.AdminReply,
 			&aspiration.CreatedAt,
 			&aspiration.UpdatedAt,
-			&aspiration.AdminReply,
-			&aspiration.Organization,
-			&aspiration.Author,
+			&aspiration.Organization.Name,
+			&aspiration.Author.Name,
+			&aspiration.Author.ProfilePicture,
 		)
 		if err != nil {
 			return nil, err
@@ -102,8 +103,13 @@ func GetAspirations(queryParams map[string]string) ([]models.Aspiration, error) 
 func GetAspirationByID(id int) (*models.Aspiration, error) {
 	var aspiration models.Aspiration
 
+	// Join aspirations with organizations and users
 	row := database.DB.QueryRow(context.Background(), `
-		SELECT * FROM aspirations WHERE id = $1`, id)
+		SELECT aspirations.*, organizations.name AS organization, CONCAT(users.first_name, ' ', users.last_name) AS name, users.profile_picture AS profile_picture
+		FROM aspirations
+		LEFT JOIN organizations ON aspirations.organization_id = organizations.id
+		LEFT JOIN users ON aspirations.user_id = users.id
+		WHERE aspirations.id = $1`, id)
 
 	err := row.Scan(
 		&aspiration.ID,
@@ -116,6 +122,9 @@ func GetAspirationByID(id int) (*models.Aspiration, error) {
 		&aspiration.AdminReply,
 		&aspiration.CreatedAt,
 		&aspiration.UpdatedAt,
+		&aspiration.Organization.Name,
+		&aspiration.Author.Name,
+		&aspiration.Author.ProfilePicture,
 	)
 	if err != nil {
 		return nil, err

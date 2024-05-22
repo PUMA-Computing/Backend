@@ -20,12 +20,14 @@ import (
 type Handlers struct {
 	AuthService       *services.AuthService
 	PermissionService *services.PermissionService
+	MailGunService    *services.MailgunService
 }
 
-func NewAuthHandlers(authService *services.AuthService, permissionService *services.PermissionService) *Handlers {
+func NewAuthHandlers(authService *services.AuthService, permissionService *services.PermissionService, MailGunService *services.MailgunService) *Handlers {
 	return &Handlers{
 		AuthService:       authService,
 		PermissionService: permissionService,
+		MailGunService:    MailGunService,
 	}
 }
 
@@ -54,7 +56,6 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 		randomBytes := make([]byte, 4) // Adjust length as needed
 		if _, err := rand.Read(randomBytes); err != nil {
 			// Handle error if random generation fails
-			// You might want to return an error or try generating again
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{"Failed to generate random string"}})
 			return
 		}
@@ -93,8 +94,18 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 		return
 	}
 
+	// Email Verification Token
+	token := utils.GenerateRandomString(32)
+	newUser.EmailVerificationToken = token
+
 	if err := h.AuthService.RegisterUser(&newUser); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	// Send verification email
+	if err := h.MailGunService.SendVerificationEmail(newUser.Email, token, newUser.ID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
@@ -125,19 +136,69 @@ func validateEmail(email, suffix string) error {
 
 func (h *Handlers) Login(c *gin.Context) {
 	var loginRequest models.User
+
+	log.Println("before bind json")
+
 	if err := c.BindJSON(&loginRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
+	log.Println("username: ", loginRequest.Username)
+
+	log.Println("before lowercase")
+
 	// Lowercase the username
 	loginRequest.Username = strings.ToLower(loginRequest.Username)
 
-	user, err := h.AuthService.LoginUser(loginRequest.Username, loginRequest.Password)
+	log.Println("before isEmailVerified")
+
+	// Check isEmailVerified
+	isEmailVerified, err := h.AuthService.IsEmailVerified(loginRequest.Username)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Verification Email Sent, Check Your Email"})
 		return
 	}
+
+	log.Println("before email verified")
+
+	if !isEmailVerified {
+		// Send verification email
+		user, err := h.AuthService.GetUserByUsernameOrEmail(loginRequest.Username)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		if user == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"User not found"}})
+			return
+		}
+
+		token := utils.GenerateRandomString(32)
+
+		if err := h.AuthService.UpdateEmailVerificationToken(user.Email, token); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		if err := h.MailGunService.SendVerificationEmail(user.Email, token, user.ID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Email not verified. Verification email sent"})
+	}
+
+	log.Println("before login user")
+
+	user, err := h.AuthService.LoginUser(loginRequest.Username, loginRequest.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	log.Println("after login user")
 
 	token, err := utils.GenerateJWTToken(user.ID, os.Getenv("JWT_SECRET_KEY"))
 	if err != nil {
@@ -239,4 +300,30 @@ func (h *Handlers) ExtractUserIDAndCheckPermission(c *gin.Context, permissionTyp
 	}
 
 	return userID, nil
+}
+
+func (h *Handlers) VerifyEmail(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Token is required"}})
+		return
+	}
+
+	exists, err := h.AuthService.IsTokenVerificationEmailExists(token)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Invalid Token"}})
+		return
+	}
+
+	if err := h.AuthService.VerifyEmail(token); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Email Verified Successfully"})
 }

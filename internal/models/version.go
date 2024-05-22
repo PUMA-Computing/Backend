@@ -1,13 +1,14 @@
 package models
 
 type Version struct {
-	LatestVersion string      `json:"latest_version"`
-	Changelog     []Changelog `json:"changelog"`
+	LatestVersion string           `json:"latest_version"`
+	Changelog     []ChangelogEntry `json:"changelog"`
 }
 
-type Changelog struct {
-	Version string   `json:"version"`
-	Changes []string `json:"changes"`
-}
+type ChangelogEntry map[string][]string
 
-// Version is a struct that represents the version of the application.
+type GithubVersion struct {
+	TagName     string `json:"tag_name"`
+	Body        string `json:"body"`
+	PublishedAt string `json:"published_at"`
+}

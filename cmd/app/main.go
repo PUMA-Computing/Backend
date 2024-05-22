@@ -4,7 +4,6 @@ import (
 	"Backend/api"
 	"Backend/configs"
 	"Backend/internal/database"
-	"Backend/internal/services"
 	"Backend/pkg/utils"
 	"github.com/joho/godotenv"
 	"log"
@@ -20,10 +19,6 @@ func main() {
 	database.Migrate()
 	database.Init(config)
 	utils.InitRedis()
-
-	eventService := services.NewEventService()
-	eventStatusUpdater := services.NewEventStatusUpdater(eventService)
-	go eventStatusUpdater.Run()
 
 	r := api.SetupRoutes()
 
