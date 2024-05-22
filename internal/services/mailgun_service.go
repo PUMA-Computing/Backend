@@ -43,7 +43,7 @@ func (ms *MailgunService) SendVerificationEmail(to, token string, userId uuid.UU
 	baseURL := configs.LoadConfig().BaseURL
 
 	// Construct the verification link
-	verificationLink := baseURL + "/verify-email?token=" + token
+	verificationLink := baseURL + "/auth/verify-email?token=" + token
 
 	data := EmailData{
 		Name:             user.FirstName,
