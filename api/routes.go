@@ -1,6 +1,7 @@
 package api
 
 import (
+	"Backend/configs"
 	"Backend/internal/handlers/aspirations"
 	"Backend/internal/handlers/auth"
 	"Backend/internal/handlers/event"
@@ -8,6 +9,7 @@ import (
 	"Backend/internal/handlers/permission"
 	"Backend/internal/handlers/role"
 	"Backend/internal/handlers/user"
+	"Backend/internal/handlers/version"
 	"Backend/internal/middleware"
 	"Backend/internal/services"
 	"github.com/gin-contrib/cors"
@@ -36,14 +38,27 @@ func SetupRoutes() *gin.Engine {
 	aspirationsService := services.NewAspirationService()
 	AWSService, _ := services.NewAWSService()
 	R2Service, _ := services.NewR2Service()
+	MailgunService := services.NewMailgunService(
+		configs.LoadConfig().MailGunDomain,
+		configs.LoadConfig().MailGunApiKey,
+		configs.LoadConfig().MailGunSenderEmail,
+	)
+	VersionService := services.NewVersionService(configs.LoadConfig().GithubAccessToken)
 
-	authHandlers := auth.NewAuthHandlers(authService, permissionService)
-	userHandlers := user.NewUserHandlers(userService, permissionService)
+	eventStatusUpdater := services.NewEventStatusUpdater(eventService)
+	go eventStatusUpdater.Run()
+
+	versionUpdater := services.NewVersionUpdater(VersionService)
+	go versionUpdater.Run()
+
+	authHandlers := auth.NewAuthHandlers(authService, permissionService, MailgunService)
+	userHandlers := user.NewUserHandlers(userService, permissionService, AWSService, R2Service)
 	eventHandlers := event.NewEventHandlers(eventService, permissionService, AWSService, R2Service)
-	newsHandlers := news.NewNewsHandler(newsService, permissionService)
+	newsHandlers := news.NewNewsHandler(newsService, permissionService, AWSService, R2Service)
 	roleHandlers := role.NewRoleHandler(roleService, userService, permissionService)
 	permissionHandlers := permission.NewPermissionHandler(permissionService)
 	aspirationHandlers := aspirations.NewAspirationHandlers(aspirationsService, permissionService)
+	versionHandlers := version.NewVersionHandlers(VersionService)
 
 	api := r.Group("/api/v1")
 
@@ -53,15 +68,19 @@ func SetupRoutes() *gin.Engine {
 		authRoutes.POST("/login", authHandlers.Login)
 		authRoutes.POST("/logout", authHandlers.Logout)
 		authRoutes.POST("/refresh-token", middleware.TokenMiddleware(), authHandlers.RefreshToken)
+		authRoutes.GET("/verify-email", authHandlers.VerifyEmail)
 	}
 
 	userRoutes := api.Group("/user")
 	{
+		userRoutes.GET("/list", userHandlers.ListUsers)
+
 		userRoutes.Use(middleware.TokenMiddleware())
 		userRoutes.GET("/:userID", userHandlers.GetUserByID)
 		userRoutes.PUT("/edit", userHandlers.EditUser)
 		userRoutes.DELETE("/delete", userHandlers.DeleteUser)
-		userRoutes.GET("/list", userHandlers.ListUsers)
+		userRoutes.POST("/upload-profile-picture", userHandlers.UploadProfilePicture)
+		userRoutes.PUT("/:userID/update-user", userHandlers.AdminUpdateRoleAndStudentIDVerified)
 
 		// ListEventsRegisteredByUser
 		userRoutes.GET("/registered-events", eventHandlers.ListEventsRegisteredByUser)
@@ -82,7 +101,7 @@ func SetupRoutes() *gin.Engine {
 	newsRoutes := api.Group("/news")
 	{
 		newsRoutes.GET("/", newsHandlers.ListNews)
-		newsRoutes.GET("/:newsID", newsHandlers.GetNewsByID)
+		newsRoutes.GET("/:newsID", newsHandlers.GetNewsBySlug)
 		newsRoutes.Use(middleware.TokenMiddleware())
 		newsRoutes.POST("/create", newsHandlers.CreateNews)
 		newsRoutes.PUT("/:newsID/edit", newsHandlers.EditNews)
@@ -111,6 +130,7 @@ func SetupRoutes() *gin.Engine {
 	aspirationRoutes := api.Group("/aspirations")
 	{
 		aspirationRoutes.GET("/", aspirationHandlers.GetAspirations)
+		aspirationRoutes.GET("/:id", aspirationHandlers.GetAspirationByID)
 		aspirationRoutes.Use(middleware.TokenMiddleware())
 		aspirationRoutes.POST("/create", aspirationHandlers.CreateAspiration)
 		aspirationRoutes.PATCH("/:id/close", aspirationHandlers.CloseAspiration)
@@ -119,5 +139,12 @@ func SetupRoutes() *gin.Engine {
 		aspirationRoutes.GET("/:id/get_upvotes", aspirationHandlers.GetUpvotesByAspirationID)
 		aspirationRoutes.POST("/:id/admin_reply", aspirationHandlers.AddAdminReply)
 	}
+
+	versionRoutes := api.Group("/version")
+	{
+		versionRoutes.GET("/", versionHandlers.GetVersion)
+		versionRoutes.GET("/changelog", versionHandlers.GetChangelog)
+	}
+
 	return r
 }

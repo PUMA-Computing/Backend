@@ -6,14 +6,17 @@ import (
 )
 
 type News struct {
-	ID          int       `json:"id"`
-	Title       string    `json:"title"`
-	Content     string    `json:"content"`
-	UserID      uuid.UUID `json:"user_id"`
-	PublishDate time.Time `json:"publish_date"`
-	Likes       int       `json:"likes"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	Thumbnail   *string   `json:"thumbnail"`
-	Slug        string    `json:"slug"`
+	ID             int       `json:"id"`
+	Title          string    `json:"title"`
+	Content        string    `json:"content"`
+	UserID         uuid.UUID `json:"user_id"`
+	PublishDate    time.Time `json:"publish_date"`
+	Likes          int       `json:"likes"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	Thumbnail      string    `json:"thumbnail"`
+	Slug           string    `json:"slug"`
+	OrganizationID int       `json:"organization_id"`
+	Organization   string    `json:"organization"`
+	Author         string    `json:"author"`
 }

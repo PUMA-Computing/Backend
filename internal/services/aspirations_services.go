@@ -60,5 +60,10 @@ func (s *AspirationService) GetUpvotesByAspirationID(aspirationID int) (int, err
 }
 
 func (s *AspirationService) AddAdminReply(aspirationID int, adminReply string) error {
+	// Close the aspiration
+	err := s.CloseAspirationByID(aspirationID)
+	if err != nil {
+		return err
+	}
 	return app.AddAdminReply(aspirationID, adminReply)
 }

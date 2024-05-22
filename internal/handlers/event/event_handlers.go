@@ -2,6 +2,7 @@ package event
 
 import (
 	"Backend/internal/handlers/auth"
+	"Backend/internal/handlers/user"
 	"Backend/internal/models"
 	"Backend/internal/services"
 	"Backend/pkg/utils"
@@ -37,10 +38,16 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+	// Log request body
+	log.Println(c.Request.Body)
+
+	parse := c.Request.ParseMultipartForm(10 << 20)
+	if parse != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{parse.Error()}})
 		return
 	}
+
+	log.Println(parse)
 
 	data := c.Request.FormValue("data")
 	var newEvent models.Event
@@ -48,6 +55,8 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
+
+	log.Println(data)
 
 	newEvent.UserID = userID
 
@@ -62,9 +71,11 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 
 	file, _, err := c.Request.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "No file uploaded"})
 		return
 	}
+
+	log.Println(file)
 
 	optimizedImage, err := utils.OptimizeImage(file, 2800, 1080)
 	if err != nil {
@@ -222,7 +233,7 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 func (h *Handlers) DeleteEvent(c *gin.Context) {
 	_, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "events:delete")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
@@ -337,6 +348,18 @@ func (h *Handlers) RegisterForEvent(c *gin.Context) {
 	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "events:register")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	// Check Role id and if it is 6 cannot register for event
+	roleID, err := (&user.Handlers{}).GetRoleIDByUserID(c, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	if roleID == 8 {
+		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": []string{"You are not eligible to this event"}})
 		return
 	}
 

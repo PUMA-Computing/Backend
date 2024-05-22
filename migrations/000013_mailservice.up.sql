@@ -1,0 +1,7 @@
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS email_verification_token VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS password_reset_token VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS password_reset_expires TIMESTAMP WITH TIME ZONE,
+    ADD COLUMN IF NOT EXISTS student_id_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS student_id_verification VARCHAR(255);
