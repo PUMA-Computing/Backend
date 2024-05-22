@@ -111,7 +111,7 @@ func (h *Handlers) RegisterUser(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
-		"message": "User Created Successfully",
+		"message": "User Created Successfully, Check Your Email for Verification",
 	})
 }
 
@@ -188,6 +188,7 @@ func (h *Handlers) Login(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Email not verified. Verification email sent"})
+		return
 	}
 
 	log.Println("before login user")
