@@ -151,7 +151,13 @@ func (h *Handlers) Login(c *gin.Context) {
 	// Lowercase the username
 	loginRequest.Username = strings.ToLower(loginRequest.Username)
 
-	log.Println("before isEmailVerified")
+	// Check if the usernameOrEmail is an email
+	if utils.IsEmail(loginRequest.Username) {
+		if err := h.AuthService.ValidateEmail(loginRequest.Username); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+	}
 
 	// Check isEmailVerified
 	isEmailVerified, err := h.AuthService.IsEmailVerified(loginRequest.Username)

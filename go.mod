@@ -18,7 +18,7 @@ require (
 	github.com/mailgun/mailgun-go/v4 v4.12.0
 	github.com/redis/go-redis/v9 v9.3.0
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/crypto v0.16.0
+	golang.org/x/crypto v0.23.0
 )
 
 require (
@@ -53,6 +53,7 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/hbollon/go-edlib v1.6.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
@@ -74,10 +75,10 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/arch v0.5.0 // indirect
 	golang.org/x/image v0.15.0 // indirect
-	golang.org/x/net v0.19.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/text v0.15.0 // indirect
 	golang.org/x/tools v0.16.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
