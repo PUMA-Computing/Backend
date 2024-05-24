@@ -32,6 +32,7 @@ type Config struct {
 	MailGunSenderEmail string
 
 	GithubAccessToken string
+	HunterApiKey      string
 
 	BaseURL string
 }
@@ -70,6 +71,7 @@ func LoadConfig() *Config {
 		MailGunSenderEmail:    os.Getenv("MAILGUN_SENDER_EMAIL"),
 		BaseURL:               baseURl,
 		GithubAccessToken:     os.Getenv("GH_ACCESS_TOKEN"),
+		HunterApiKey:          os.Getenv("HUNTER_API_KEY"),
 	}
 
 	fmt.Printf("Loaded Config: %+v\n", cfg)

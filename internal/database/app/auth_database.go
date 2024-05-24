@@ -64,10 +64,6 @@ func AuthenticateUser(usernameOrEmail string) (*models.User, error) {
 		return nil, err
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
 	user.ID, err = uuid.Parse(userID)
 	if err != nil {
 		return nil, err
