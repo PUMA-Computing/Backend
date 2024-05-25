@@ -65,8 +65,8 @@ jobs:
         run: |
           echo ${{ secrets.GH_GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           docker pull ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:beta
-          docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:beta ghcr.io/${{ github.actor }}/api-pufa-computing
-          docker push ghcr.io/${{ github.actor }}/api-pufa-computing
+          docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:beta ghcr.io/${{ github.actor }}/api-pufa-computing:beta
+          docker push ghcr.io/${{ github.actor }}/api-pufa-computing:beta
 
   deployments:
     needs: build
