@@ -155,7 +155,7 @@ func (h *Handlers) Login(c *gin.Context) {
 
 	user, err := h.AuthService.LoginUser(loginRequest.Username, loginRequest.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Invalid Credentials"})
 		return
 	}
 

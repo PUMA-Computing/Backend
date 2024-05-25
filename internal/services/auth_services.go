@@ -31,6 +31,8 @@ func (as *AuthService) RegisterUser(user *models.User) error {
 
 	user.ID = uuid.New()
 	user.RoleID = 2
+	user.Gender = "male"
+	user.ProfilePicture = "https://sg.pufacomputing.live/Assets/male.jpeg"
 
 	// Set major based on studentID
 	if user.StudentID[:3] == "001" {
