@@ -115,7 +115,7 @@ jobs:
 
       - name: Push to Github Container Registry
         run: |
-          docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GH_ACCESS_TOKEN }}
+          docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GH_GHCR_TOKEN }}
           docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }} ghcr.io/${{ github.actor }}/api-pufa-computing:${{ github.sha }}
           docker push ghcr.io/${{ github.actor }}/api-pufa-computing:${{ github.sha }}
           docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ needs.release.new_release_version }} ghcr.io/${{ github.actor }}/api-pufa-computing:${{ needs.release.new_release_version }}
