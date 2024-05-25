@@ -61,6 +61,13 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:beta
 
+      - name: Push to Github Container Registry
+        run: |
+          echo ${{ secrets.GH_GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker pull ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:beta
+          docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:beta ghcr.io/${{ github.actor }}/api-pufa-computing:beta
+          docker push ghcr.io/${{ github.actor }}/api-pufa-computing:beta
+
   deployments:
     needs: build
     environment: staging
@@ -69,12 +76,12 @@ jobs:
       - name: Deploy to Staging
         uses: appleboy/ssh-action@master
         with:
-            host: ${{ secrets.SERVER }}
-            username: ${{ secrets.SERVER_USERNAME }}
-            password: ${{ secrets.SERVER_PASSWORD }}
-            port: ${{ secrets.SERVER_PORT }}
-            script: |
-              whoami
-              docker stop staging-api-computing || true && docker rm staging-api-computing || true
-              docker pull ${{ vars.IMAGE_NAME}}
-              docker run -d -p ${{ secrets.API_PORT }}:8080 --name staging-api-computing ${{ vars.IMAGE_NAME}}
+          host: ${{ secrets.SERVER }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            whoami
+            docker stop staging-api-computing || true && docker rm staging-api-computing || true
+            docker pull ${{ vars.IMAGE_NAME}}
+            docker run -d -p ${{ secrets.API_PORT }}:8080 --name staging-api-computing ${{ vars.IMAGE_NAME}}
