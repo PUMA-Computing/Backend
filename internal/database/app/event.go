@@ -254,11 +254,10 @@ func RegisterForEvent(userID uuid.UUID, eventID int) error {
 
 func ListRegisteredUsers(eventID int) ([]*models.User, error) {
 	rows, err := database.DB.Query(context.Background(), `
-		SELECT u.id, u.username, u.first_name, u.middle_name, u.last_name, u.email, u.student_id, u.major, u.year, u.profile_picture, u.date_of_birth, u.role_id, u.created_at, u.updated_at
-        FROM users u
-        JOIN event_registrations er ON u.id = er.user_id
-        WHERE er.event_id = $1`,
-		eventID)
+		SELECT u.id, u.username, u.first_name, u.last_name, u.email, u.student_id, u.major, u.profile_picture, u.date_of_birth, u.role_id, u.created_at, u.updated_at, u.year, u.institution_name
+		FROM users u
+		JOIN event_registrations er ON u.id = er.user_id
+		WHERE er.event_id = $1`, eventID)
 	if err != nil {
 		return nil, err
 	}
@@ -267,11 +266,8 @@ func ListRegisteredUsers(eventID int) ([]*models.User, error) {
 	var users []*models.User
 	for rows.Next() {
 		var user models.User
-		var middleName sql.NullString
-		var profilePicture sql.NullString
-		var dateOfBirth sql.NullTime
 		err := rows.Scan(
-			&user.ID, &user.Username, &user.FirstName, &middleName, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.Year, &profilePicture, &dateOfBirth, &user.RoleID, &user.CreatedAt, &user.UpdatedAt)
+			&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.ProfilePicture, &user.DateOfBirth, &user.RoleID, &user.CreatedAt, &user.UpdatedAt, &user.Year, &user.InstitutionName)
 		if err != nil {
 			return nil, err
 		}

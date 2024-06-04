@@ -42,7 +42,7 @@ jobs:
             - "@semantic-release/release-notes-generator"
             - "@semantic-release/commit-analyzer"
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Do something when a new release published
         if: steps.semantic.outputs.new_release_published == 'true'
@@ -104,7 +104,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
