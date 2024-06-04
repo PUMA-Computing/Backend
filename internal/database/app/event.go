@@ -92,25 +92,36 @@ func DeleteEvent(eventID int) error {
 	return err
 }
 
+// GetEventByID Get event and join the total number of registered users
 func GetEventByID(eventID int) (*models.Event, error) {
 	var event models.Event
 	err := database.DB.QueryRow(context.Background(), `
-		SELECT id, title, description, start_date, end_date, user_id, status, slug, thumbnail, created_at, updated_at, organization_id, max_registration
-		FROM events WHERE id = $1`, eventID).Scan(&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Slug, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt, &event.OrganizationID, &event.MaxRegistration)
+		SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.user_id, e.status, e.slug, e.thumbnail, e.created_at, e.updated_at, e.organization_id, e.max_registration, o.name as organization, CONCAT(u.first_name, ' ', u.last_name) AS author, COUNT(er.user_id) as total_registered
+		FROM events e
+		LEFT JOIN organizations o ON e.organization_id = o.id
+		LEFT JOIN users u ON e.user_id = u.id
+		LEFT JOIN event_registrations er ON e.id = er.event_id
+		WHERE e.id = $1
+		GROUP BY e.id, o.name, u.first_name, u.last_name`, eventID).Scan(
+		&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Slug, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt, &event.OrganizationID, &event.MaxRegistration, &event.Organization, &event.Author, &event.TotalRegistered)
 	if err != nil {
 		return nil, err
 	}
 	return &event, nil
 }
 
+// GetEventBySlug Get event and join the total number of registered users
 func GetEventBySlug(slug string) (*models.Event, error) {
 	var event models.Event
 	err := database.DB.QueryRow(context.Background(), `
-		SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.user_id, e.status, e.slug, e.thumbnail, e.created_at, e.updated_at, e.organization_id, e.max_registration, o.name AS organization, CONCAT(u.first_name, ' ', u.last_name) AS author
+		SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.user_id, e.status, e.slug, e.thumbnail, e.created_at, e.updated_at, e.organization_id, e.max_registration, o.name as organization, CONCAT(u.first_name, ' ', u.last_name) AS author, COUNT(er.user_id) as total_registered
 		FROM events e
 		LEFT JOIN organizations o ON e.organization_id = o.id
 		LEFT JOIN users u ON e.user_id = u.id
-		WHERE e.slug = $1`, slug).Scan(&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Slug, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt, &event.OrganizationID, &event.MaxRegistration, &event.Organization, &event.Author)
+		LEFT JOIN event_registrations er ON e.id = er.event_id
+		WHERE e.slug = $1
+		GROUP BY e.id, o.name, u.first_name, u.last_name`, slug).Scan(
+		&event.ID, &event.Title, &event.Description, &event.StartDate, &event.EndDate, &event.UserID, &event.Status, &event.Slug, &event.Thumbnail, &event.CreatedAt, &event.UpdatedAt, &event.OrganizationID, &event.MaxRegistration, &event.Organization, &event.Author, &event.TotalRegistered)
 	if err != nil {
 		return nil, err
 	}
