@@ -1,3 +1,10 @@
+## [0.7.1](https://github.com/PUFA-Computing/backend/compare/v0.7.0...v0.7.1) (2024-06-04)
+
+
+### Bug Fixes
+
+* bugfix not return the profile picture ([6f0cb68](https://github.com/PUFA-Computing/backend/commit/6f0cb687467a383319da5b8cd5c3608ed76b4f66))
+
 # [0.7.0](https://github.com/PUFA-Computing/backend/compare/v0.6.2...v0.7.0) (2024-05-25)
 
 
