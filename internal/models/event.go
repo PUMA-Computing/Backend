@@ -21,6 +21,7 @@ type Event struct {
 	MaxRegistration *int      `json:"max_registration"`
 	Organization    string    `json:"organization"`
 	Author          string    `json:"author"`
+	TotalRegistered int       `json:"total_registered"`
 }
 
 type EventRegistration struct {

@@ -111,17 +111,22 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }}
-            ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ needs.release.new_release_version }}
 
       - name: Push to Github Container Registry
         run: |
           docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GH_GHCR_TOKEN }}
           docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }} ghcr.io/${{ github.actor }}/api-pufa-computing:${{ github.sha }}
           docker push ghcr.io/${{ github.actor }}/api-pufa-computing:${{ github.sha }}
-          docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ needs.release.new_release_version }} ghcr.io/${{ github.actor }}/api-pufa-computing:${{ needs.release.new_release_version }}
+          docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }} ghcr.io/${{ github.actor }}/api-pufa-computing:${{ needs.release.new_release_version }}
           docker push ghcr.io/${{ github.actor }}/api-pufa-computing:${{ needs.release.new_release_version }}
 
-      - name: Tag and push latest
+      - name: Push to Docker Hub
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }}
+          docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ needs.release.new_release_version }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ needs.release.new_release_version }}
+
+      - name: Tag and push latest to Docker Hub
         if: github.ref == 'refs/heads/master'
         run: |
           docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:latest
