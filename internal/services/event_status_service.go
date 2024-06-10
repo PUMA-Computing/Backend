@@ -48,7 +48,7 @@ func (e *EventStatusUpdater) updateEventStatus(event *models.Event) {
 	case currentTime.After(event.StartDate) && currentTime.Before(event.EndDate):
 		event.Status = "Open"
 	default:
-		event.Status = "Ended"
+		event.Status = "Closed"
 	}
 
 	// Update the event status in the database

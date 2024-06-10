@@ -4,14 +4,89 @@ on:
   push:
     branches:
       - master
+      - next
+      - next-major
+      - beta
+      - alpha
+      - '+([0-9])?(.{+([0-9]),x}).x'
 
 jobs:
-  build:
-    environment: production
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
+        uses: actions/checkout@v4
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v4
+        id: semantic
+        with:
+          branches: |
+            [
+              '+([0-9])?(.{+([0-9]),x}).x',
+              'master',
+              'next',
+              'next-major',
+              {
+                name: 'beta',
+                prerelease: true
+              },
+              {
+                name: 'alpha',
+                prerelease: true
+              }
+            ]
+          extra_plugins: |
+            - "@semantic-release/changelog"
+            - "@semantic-release/git"
+            - "@semantic-release/github"
+            - "@semantic-release/release-notes-generator"
+            - "@semantic-release/commit-analyzer"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Print release info & outputs
+        if: steps.semantic.outputs.new_release_published == 'true'
+        run: |
+          echo "New release version: ${{ steps.semantic.outputs.new_release_version }}"
+          echo "New release major version: ${{ steps.semantic.outputs.new_release_major_version }}"
+          echo "New release minor version: ${{ steps.semantic.outputs.new_release_minor_version }}"
+          echo "New release patch version: ${{ steps.semantic.outputs.new_release_patch_version }}"
+
+      - name: Set outputs
+        if: steps.semantic.outputs.new_release_published == 'true'
+        id: set_outputs
+        run: |
+          echo "::set-output name=new_release_version::${{ steps.semantic.outputs.new_release_version }}"
+          echo "::set-output name=new_release_major_version::${{ steps.semantic.outputs.new_release_major_version }}"
+          echo "::set-output name=new_release_minor_version::${{ steps.semantic.outputs.new_release_minor_version }}"
+          echo "::set-output name=new_release_patch_version::${{ steps.semantic.outputs.new_release_patch_version }}"
+    outputs:
+      new_release_version: ${{ steps.set_outputs.outputs.new_release_version }}
+      new_release_major_version: ${{ steps.set_outputs.outputs.new_release_major_version }}
+      new_release_minor_version: ${{ steps.set_outputs.outputs.new_release_minor_version }}
+      new_release_patch_version: ${{ steps.set_outputs.outputs.new_release_patch_version }}
+
+  build:
+    environment: production
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Print received outputs
+        run: |
+          echo "Received release version: ${{ needs.release.outputs.new_release_version }}"
+          echo "Received release major version: ${{ needs.release.outputs.new_release_major_version }}"
+          echo "Received release minor version: ${{ needs.release.outputs.new_release_minor_version }}"
+          echo "Received release patch version: ${{ needs.release.outputs.new_release_patch_version }}"
+
+      - name: Validate release version
+        run: |
+          if [ -z "${{ needs.release.outputs.new_release_version }}" ]; then
+            echo "Error: New release version is not set."
+            exit 1
+          fi
 
       - name: Generate .env file
         run: |
@@ -52,14 +127,28 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags:
-            ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:latest
+      - name: Push to Github Container Registry
+        run: |
+          docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GH_GHCR_TOKEN }}
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }} .
+          docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }} ghcr.io/${{ github.actor }}/api-pufa-computing:${{ github.sha }}
+          docker push ghcr.io/${{ github.actor }}/api-pufa-computing:${{ github.sha }}
+          docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }} ghcr.io/${{ github.actor }}/api-pufa-computing:${{ needs.release.outputs.new_release_version }}
+          docker push ghcr.io/${{ github.actor }}/api-pufa-computing:${{ needs.release.outputs.new_release_version }}
+
+      - name: Push to Docker Hub
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }}
+          docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ needs.release.outputs.new_release_version }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ needs.release.outputs.new_release_version }}
+
+      - name: Tag and push latest to Docker Hub
+        if: github.ref == 'refs/heads/master'
+        run: |
+          docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:latest
+          docker tag ghcr.io/${{ github.actor }}/api-pufa-computing:${{ github.sha }} ghcr.io/${{ github.actor }}/api-pufa-computing:latest
+          docker push ghcr.io/${{ github.actor }}/api-pufa-computing:latest
 
   deployments:
     needs: build
@@ -69,12 +158,12 @@ jobs:
       - name: Deploy to Production
         uses: appleboy/ssh-action@master
         with:
-            host: ${{ secrets.SERVER }}
-            username: ${{ secrets.SERVER_USERNAME }}
-            password: ${{ secrets.SERVER_PASSWORD }}
-            port: ${{ secrets.SERVER_PORT }}
-            script: |
-              whoami
-              docker stop api-pufa-computing || true && docker rm api-pufa-computing || true
-              docker pull ${{ vars.IMAGE_NAME}}
-              docker run -d -p ${{ secrets.API_PORT }}:8080 --name ${{ vars.CONTAINER_NAME }} ${{ vars.IMAGE_NAME}}
+          host: ${{ secrets.SERVER }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            whoami
+            docker stop api-computing || true && docker rm api-computing || true
+            docker pull ${{ vars.IMAGE_NAME }}
+            docker run -d -p ${{ secrets.API_PORT }}:8080 --name api-computing ${{ vars.IMAGE_NAME }}

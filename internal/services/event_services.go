@@ -14,6 +14,7 @@ func NewEventService() *EventService {
 	return &EventService{}
 }
 
+// CreateEvent creates a new event in the database
 func (es *EventService) CreateEvent(event *models.Event) error {
 	if time.Now().Before(event.StartDate) {
 		event.Status = "Upcoming"
@@ -30,6 +31,7 @@ func (es *EventService) CreateEvent(event *models.Event) error {
 	return nil
 }
 
+// GetEventByID retrieves an event by its ID
 func (es *EventService) GetEventByID(eventID int) (*models.Event, error) {
 	event, err := app.GetEventByID(eventID)
 	if err != nil {
@@ -38,6 +40,7 @@ func (es *EventService) GetEventByID(eventID int) (*models.Event, error) {
 	return event, nil
 }
 
+// GetEventBySlug retrieves an event by its slug
 func (es *EventService) GetEventBySlug(slug string) (*models.Event, error) {
 	event, err := app.GetEventBySlug(slug)
 	if err != nil {
@@ -46,6 +49,7 @@ func (es *EventService) GetEventBySlug(slug string) (*models.Event, error) {
 	return event, nil
 }
 
+// EditEvent updates an event in the database
 func (es *EventService) EditEvent(eventID int, updatedEvent *models.Event) error {
 	if time.Now().Before(updatedEvent.StartDate) {
 		updatedEvent.Status = "Upcoming"
@@ -62,6 +66,7 @@ func (es *EventService) EditEvent(eventID int, updatedEvent *models.Event) error
 	return nil
 }
 
+// DeleteEvent deletes an event from the database
 func (es *EventService) DeleteEvent(eventID int) error {
 	if err := app.DeleteEvent(eventID); err != nil {
 		return err
@@ -70,6 +75,7 @@ func (es *EventService) DeleteEvent(eventID int) error {
 	return nil
 }
 
+// ListEvents retrieves all events from the database
 func (es *EventService) ListEvents(queryParams map[string]string) ([]*models.Event, int, error) {
 	events, totalPages, err := app.ListEvents(queryParams)
 	if err != nil {
@@ -79,6 +85,7 @@ func (es *EventService) ListEvents(queryParams map[string]string) ([]*models.Eve
 	return events, totalPages, nil
 }
 
+// RegisterForEvent registers a user for an event
 func (es *EventService) RegisterForEvent(userID uuid.UUID, eventID int) error {
 	if err := app.RegisterForEvent(userID, eventID); err != nil {
 		return err
@@ -87,6 +94,7 @@ func (es *EventService) RegisterForEvent(userID uuid.UUID, eventID int) error {
 	return nil
 }
 
+// ListRegisteredUsers retrieves all users registered for an event
 func (es *EventService) ListRegisteredUsers(eventID int) ([]*models.User, error) {
 	users, err := app.ListRegisteredUsers(eventID)
 	if err != nil {
@@ -96,6 +104,7 @@ func (es *EventService) ListRegisteredUsers(eventID int) ([]*models.User, error)
 	return users, nil
 }
 
+// ListEventsRegisteredByUser retrieves all events registered by a user
 func (es *EventService) ListEventsRegisteredByUser(userID uuid.UUID) ([]*models.Event, error) {
 	events, err := app.ListEventsRegisteredByUser(userID)
 	if err != nil {
