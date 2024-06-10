@@ -1,3 +1,11 @@
+## [0.7.4](https://github.com/PUFA-Computing/backend/compare/v0.7.3...v0.7.4) (2024-06-10)
+
+
+### Bug Fixes
+
+* workflow production typo ([a3a626f](https://github.com/PUFA-Computing/backend/commit/a3a626f7666a0654023cd1fc43c16aae81ff646b))
+* workflows production with more print results ([d878074](https://github.com/PUFA-Computing/backend/commit/d878074c8ea6b535bbf8507ebe0ee9b313b2518c))
+
 ## [0.7.3](https://github.com/PUFA-Computing/backend/compare/v0.7.2...v0.7.3) (2024-06-10)
 
 
