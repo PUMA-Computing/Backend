@@ -165,4 +165,5 @@ jobs:
           script: |
             whoami
             docker stop api-computing || true && docker rm api-computing || true
-            docker pull ${{ va
+            docker pull ${{ vars.IMAGE_NAME }}
+            docker run -d -p ${{ secrets.API_PORT }}:8080 --name api-computing ${{ vars.IMAGE_NAME }}
