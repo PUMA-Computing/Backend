@@ -1,3 +1,10 @@
+## [0.7.3](https://github.com/PUFA-Computing/backend/compare/v0.7.2...v0.7.3) (2024-06-10)
+
+
+### Bug Fixes
+
+* workflows set output ([92f16f2](https://github.com/PUFA-Computing/backend/commit/92f16f2a80553fb5a1a2a4615727861f9e29add4))
+
 ## [0.7.2](https://github.com/PUFA-Computing/backend/compare/v0.7.1...v0.7.2) (2024-06-10)
 
 
