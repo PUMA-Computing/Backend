@@ -1,3 +1,10 @@
+## [0.7.2](https://github.com/PUFA-Computing/backend/compare/v0.7.1...v0.7.2) (2024-06-10)
+
+
+### Bug Fixes
+
+* documentation of event service ([9f7cf72](https://github.com/PUFA-Computing/backend/commit/9f7cf725cb544431d1ba7568e44b57ff5516965b))
+
 ## [0.7.1](https://github.com/PUFA-Computing/backend/compare/v0.7.0...v0.7.1) (2024-06-04)
 
 
