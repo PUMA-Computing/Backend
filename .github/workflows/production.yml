@@ -66,6 +66,7 @@ jobs:
       new_release_minor_version: ${{ steps.set_outputs.outputs.new_release_minor_version }}
       new_release_patch_version: ${{ steps.set_outputs.outputs.new_release_patch_version }}
 
+
   build:
     environment: production
     runs-on: ubuntu-latest
@@ -119,8 +120,12 @@ jobs:
           docker build -t ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }} .
           docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }} ghcr.io/${{ github.actor }}/api-pufa-computing:${{ github.sha }}
           docker push ghcr.io/${{ github.actor }}/api-pufa-computing:${{ github.sha }}
-          docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }} ghcr.io/${{ github.actor }}/api-pufa-computing:${{ needs.release.new_release_version }}
-          docker push ghcr.io/${{ github.actor }}/api-pufa-computing:${{ needs.release.new_release_version }}
+          if [ -z "${{ needs.release.outputs.new_release_version }}" ]; then
+            echo "Error: New release version is not set."
+            exit 1
+          fi
+          docker tag ${{ secrets.DOCKER_USERNAME }}/api-pufa-computing:${{ github.sha }} ghcr.io/${{ github.actor }}/api-pufa-computing:${{ needs.release.outputs.new_release_version }}
+          docker push ghcr.io/${{ github.actor }}/api-pufa-computing:${{ needs.release.outputs.new_release_version }}
 
       - name: Push to Docker Hub
         run: |
