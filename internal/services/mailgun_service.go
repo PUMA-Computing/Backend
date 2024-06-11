@@ -364,8 +364,6 @@ to developer@computizen.me</p>
 </html>`
 
 	log.Println("Sending email to: ", to)
-	log.Println("Subject: ", subject)
-	log.Println("Body: ", body)
 
 	// Make sure to modify the sendEmail function to support sending HTML content
 	if err := ms.sendEmail(to, subject, body); err != nil {

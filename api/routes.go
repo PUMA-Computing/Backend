@@ -27,6 +27,10 @@ func SetupRoutes() *gin.Engine {
 		AllowCredentials: true,
 	}))
 
+	// Apply rate limiter middleware to all routes
+	rate := 1 // rate limit of 60 requests per minute per IP
+	r.Use(middleware.RateLimiterMiddleware(rate))
+
 	r.Static("/public", "./public")
 
 	authService := services.NewAuthService()
