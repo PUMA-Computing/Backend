@@ -2,44 +2,90 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
-	"go.uber.org/ratelimit"
-	"log"
 	"net/http"
+	"strconv"
 	"sync"
+	"time"
 )
 
 var (
-	limiterMap = make(map[string]ratelimit.Limiter)
+	limiterMap = make(map[string]*RateLimiter)
 	mu         sync.Mutex
 )
 
-// RateLimiterMiddleware creates a rate limiter for each IP address
-func RateLimiterMiddleware(rate int) gin.HandlerFunc {
+type RateLimiter struct {
+	tokens         int
+	lastRefill     time.Time
+	refillInterval time.Duration
+	maxTokens      int
+}
+
+func NewRateLimiter(maxTokens int, refillInterval time.Duration) *RateLimiter {
+	return &RateLimiter{
+		tokens:         maxTokens,
+		lastRefill:     time.Now(),
+		refillInterval: refillInterval,
+		maxTokens:      maxTokens,
+	}
+}
+
+func (rl *RateLimiter) Allow() (bool, int, time.Time) {
+	now := time.Now()
+	elapsed := now.Sub(rl.lastRefill)
+
+	// Refill tokens
+	refillAmount := int(elapsed / rl.refillInterval)
+	if refillAmount > 0 {
+		rl.tokens = min(rl.tokens+refillAmount, rl.maxTokens)
+		rl.lastRefill = now
+	}
+
+	// Calculate next refill time
+	nextRefill := rl.lastRefill.Add(rl.refillInterval)
+
+	// Check if we have tokens available
+	if rl.tokens > 0 {
+		rl.tokens--
+		return true, rl.tokens, nextRefill
+	}
+
+	return false, rl.tokens, nextRefill
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func RateLimiterMiddleware(maxTokens int, refillInterval time.Duration, key string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
+		limiterKey := ip + ":" + key
 
 		mu.Lock()
-		if _, exists := limiterMap[ip]; !exists {
-			log.Printf("Creating new rate limiter for IP: %s", ip)
-			limiterMap[ip] = ratelimit.New(rate)
+		if _, exists := limiterMap[limiterKey]; !exists {
+			limiterMap[limiterKey] = NewRateLimiter(maxTokens, refillInterval)
 		}
-		limiter := limiterMap[ip]
+		limiter := limiterMap[limiterKey]
 		mu.Unlock()
 
-		// Wait for the rate limiter to allow the request
-		limiter.Take()
+		allowed, tokensLeft, nextRefill := limiter.Allow()
 
-		// Check if the request should be rate limited
-		if rate == 0 {
-			log.Printf("Rate limit exceeded for IP: %s", ip)
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests"})
+		// Add headers to indicate rate limiting status
+		c.Writer.Header().Set("X-Rate-Limit-Tokens-Left", strconv.Itoa(tokensLeft))
+		c.Writer.Header().Set("X-Rate-Limit-Next-Refill", nextRefill.Format(time.RFC1123))
+
+		if !allowed {
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
+				"error":       "Too many requests",
+				"tokens_left": tokensLeft,
+				"next_refill": nextRefill.Format(time.RFC1123),
+			})
 			return
 		}
-
-		// Optionally, add a header to indicate rate limiting status
-		c.Writer.Header().Set("X-Rate-Limit", "active")
-
-		// Process the request
+		g
 		c.Next()
 	}
 }
