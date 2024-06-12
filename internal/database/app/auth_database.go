@@ -29,20 +29,15 @@ func CreateUser(user *models.User) error {
 }
 
 func AuthenticateUser(usernameOrEmail string) (*models.User, error) {
-	log.Printf("start AuthenticateUser")
 	var user models.User
 	var userID string
 	var query string
 	var err error
 
-	log.Println("before query")
-
 	query = `
 		SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, year, role_id, email_verification_token, institution_name, gender
 		FROM users
 		WHERE username = $1 OR email = $1`
-
-	log.Println("after query")
 
 	err = database.DB.QueryRow(
 		context.Background(),
@@ -53,8 +48,6 @@ func AuthenticateUser(usernameOrEmail string) (*models.User, error) {
 		&user.StudentID, &user.Major, &user.Year, &user.RoleID, &user.EmailVerificationToken, &user.InstitutionName,
 		&user.Gender,
 	)
-
-	log.Println("after scan")
 
 	if errors.Is(err, sql.ErrNoRows) {
 		log.Println("No user found with username or email:", usernameOrEmail)
