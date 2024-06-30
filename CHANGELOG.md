@@ -1,3 +1,14 @@
+# [0.8.0](https://github.com/PUFA-Computing/backend/compare/v0.7.4...v0.8.0) (2024-06-30)
+
+
+### Features
+
+* count total registered users on the event ([296469f](https://github.com/PUFA-Computing/backend/commit/296469ff637359ccea72d948553330eb0146b254))
+* rate limit for api ([9e297cb](https://github.com/PUFA-Computing/backend/commit/9e297cb2cdcb0d41dc2add0782d97908ba959148))
+* **ratelimit:** adding tokens and refill to a ratelimiter ([793bc52](https://github.com/PUFA-Computing/backend/commit/793bc52c40068e724c0c3738f468d231467c2b27))
+* **ratelimit:** adding tokens and refill to a ratelimiter ([d3e0db2](https://github.com/PUFA-Computing/backend/commit/d3e0db288b320f2d96a734b74e350ada73aa110f))
+* **ratelimit:** adding tokens and refill to a ratelimiter ([85755d8](https://github.com/PUFA-Computing/backend/commit/85755d8439e9967861d437e844deba7ad17c9f7c))
+
 ## [0.7.4](https://github.com/PUFA-Computing/backend/compare/v0.7.3...v0.7.4) (2024-06-10)
 
 
