@@ -270,29 +270,33 @@ func RegisterForEvent(userID uuid.UUID, eventID int, additionalNotes string) err
 	return err
 }
 
+// ListRegisteredUsers retrieves all users registered for an event
 func ListRegisteredUsers(eventID int) ([]*models.User, error) {
 	rows, err := database.DB.Query(context.Background(), `
-		SELECT u.id, u.username, u.first_name, u.last_name, u.email, u.student_id, u.major, u.profile_picture, u.date_of_birth, u.role_id, u.created_at, u.updated_at, u.year, u.institution_name
-		FROM users u
-		JOIN event_registrations er ON u.id = er.user_id
-		WHERE er.event_id = $1`, eventID)
+        SELECT u.id, u.username, u.first_name, u.last_name, u.email, u.student_id, u.major, u.profile_picture, u.date_of_birth, u.role_id, u.created_at, u.updated_at, u.year, u.institution_name,
+               er.additional_notes
+        FROM users u
+        JOIN event_registrations er ON u.id = er.user_id
+        WHERE er.event_id = $1`, eventID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var users []*models.User
+	var registrations []*models.User
 	for rows.Next() {
-		var user models.User
+		var registration models.User
 		err := rows.Scan(
-			&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.ProfilePicture, &user.DateOfBirth, &user.RoleID, &user.CreatedAt, &user.UpdatedAt, &user.Year, &user.InstitutionName)
+			&registration.ID, &registration.Username, &registration.FirstName, &registration.LastName, &registration.Email, &registration.StudentID, &registration.Major, &registration.ProfilePicture, &registration.DateOfBirth, &registration.RoleID, &registration.CreatedAt, &registration.UpdatedAt, &registration.Year, &registration.InstitutionName,
+			&registration.AdditionalNotes,
+		)
 		if err != nil {
 			return nil, err
 		}
-		users = append(users, &user)
+		registrations = append(registrations, &registration)
 	}
 
-	return users, nil
+	return registrations, nil
 }
 
 func ListEventsRegisteredByUser(userID uuid.UUID) ([]*models.Event, error) {

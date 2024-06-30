@@ -29,4 +29,5 @@ type User struct {
 	StudentIDVerification  *string    `json:"student_id_verification"`
 	InstitutionName        *string    `json:"institution_name"`
 	Gender                 string     `json:"gender"`
+	AdditionalNotes        *string    `json:"additional_notes"`
 }
