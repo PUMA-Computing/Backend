@@ -1,3 +1,15 @@
+# [0.9.0](https://github.com/PUFA-Computing/backend/compare/v0.8.1...v0.9.0) (2024-06-30)
+
+
+### Bug Fixes
+
+* list registered users fix ([78b86e8](https://github.com/PUFA-Computing/backend/commit/78b86e856a21498b6fb14d6cc7df271f22184770))
+
+
+### Features
+
+* adding additional notes for events ([b3b2aaf](https://github.com/PUFA-Computing/backend/commit/b3b2aafab39efa0d6201124537bf8368a0540d7b))
+
 ## [0.8.1](https://github.com/PUFA-Computing/backend/compare/v0.8.0...v0.8.1) (2024-06-30)
 
 
