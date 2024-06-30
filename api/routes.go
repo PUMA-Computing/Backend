@@ -28,7 +28,7 @@ func SetupRoutes() *gin.Engine {
 		AllowCredentials: true,
 	}))
 
-	maxTokens := 100
+	maxTokens := 1000
 	refillInterval := time.Minute
 	r.Use(middleware.RateLimiterMiddleware(maxTokens, refillInterval, "general"))
 
@@ -95,6 +95,7 @@ func SetupRoutes() *gin.Engine {
 	{
 		eventRoutes.GET("/:eventID", eventHandlers.GetEventBySlug)
 		eventRoutes.GET("/", eventHandlers.ListEvents)
+		eventRoutes.GET("/:eventID/total-participant", eventHandlers.TotalRegisteredUsers)
 		eventRoutes.Use(middleware.TokenMiddleware())
 		eventRoutes.POST("/create", eventHandlers.CreateEvent)
 		eventRoutes.PATCH("/:eventID/edit", eventHandlers.EditEvent)

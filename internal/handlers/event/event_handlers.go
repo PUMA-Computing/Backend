@@ -457,3 +457,24 @@ func (h *Handlers) ListEventsRegisteredByUser(c *gin.Context) {
 		"data":    events,
 	})
 }
+
+func (h *Handlers) TotalRegisteredUsers(c *gin.Context) {
+	eventIDStr := c.Param("eventID")
+	eventID, err := strconv.Atoi(eventIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Invalid Event ID"}})
+		return
+	}
+
+	total, err := h.EventService.TotalRegisteredUsers(eventID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Total Registered Users Retrieved Successfully",
+		"data":    total,
+	})
+}

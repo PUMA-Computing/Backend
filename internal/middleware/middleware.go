@@ -10,7 +10,7 @@ func TokenMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString, err := utils.ExtractTokenFromHeader(c)
 		if err != nil {
-			c.AbortWithStatusJSON(401, gin.H{"success": false, "message": []string{""}})
+			c.AbortWithStatusJSON(401, gin.H{"success": false, "message": []string{err.Error()}})
 			return
 		}
 

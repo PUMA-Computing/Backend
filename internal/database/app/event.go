@@ -314,3 +314,13 @@ func ListEventsRegisteredByUser(userID uuid.UUID) ([]*models.Event, error) {
 
 	return events, nil
 }
+
+func TotalRegisteredUsers(eventID int) (int, error) {
+	var totalRegistered int
+	err := database.DB.QueryRow(context.Background(), `
+		SELECT COUNT(*) FROM event_registrations WHERE event_id = $1`, eventID).Scan(&totalRegistered)
+	if err != nil {
+		return 0, err
+	}
+	return totalRegistered, nil
+}
