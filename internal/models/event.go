@@ -27,6 +27,7 @@ type Event struct {
 type EventRegistration struct {
 	ID               int       `json:"id"`
 	EventID          int       `json:"event_id"`
-	UserID           int       `json:"user_id"`
+	UserID           uuid.UUID `json:"user_id"`
 	RegistrationDate time.Time `json:"registration_date"`
+	AdditionalNotes  string    `json:"additional_notes"`
 }

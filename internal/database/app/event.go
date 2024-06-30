@@ -197,7 +197,7 @@ func ListEvents(queryParams map[string]string) ([]*models.Event, int, error) {
 }
 
 // RegisterForEvent registers a user for an event by creating a new event registration record
-func RegisterForEvent(userID uuid.UUID, eventID int) error {
+func RegisterForEvent(userID uuid.UUID, eventID int, additionalNotes string) error {
 	tx, err := database.DB.Begin(context.Background())
 	if err != nil {
 		return err
@@ -231,8 +231,8 @@ func RegisterForEvent(userID uuid.UUID, eventID int) error {
 		if errors.Is(err, sql.ErrNoRows) {
 			// No registration limit specified for the event, proceed with registration
 			_, err = tx.Exec(context.Background(), `
-                INSERT INTO event_registrations (event_id, user_id, registration_date)
-                VALUES ($1, $2, $3)`, eventID, userID, time.Now())
+                INSERT INTO event_registrations (event_id, user_id, registration_date, additional_notes)
+                VALUES ($1, $2, $3, $4)`, eventID, userID, time.Now(), additionalNotes)
 			return err
 		}
 		return err
@@ -265,8 +265,8 @@ func RegisterForEvent(userID uuid.UUID, eventID int) error {
 	}
 
 	_, err = database.DB.Exec(context.Background(), `
-        INSERT INTO event_registrations (event_id, user_id, registration_date)
-        VALUES ($1, $2, $3)`, eventID, userID, time.Now())
+        INSERT INTO event_registrations (event_id, user_id, registration_date, additional_notes)
+        VALUES ($1, $2, $3, $4)`, eventID, userID, time.Now(), additionalNotes)
 	return err
 }
 
