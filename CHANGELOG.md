@@ -1,3 +1,10 @@
+## [0.8.1](https://github.com/PUFA-Computing/backend/compare/v0.8.0...v0.8.1) (2024-06-30)
+
+
+### Bug Fixes
+
+* delete event also delete fk events regis ([49df9e1](https://github.com/PUFA-Computing/backend/commit/49df9e1718d454909e63fd48f62580cd076d0db6))
+
 # [0.8.0](https://github.com/PUFA-Computing/backend/compare/v0.7.4...v0.8.0) (2024-06-30)
 
 
