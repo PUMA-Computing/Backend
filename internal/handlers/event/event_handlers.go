@@ -363,6 +363,14 @@ func (h *Handlers) RegisterForEvent(c *gin.Context) {
 		return
 	}
 
+	var eventRegistration models.EventRegistration
+	if err := c.BindJSON(&eventRegistration); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	log.Println(eventRegistration.AdditionalNotes)
+
 	log.Println("Register for Event Middle")
 
 	eventIDStr := c.Param("eventID")
@@ -374,7 +382,7 @@ func (h *Handlers) RegisterForEvent(c *gin.Context) {
 
 	log.Println("Register for Event Middle 2")
 
-	if err := h.EventService.RegisterForEvent(userID, eventID); err != nil {
+	if err := h.EventService.RegisterForEvent(userID, eventID, eventRegistration.AdditionalNotes); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}

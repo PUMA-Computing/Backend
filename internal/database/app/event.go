@@ -197,7 +197,7 @@ func ListEvents(queryParams map[string]string) ([]*models.Event, int, error) {
 }
 
 // RegisterForEvent registers a user for an event by creating a new event registration record
-func RegisterForEvent(userID uuid.UUID, eventID int) error {
+func RegisterForEvent(userID uuid.UUID, eventID int, additionalNotes string) error {
 	tx, err := database.DB.Begin(context.Background())
 	if err != nil {
 		return err
@@ -231,8 +231,8 @@ func RegisterForEvent(userID uuid.UUID, eventID int) error {
 		if errors.Is(err, sql.ErrNoRows) {
 			// No registration limit specified for the event, proceed with registration
 			_, err = tx.Exec(context.Background(), `
-                INSERT INTO event_registrations (event_id, user_id, registration_date)
-                VALUES ($1, $2, $3)`, eventID, userID, time.Now())
+                INSERT INTO event_registrations (event_id, user_id, registration_date, additional_notes)
+                VALUES ($1, $2, $3, $4)`, eventID, userID, time.Now(), additionalNotes)
 			return err
 		}
 		return err
@@ -265,34 +265,38 @@ func RegisterForEvent(userID uuid.UUID, eventID int) error {
 	}
 
 	_, err = database.DB.Exec(context.Background(), `
-        INSERT INTO event_registrations (event_id, user_id, registration_date)
-        VALUES ($1, $2, $3)`, eventID, userID, time.Now())
+        INSERT INTO event_registrations (event_id, user_id, registration_date, additional_notes)
+        VALUES ($1, $2, $3, $4)`, eventID, userID, time.Now(), additionalNotes)
 	return err
 }
 
+// ListRegisteredUsers retrieves all users registered for an event
 func ListRegisteredUsers(eventID int) ([]*models.User, error) {
 	rows, err := database.DB.Query(context.Background(), `
-		SELECT u.id, u.username, u.first_name, u.last_name, u.email, u.student_id, u.major, u.profile_picture, u.date_of_birth, u.role_id, u.created_at, u.updated_at, u.year, u.institution_name
-		FROM users u
-		JOIN event_registrations er ON u.id = er.user_id
-		WHERE er.event_id = $1`, eventID)
+        SELECT u.id, u.username, u.first_name, u.last_name, u.email, u.student_id, u.major, u.profile_picture, u.date_of_birth, u.role_id, u.created_at, u.updated_at, u.year, u.institution_name,
+               er.additional_notes
+        FROM users u
+        JOIN event_registrations er ON u.id = er.user_id
+        WHERE er.event_id = $1`, eventID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var users []*models.User
+	var registrations []*models.User
 	for rows.Next() {
-		var user models.User
+		var registration models.User
 		err := rows.Scan(
-			&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Email, &user.StudentID, &user.Major, &user.ProfilePicture, &user.DateOfBirth, &user.RoleID, &user.CreatedAt, &user.UpdatedAt, &user.Year, &user.InstitutionName)
+			&registration.ID, &registration.Username, &registration.FirstName, &registration.LastName, &registration.Email, &registration.StudentID, &registration.Major, &registration.ProfilePicture, &registration.DateOfBirth, &registration.RoleID, &registration.CreatedAt, &registration.UpdatedAt, &registration.Year, &registration.InstitutionName,
+			&registration.AdditionalNotes,
+		)
 		if err != nil {
 			return nil, err
 		}
-		users = append(users, &user)
+		registrations = append(registrations, &registration)
 	}
 
-	return users, nil
+	return registrations, nil
 }
 
 func ListEventsRegisteredByUser(userID uuid.UUID) ([]*models.Event, error) {
