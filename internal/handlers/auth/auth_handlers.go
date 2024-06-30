@@ -144,22 +144,14 @@ func (h *Handlers) Login(c *gin.Context) {
 		return
 	}
 
-	log.Println("username: ", loginRequest.Username)
-
-	log.Println("before lowercase")
-
 	// Lowercase the username
 	loginRequest.Username = strings.ToLower(loginRequest.Username)
-
-	log.Println("before login user")
 
 	user, err := h.AuthService.LoginUser(loginRequest.Username, loginRequest.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Invalid Credentials"})
 		return
 	}
-
-	log.Println("after login user")
 
 	// Check if the usernameOrEmail is an email
 	if utils.IsEmail(loginRequest.Username) {
@@ -175,8 +167,6 @@ func (h *Handlers) Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Verification Email Sent, Check Your Email"})
 		return
 	}
-
-	log.Println("before email verified")
 
 	if !isEmailVerified {
 		// Send verification email

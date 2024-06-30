@@ -113,3 +113,12 @@ func (es *EventService) ListEventsRegisteredByUser(userID uuid.UUID) ([]*models.
 
 	return events, nil
 }
+
+func (es *EventService) TotalRegisteredUsers(eventID int) (int, error) {
+	total, err := app.TotalRegisteredUsers(eventID)
+	if err != nil {
+		return 0, err
+	}
+
+	return total, nil
+}

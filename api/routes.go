@@ -14,6 +14,7 @@ import (
 	"Backend/internal/services"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"time"
 )
 
 func SetupRoutes() *gin.Engine {
@@ -26,6 +27,10 @@ func SetupRoutes() *gin.Engine {
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
+
+	maxTokens := 1000
+	refillInterval := time.Minute
+	r.Use(middleware.RateLimiterMiddleware(maxTokens, refillInterval, "general"))
 
 	r.Static("/public", "./public")
 
@@ -65,7 +70,7 @@ func SetupRoutes() *gin.Engine {
 	authRoutes := api.Group("/auth")
 	{
 		authRoutes.POST("/register", authHandlers.RegisterUser)
-		authRoutes.POST("/login", authHandlers.Login)
+		authRoutes.POST("/login", middleware.RateLimiterMiddleware(5, time.Minute, "login"), authHandlers.Login)
 		authRoutes.POST("/logout", authHandlers.Logout)
 		authRoutes.POST("/refresh-token", middleware.TokenMiddleware(), authHandlers.RefreshToken)
 		authRoutes.GET("/verify-email", authHandlers.VerifyEmail)
@@ -90,6 +95,7 @@ func SetupRoutes() *gin.Engine {
 	{
 		eventRoutes.GET("/:eventID", eventHandlers.GetEventBySlug)
 		eventRoutes.GET("/", eventHandlers.ListEvents)
+		eventRoutes.GET("/:eventID/total-participant", eventHandlers.TotalRegisteredUsers)
 		eventRoutes.Use(middleware.TokenMiddleware())
 		eventRoutes.POST("/create", eventHandlers.CreateEvent)
 		eventRoutes.PATCH("/:eventID/edit", eventHandlers.EditEvent)
