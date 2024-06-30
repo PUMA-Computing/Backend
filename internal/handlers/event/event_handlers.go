@@ -369,6 +369,8 @@ func (h *Handlers) RegisterForEvent(c *gin.Context) {
 		return
 	}
 
+	log.Println(eventRegistration.AdditionalNotes)
+
 	log.Println("Register for Event Middle")
 
 	eventIDStr := c.Param("eventID")
