@@ -86,8 +86,15 @@ func UpdateEvent(eventID int, updatedEvent *models.Event) error {
 	return err
 }
 
+// DeleteEvent deletes an event record from the database and delete all event registrations associated with the event
 func DeleteEvent(eventID int) error {
 	_, err := database.DB.Exec(context.Background(), `
+		DELETE FROM event_registrations WHERE event_id = $1`, eventID)
+	if err != nil {
+		return err
+	}
+
+	_, err = database.DB.Exec(context.Background(), `
 		DELETE FROM events WHERE id = $1`, eventID)
 	return err
 }

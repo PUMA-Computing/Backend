@@ -138,20 +138,3 @@ func VerifyEmail(token string) error {
 	}
 	return nil
 }
-
-func PasswordResetToken(token string) error {
-	query := `
-		UPDATE users
-		SET password_reset_token = $1
-		WHERE email = $2`
-	_, err := database.DB.Exec(
-		context.Background(),
-		query,
-		token,
-	)
-	if err != nil {
-		log.Printf("Error during query execution or scanning: %v", err)
-		return err
-	}
-	return nil
-}
