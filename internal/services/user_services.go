@@ -3,9 +3,14 @@ package services
 import (
 	"Backend/internal/database/app"
 	"Backend/internal/models"
+	"Backend/pkg/utils"
 	"errors"
+	"fmt"
 	"github.com/google/uuid"
+	"github.com/pquerna/otp"
+	"github.com/pquerna/otp/totp"
 	"log"
+	"time"
 )
 
 type UserService struct{}
@@ -105,4 +110,92 @@ func (us *UserService) AdminUpdateRoleAndStudentIDVerified(userID uuid.UUID, rol
 
 func (us *UserService) UploadProfilePicture(userID uuid.UUID, profilePicture string) error {
 	return app.UploadProfilePicture(userID, profilePicture)
+}
+
+func (us *UserService) EnableTwoFA(userID uuid.UUID) (string, string, error) {
+	user, err := app.GetUserByID(userID)
+	if err != nil {
+		return "", "", err
+	}
+
+	log.Println("Generating TOTP key")
+
+	secret, err := utils.GenerateTOTPKey(user.Email)
+	if err != nil {
+		return "", "", err
+	}
+
+	log.Println("Generated TOTP secret:", secret.Secret())
+
+	log.Println("Generating QR code")
+
+	qr, err := utils.GenerateQRCodeBase64(secret)
+	if err != nil {
+		return "", "", err
+	}
+
+	log.Println("Updating user")
+
+	secretStr := secret.Secret()
+
+	user.TwoFASecret = &secretStr
+	user.TwoFAEnabled = true
+	user.TwoFAImage = &qr
+
+	log.Println("User updated with TOTP secret:", secretStr)
+
+	err = app.UpdateUser(userID, user)
+	if err != nil {
+		return "", "", err
+	}
+
+	return qr, secretStr, nil
+}
+
+func (us *UserService) VerifyTwoFA(userID uuid.UUID, code string) (bool, error) {
+	user, err := app.GetUserByID(userID)
+	if err != nil {
+		return false, err
+	}
+
+	if user.TwoFASecret == nil {
+		log.Println("No TOTP secret found for user")
+		return false, fmt.Errorf("no TOTP secret found for user")
+	}
+
+	log.Println("Verifying TOTP code with secret:", *user.TwoFASecret)
+	log.Println("TOTP code to verify:", code)
+
+	// Ensure the correct settings for TOTP validation
+	valid, err := totp.ValidateCustom(code, *user.TwoFASecret, time.Now(), totp.ValidateOpts{
+		Period:    30,
+		Skew:      1,
+		Digits:    otp.DigitsEight,
+		Algorithm: otp.AlgorithmSHA256,
+	})
+
+	if err != nil {
+		return false, err
+	}
+
+	log.Println("Is TOTP code valid?", valid)
+	return valid, nil
+}
+
+func (us *UserService) DisableTwoFA(userID uuid.UUID) error {
+	user, err := app.GetUserByID(userID)
+	if err != nil {
+		return err
+	}
+
+	user.TwoFASecret = nil
+	user.TwoFAEnabled = false
+	user.TwoFAImage = nil
+
+	err = app.UpdateUser(userID, user)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

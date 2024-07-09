@@ -8,6 +8,8 @@ import (
 	"errors"
 	"github.com/google/uuid"
 	"log"
+	"strconv"
+	"strings"
 )
 
 func GetUserByUsernameOrEmail(username string) (*models.User, error) {
@@ -83,7 +85,7 @@ func GetUserByEmail(email string) (*models.User, error) {
 	err := database.DB.QueryRow(context.Background(), query, email).Scan(
 		&userID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email,
 		&user.StudentID, &user.Major, &user.ProfilePicture, &user.DateOfBirth, &user.RoleID, &user.CreatedAt,
-		&user.UpdatedAt, &user.Year, &user.InstitutionName, &user.Gender)
+		&user.UpdatedAt, &user.Year, &user.InstitutionName, &user.Gender, &user.TwoFAEnabled, &user.TwoFAImage, &user.TwoFASecret)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil // User not found, return nil
@@ -101,13 +103,16 @@ func GetUserByID(userID uuid.UUID) (*models.User, error) {
 	var user models.User
 
 	err := database.DB.QueryRow(context.Background(), `
-		SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, profile_picture, date_of_birth, role_id, created_at, updated_at, year, institution_name, gender
+		SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, profile_picture, date_of_birth, role_id, created_at, updated_at, year, institution_name, gender, twofa_enabled, twofa_image, twofa_secret
 		FROM users WHERE id = $1`, userID).Scan(
 		&user.ID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email,
 		&user.StudentID, &user.Major, &user.ProfilePicture, &user.DateOfBirth, &user.RoleID, &user.CreatedAt,
-		&user.UpdatedAt, &user.Year, &user.InstitutionName, &user.Gender)
+		&user.UpdatedAt, &user.Year, &user.InstitutionName, &user.Gender, &user.TwoFAEnabled, &user.TwoFAImage, &user.TwoFASecret)
 
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -153,13 +158,104 @@ func CheckStudentIDExists(studentID string) (bool, error) {
 }
 
 func UpdateUser(UserID uuid.UUID, updatedUser *models.User) error {
-	_, err := database.DB.Exec(context.Background(), `
-		UPDATE users SET username = $1, password = $2, first_name = $3, middle_name = $4, last_name = $5, email = $6,
-		student_id = $7, major = $8, year = $9, role_id = $10, updated_at = $11, institution_name= $12, gender = $13
-		WHERE id = $14`,
-		updatedUser.Username, updatedUser.Password, updatedUser.FirstName, updatedUser.MiddleName, updatedUser.LastName,
-		updatedUser.Email, updatedUser.StudentID, updatedUser.Major, updatedUser.Year, updatedUser.RoleID,
-		updatedUser.UpdatedAt, updatedUser.InstitutionName, updatedUser.Gender, UserID)
+	query := "UPDATE users SET "
+	args := []interface{}{}
+	argID := 1
+
+	if updatedUser.Username != "" {
+		query += "username = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.Username)
+		argID++
+	}
+	if updatedUser.Password != "" {
+		query += "password = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.Password)
+		argID++
+	}
+	if updatedUser.FirstName != "" {
+		query += "first_name = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.FirstName)
+		argID++
+	}
+	if updatedUser.MiddleName != nil && *updatedUser.MiddleName != "" {
+		query += "middle_name = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.MiddleName)
+		argID++
+	}
+	if updatedUser.LastName != "" {
+		query += "last_name = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.LastName)
+		argID++
+	}
+	if updatedUser.Email != "" {
+		query += "email = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.Email)
+		argID++
+	}
+	if updatedUser.StudentID != "" {
+		query += "student_id = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.StudentID)
+		argID++
+	}
+	if updatedUser.Major != "" {
+		query += "major = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.Major)
+		argID++
+	}
+	if updatedUser.Year != "" {
+		query += "year = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.Year)
+		argID++
+	}
+	if updatedUser.DateOfBirth != nil {
+		query += "date_of_birth = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.DateOfBirth)
+		argID++
+	}
+	if updatedUser.RoleID != 0 {
+		query += "role_id = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.RoleID)
+		argID++
+	}
+	if !updatedUser.UpdatedAt.IsZero() {
+		query += "updated_at = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.UpdatedAt)
+		argID++
+	}
+	if updatedUser.InstitutionName != nil && *updatedUser.InstitutionName != "" {
+		query += "institution_name = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.InstitutionName)
+		argID++
+	}
+	if updatedUser.Gender != "" {
+		query += "gender = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.Gender)
+		argID++
+	}
+	if updatedUser.TwoFAEnabled != false {
+		query += "twofa_enabled = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.TwoFAEnabled)
+		argID++
+	}
+	if updatedUser.TwoFAImage != nil && *updatedUser.TwoFAImage != "" {
+		query += "twofa_image = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.TwoFAImage)
+		argID++
+	}
+	if updatedUser.TwoFASecret != nil && *updatedUser.TwoFASecret != "" {
+		query += "twofa_secret = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.TwoFASecret)
+		argID++
+	}
+
+	// Remove the last comma and space
+	query = strings.TrimSuffix(query, ", ")
+
+	// Add the WHERE clause
+	query += " WHERE id = $" + strconv.Itoa(argID)
+	args = append(args, UserID)
+
+	_, err := database.DB.Exec(context.Background(), query, args...)
 	return err
 }
 
@@ -195,6 +291,7 @@ func ListUsers() ([]models.User, error) {
 			&user.RoleID, &user.CreatedAt, &user.UpdatedAt, &user.Year, &user.EmailVerified,
 			&user.EmailVerificationToken, &user.PasswordResetToken, &user.PasswordResetExpires,
 			&user.StudentIDVerified, &user.StudentIDVerification, &user.InstitutionName, &user.Gender,
+			&user.TwoFAEnabled, &user.TwoFAImage, &user.TwoFASecret,
 		)
 		if err != nil {
 			log.Println("Error scanning row:", err)
