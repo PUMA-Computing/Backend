@@ -355,3 +355,68 @@ func (h *Handlers) UploadProfilePicture(c *gin.Context) {
 		"data":    user.ProfilePicture,
 	})
 }
+
+func (h *Handlers) EnableTwoFA(c *gin.Context) {
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "users:2fa")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	qr, setupKey, err := h.UserService.EnableTwoFA(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Two Factor Authentication Enabled Successfully",
+		"data": gin.H{
+			"qr_image":  qr,
+			"setup_key": setupKey,
+		},
+	})
+}
+
+func (h *Handlers) VerifyTwoFA(c *gin.Context) {
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "users:2fa")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	var request struct {
+		Code string `json:"code"`
+	}
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	valid, err := h.UserService.VerifyTwoFA(userID, request.Code)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	if !valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Invalid TOTP Code"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "TOTP Verified Successfully"})
+}
+
+func (h *Handlers) DisableTwoFA(c *gin.Context) {
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "users:2fa")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	err = h.UserService.DisableTwoFA(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Two Factor Authentication Disabled Successfully"})
+}
