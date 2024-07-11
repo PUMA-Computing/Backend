@@ -35,7 +35,7 @@ func AuthenticateUser(usernameOrEmail string) (*models.User, error) {
 	var err error
 
 	query = `
-		SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, year, role_id, email_verification_token, institution_name, gender
+		SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, year, role_id, email_verification_token, institution_name, gender, email_verified, twofa_enabled, twofa_image, twofa_secret
 		FROM users
 		WHERE username = $1 OR email = $1`
 
@@ -46,7 +46,7 @@ func AuthenticateUser(usernameOrEmail string) (*models.User, error) {
 	).Scan(
 		&userID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email,
 		&user.StudentID, &user.Major, &user.Year, &user.RoleID, &user.EmailVerificationToken, &user.InstitutionName,
-		&user.Gender,
+		&user.Gender, &user.EmailVerified, &user.TwoFAEnabled, &user.TwoFAImage, &user.TwoFASecret,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
