@@ -232,21 +232,6 @@ func UpdateUser(UserID uuid.UUID, updatedUser *models.User) error {
 		args = append(args, updatedUser.Gender)
 		argID++
 	}
-	if updatedUser.TwoFAEnabled != false {
-		query += "twofa_enabled = $" + strconv.Itoa(argID) + ", "
-		args = append(args, updatedUser.TwoFAEnabled)
-		argID++
-	}
-	if updatedUser.TwoFAImage != nil && *updatedUser.TwoFAImage != "" {
-		query += "twofa_image = $" + strconv.Itoa(argID) + ", "
-		args = append(args, updatedUser.TwoFAImage)
-		argID++
-	}
-	if updatedUser.TwoFASecret != nil && *updatedUser.TwoFASecret != "" {
-		query += "twofa_secret = $" + strconv.Itoa(argID) + ", "
-		args = append(args, updatedUser.TwoFASecret)
-		argID++
-	}
 
 	// Remove the last comma and space
 	query = strings.TrimSuffix(query, ", ")
@@ -257,6 +242,12 @@ func UpdateUser(UserID uuid.UUID, updatedUser *models.User) error {
 
 	_, err := database.DB.Exec(context.Background(), query, args...)
 	return err
+}
+
+func DisableTwoFA(userID uuid.UUID) error {
+	_, err := database.DB.Exec(context.Background(), "UPDATE users SET twofa_enabled = false, twofa_image = NULL, twofa_secret = NULL WHERE id = $1", userID)
+	return err
+
 }
 
 func AdminUpdateRoleAndStudentIDVerified(userID uuid.UUID, roleID int, studentIDVerified bool) error {
