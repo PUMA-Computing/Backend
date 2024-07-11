@@ -192,7 +192,7 @@ func (us *UserService) DisableTwoFA(userID uuid.UUID) error {
 	user.TwoFAEnabled = false
 	user.TwoFAImage = nil
 
-	err = app.UpdateUser(userID, user)
+	err = app.DisableTwoFA(userID)
 	if err != nil {
 		return err
 	}
