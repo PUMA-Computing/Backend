@@ -21,13 +21,15 @@ type Handlers struct {
 	AuthService       *services.AuthService
 	PermissionService *services.PermissionService
 	MailGunService    *services.MailgunService
+	UserService       *services.UserService
 }
 
-func NewAuthHandlers(authService *services.AuthService, permissionService *services.PermissionService, MailGunService *services.MailgunService) *Handlers {
+func NewAuthHandlers(authService *services.AuthService, permissionService *services.PermissionService, MailGunService *services.MailgunService, userService *services.UserService) *Handlers {
 	return &Handlers{
 		AuthService:       authService,
 		PermissionService: permissionService,
 		MailGunService:    MailGunService,
+		UserService:       userService,
 	}
 }
 
@@ -135,9 +137,11 @@ func validateEmail(email, suffix string) error {
 }
 
 func (h *Handlers) Login(c *gin.Context) {
-	var loginRequest models.User
-
-	log.Println("before bind json")
+	var loginRequest struct {
+		Username string  `json:"username"`
+		Password string  `json:"password"`
+		Passcode *string `json:"passcode"`
+	}
 
 	if err := c.BindJSON(&loginRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
@@ -151,6 +155,29 @@ func (h *Handlers) Login(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Invalid Credentials"})
 		return
+	}
+
+	// If there is no passcode, but 2FA is enabled, return otp required
+	if loginRequest.Passcode == nil {
+
+		if user.TwoFAEnabled {
+			c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Two Factor Authentication Required"})
+			return
+		}
+	}
+
+	if loginRequest.Passcode != nil {
+		if !user.TwoFAEnabled {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "2FA is not enabled for this account"})
+			return
+		}
+
+		_, err := h.UserService.VerifyTwoFA(user.ID, *loginRequest.Passcode)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid 2FA Code"})
+			return
+		}
+
 	}
 
 	// Check if the usernameOrEmail is an email

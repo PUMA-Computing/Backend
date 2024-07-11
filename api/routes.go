@@ -56,7 +56,7 @@ func SetupRoutes() *gin.Engine {
 	versionUpdater := services.NewVersionUpdater(VersionService)
 	go versionUpdater.Run()
 
-	authHandlers := auth.NewAuthHandlers(authService, permissionService, MailgunService)
+	authHandlers := auth.NewAuthHandlers(authService, permissionService, MailgunService, userService)
 	userHandlers := user.NewUserHandlers(userService, permissionService, AWSService, R2Service)
 	eventHandlers := event.NewEventHandlers(eventService, permissionService, AWSService, R2Service)
 	newsHandlers := news.NewNewsHandler(newsService, permissionService, AWSService, R2Service)
