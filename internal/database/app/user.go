@@ -233,6 +233,25 @@ func UpdateUser(UserID uuid.UUID, updatedUser *models.User) error {
 		argID++
 	}
 
+	if updatedUser.TwoFASecret != nil && *updatedUser.TwoFASecret != "" {
+		query += "twofa_secret = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.TwoFASecret)
+		argID++
+	}
+
+	if updatedUser.TwoFAImage != nil && *updatedUser.TwoFAImage != "" {
+		query += "twofa_image = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.TwoFAImage)
+		argID++
+	}
+
+	if updatedUser.TwoFAEnabled != false {
+		query += "twofa_enabled = $" + strconv.Itoa(argID) + ", "
+		args = append(args, updatedUser.TwoFAEnabled)
+		argID++
+
+	}
+
 	// Remove the last comma and space
 	query = strings.TrimSuffix(query, ", ")
 
