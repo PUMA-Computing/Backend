@@ -373,8 +373,8 @@ func (h *Handlers) EnableTwoFA(c *gin.Context) {
 		"success": true,
 		"message": "Two Factor Authentication Enabled Successfully",
 		"data": gin.H{
-			"qr_image":  qr,
-			"setup_key": setupKey,
+			"qr_image":     qr,
+			"twofa_secret": setupKey,
 		},
 	})
 }
