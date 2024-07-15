@@ -135,7 +135,6 @@ func (us *UserService) EnableTwoFA(userID uuid.UUID) (string, string, error) {
 	secretStr := secret.Secret()
 
 	user.TwoFASecret = &secretStr
-	user.TwoFAEnabled = true
 	user.TwoFAImage = &qr
 
 	err = app.UpdateUser(userID, user)
@@ -176,17 +175,15 @@ func (us *UserService) VerifyTwoFA(userID uuid.UUID, code string) (bool, error) 
 	return valid, nil
 }
 
-func (us *UserService) DisableTwoFA(userID uuid.UUID) error {
+func (us *UserService) ChangeTwoFAStatus(userID uuid.UUID, enable bool) error {
 	user, err := app.GetUserByID(userID)
 	if err != nil {
 		return err
 	}
 
-	user.TwoFASecret = nil
-	user.TwoFAEnabled = false
-	user.TwoFAImage = nil
+	user.TwoFAEnabled = enable
 
-	err = app.DisableTwoFA(userID)
+	err = app.ToggleTwoFA(userID, enable)
 	if err != nil {
 		return err
 	}

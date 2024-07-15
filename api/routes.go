@@ -88,7 +88,7 @@ func SetupRoutes() *gin.Engine {
 		userRoutes.PUT("/update-user", userHandlers.AdminUpdateRoleAndStudentIDVerified)
 		userRoutes.POST("/2fa/enable", userHandlers.EnableTwoFA)
 		userRoutes.POST("/2fa/verify", userHandlers.VerifyTwoFA)
-		userRoutes.POST("/2fa/disable", userHandlers.DisableTwoFA)
+		userRoutes.POST("/2fa/toggle", userHandlers.ToggleTwoFA)
 
 		// ListEventsRegisteredByUser
 		userRoutes.GET("/registered-events", eventHandlers.ListEventsRegisteredByUser)

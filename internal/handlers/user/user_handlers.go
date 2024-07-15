@@ -405,18 +405,26 @@ func (h *Handlers) VerifyTwoFA(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "TOTP Verified Successfully"})
 }
 
-func (h *Handlers) DisableTwoFA(c *gin.Context) {
+func (h *Handlers) ToggleTwoFA(c *gin.Context) {
 	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "users:2fa")
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
-	err = h.UserService.DisableTwoFA(userID)
+	var request struct {
+		Enable bool `json:"enable"`
+	}
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	err = h.UserService.ChangeTwoFAStatus(userID, request.Enable)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Two Factor Authentication Disabled Successfully"})
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Two Factor Authentication Status Updated Successfully"})
 }

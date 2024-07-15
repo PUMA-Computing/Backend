@@ -263,10 +263,18 @@ func UpdateUser(UserID uuid.UUID, updatedUser *models.User) error {
 	return err
 }
 
-func DisableTwoFA(userID uuid.UUID) error {
-	_, err := database.DB.Exec(context.Background(), "UPDATE users SET twofa_enabled = false, twofa_image = NULL, twofa_secret = NULL WHERE id = $1", userID)
+func ToggleTwoFA(userID uuid.UUID, enable bool) error {
+	var err error
+	if enable {
+		_, err = database.DB.Exec(context.Background(),
+			"UPDATE users SET twofa_enabled = $1 WHERE id = $2",
+			enable, userID)
+	} else {
+		_, err = database.DB.Exec(context.Background(),
+			"UPDATE users SET twofa_enabled = $1, twofa_image = NULL, twofa_secret = NULL WHERE id = $2",
+			enable, userID)
+	}
 	return err
-
 }
 
 func AdminUpdateRoleAndStudentIDVerified(userID uuid.UUID, roleID int, studentIDVerified bool) error {
