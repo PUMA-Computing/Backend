@@ -14,13 +14,13 @@ func GenerateTOTPKey(email string) (*otp.Key, error) {
 		Issuer:      "PUFA Computing",
 		AccountName: email,
 		Period:      30,
-		Digits:      otp.DigitsEight,
+		Digits:      otp.DigitsSix,
 		Algorithm:   otp.AlgorithmSHA256,
 	})
 	if err != nil {
 		return nil, err
 	}
-	log.Println("Generated TOTP key:", key.Secret())
+	log.Println("Generated TOTP key:", key)
 	return key, nil
 }
 
@@ -34,6 +34,5 @@ func GenerateQRCodeBase64(key *otp.Key) (string, error) {
 		return "", err
 	}
 	qrCode := base64.StdEncoding.EncodeToString(buf.Bytes())
-	log.Println("Generated QR code:", qrCode)
 	return qrCode, nil
 }

@@ -125,24 +125,18 @@ func (us *UserService) EnableTwoFA(userID uuid.UUID) (string, string, error) {
 		return "", "", err
 	}
 
-	log.Println("Generated TOTP secret:", secret.Secret())
-
-	log.Println("Generating QR code")
+	log.Println("Generated TOTP secret:", secret)
 
 	qr, err := utils.GenerateQRCodeBase64(secret)
 	if err != nil {
 		return "", "", err
 	}
 
-	log.Println("Updating user")
-
 	secretStr := secret.Secret()
 
 	user.TwoFASecret = &secretStr
 	user.TwoFAEnabled = true
 	user.TwoFAImage = &qr
-
-	log.Println("User updated with TOTP secret:", secretStr)
 
 	err = app.UpdateUser(userID, user)
 	if err != nil {
@@ -170,7 +164,7 @@ func (us *UserService) VerifyTwoFA(userID uuid.UUID, code string) (bool, error) 
 	valid, err := totp.ValidateCustom(code, *user.TwoFASecret, time.Now(), totp.ValidateOpts{
 		Period:    30,
 		Skew:      1,
-		Digits:    otp.DigitsEight,
+		Digits:    otp.DigitsSix,
 		Algorithm: otp.AlgorithmSHA256,
 	})
 
