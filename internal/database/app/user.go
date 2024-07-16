@@ -337,3 +337,8 @@ func UploadProfilePicture(userID uuid.UUID, profilePicture string) error {
 	_, err := database.DB.Exec(context.Background(), "UPDATE users SET profile_picture = $1 WHERE id = $2", profilePicture, userID)
 	return err
 }
+
+func UploadStudentID(userID uuid.UUID, studentID string) error {
+	_, err := database.DB.Exec(context.Background(), "UPDATE users SET student_id_verification = $1 WHERE id = $2", studentID, userID)
+	return err
+}

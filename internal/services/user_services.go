@@ -112,6 +112,10 @@ func (us *UserService) UploadProfilePicture(userID uuid.UUID, profilePicture str
 	return app.UploadProfilePicture(userID, profilePicture)
 }
 
+func (us *UserService) UploadStudentID(userID uuid.UUID, profilePicture string) error {
+	return app.UploadStudentID(userID, profilePicture)
+}
+
 func (us *UserService) EnableTwoFA(userID uuid.UUID) (string, string, error) {
 	user, err := app.GetUserByID(userID)
 	if err != nil {

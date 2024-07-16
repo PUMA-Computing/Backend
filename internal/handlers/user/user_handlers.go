@@ -356,6 +356,75 @@ func (h *Handlers) UploadProfilePicture(c *gin.Context) {
 	})
 }
 
+func (h *Handlers) UploadStudentID(c *gin.Context) {
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	user, err := h.UserService.GetUserByID(userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	file, _, err := c.Request.FormFile("student_id")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	// Check if file size is greater than 2MB
+	optimizedImage, err := utils.OptimizeImage(file, 2800, 1080)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	optimizedImageBytes, err := io.ReadAll(optimizedImage)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	// Choose storage service to upload image to (AWS or R2)
+	upload := utils.ChooseStorageService()
+
+	// Upload image to storage service
+	if upload == utils.R2Service {
+		err = h.R2Service.UploadFileToR2(context.Background(), "users", "student_id_"+userID.String(), optimizedImageBytes)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		imageUrl, _ := h.R2Service.GetFileR2("users", "student_id_"+userID.String())
+		user.StudentIDVerification = &imageUrl
+	} else {
+		err = h.AWSService.UploadFileToAWS(context.Background(), "users", "student_id_"+userID.String(), optimizedImageBytes)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		imageUrl, _ := h.AWSService.GetFileAWS("users", "student_id_"+userID.String())
+		user.StudentIDVerification = &imageUrl
+	}
+
+	// Update user profile picture
+	if err := h.UserService.UploadProfilePicture(userID, user.ProfilePicture); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Profile Picture Uploaded Successfully",
+		"data":    user.ProfilePicture,
+	})
+}
+
 func (h *Handlers) EnableTwoFA(c *gin.Context) {
 	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "users:2fa")
 	if err != nil {
