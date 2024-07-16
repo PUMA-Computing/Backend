@@ -86,7 +86,7 @@ func SetupRoutes() *gin.Engine {
 		userRoutes.DELETE("/delete", userHandlers.DeleteUser)
 		userRoutes.POST("/upload-profile-picture", userHandlers.UploadProfilePicture)
 		userRoutes.POST("/upload-student-id", userHandlers.UploadStudentID)
-		userRoutes.PUT("/update-user", userHandlers.AdminUpdateRoleAndStudentIDVerified)
+		userRoutes.PUT("/:userID/update-user", userHandlers.AdminUpdateRoleAndStudentIDVerified)
 		userRoutes.POST("/2fa/enable", userHandlers.EnableTwoFA)
 		userRoutes.POST("/2fa/verify", userHandlers.VerifyTwoFA)
 		userRoutes.POST("/2fa/toggle", userHandlers.ToggleTwoFA)
