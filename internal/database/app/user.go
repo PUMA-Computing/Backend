@@ -103,11 +103,16 @@ func GetUserByID(userID uuid.UUID) (*models.User, error) {
 	var user models.User
 
 	err := database.DB.QueryRow(context.Background(), `
-		SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, profile_picture, date_of_birth, role_id, created_at, updated_at, year, institution_name, gender, twofa_enabled, twofa_image, twofa_secret
-		FROM users WHERE id = $1`, userID).Scan(
+		SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, profile_picture, date_of_birth, role_id, created_at, updated_at, year, email_verified, email_verification_token, password_reset_token, password_reset_expires, student_id_verified, student_id_verification, institution_name, gender, twofa_enabled, twofa_image, twofa_secret
+		FROM users
+		WHERE id = $1
+	`, userID).Scan(
 		&user.ID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email,
 		&user.StudentID, &user.Major, &user.ProfilePicture, &user.DateOfBirth, &user.RoleID, &user.CreatedAt,
-		&user.UpdatedAt, &user.Year, &user.InstitutionName, &user.Gender, &user.TwoFAEnabled, &user.TwoFAImage, &user.TwoFASecret)
+		&user.UpdatedAt, &user.Year, &user.EmailVerified, &user.EmailVerificationToken, &user.PasswordResetToken,
+		&user.PasswordResetExpires, &user.StudentIDVerified, &user.StudentIDVerification, &user.InstitutionName,
+		&user.Gender, &user.TwoFAEnabled, &user.TwoFAImage, &user.TwoFASecret,
+	)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
