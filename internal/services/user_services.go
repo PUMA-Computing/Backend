@@ -72,8 +72,12 @@ func (us *UserService) EditUser(userID uuid.UUID, updatedUser *models.User) erro
 		existingUser.DateOfBirth = updatedUser.DateOfBirth
 	}
 
-	if updatedUser.ProfilePicture != "" {
-		existingUser.ProfilePicture = updatedUser.ProfilePicture
+	if updatedUser.InstitutionName != nil {
+		existingUser.InstitutionName = updatedUser.InstitutionName
+	}
+
+	if updatedUser.Gender != "" {
+		existingUser.Gender = updatedUser.Gender
 	}
 
 	return app.UpdateUser(userID, existingUser)
