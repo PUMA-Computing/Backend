@@ -413,7 +413,7 @@ func (h *Handlers) UploadStudentID(c *gin.Context) {
 	}
 
 	// Update user profile picture
-	if err := h.UserService.UploadProfilePicture(userID, user.ProfilePicture); err != nil {
+	if err := h.UserService.UploadStudentID(userID, *user.StudentIDVerification); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
@@ -421,7 +421,7 @@ func (h *Handlers) UploadStudentID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Profile Picture Uploaded Successfully",
-		"data":    user.ProfilePicture,
+		"data":    user.StudentIDVerification,
 	})
 }
 
