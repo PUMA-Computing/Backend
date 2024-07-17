@@ -153,7 +153,7 @@ func (us *UserService) EnableTwoFA(userID uuid.UUID) (string, string, error) {
 	user.TwoFASecret = &secretStr
 	user.TwoFAImage = &qr
 
-	err = app.UpdateUser(userID, user)
+	err = app.SaveTwoFAInfo(userID, secretStr, qr)
 	if err != nil {
 		return "", "", err
 	}

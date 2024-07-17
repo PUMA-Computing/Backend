@@ -264,3 +264,8 @@ func UploadStudentID(userID uuid.UUID, studentID string) error {
 	_, err := database.DB.Exec(context.Background(), "UPDATE users SET student_id_verification = $1 WHERE id = $2", studentID, userID)
 	return err
 }
+
+func SaveTwoFAInfo(userID uuid.UUID, secret string, image string) error {
+	_, err := database.DB.Exec(context.Background(), "UPDATE users SET twofa_image = $1, twofa_secret = $2 WHERE id = $3", image, secret, userID)
+	return err
+}
