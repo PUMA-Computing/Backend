@@ -86,6 +86,7 @@ func SetupRoutes() *gin.Engine {
 		userRoutes.GET("/:userID", userHandlers.GetUserByID)
 		userRoutes.PUT("/edit", userHandlers.EditUser)
 		userRoutes.DELETE("/delete", userHandlers.DeleteUser)
+		userRoutes.PUT("/change-password", userHandlers.ChangePassword)
 		userRoutes.POST("/upload-profile-picture", userHandlers.UploadProfilePicture)
 		userRoutes.POST("/upload-student-id", userHandlers.UploadStudentID)
 		userRoutes.PUT("/:userID/update-user", userHandlers.AdminUpdateRoleAndStudentIDVerified)

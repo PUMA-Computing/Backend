@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pquerna/otp"
 	"github.com/pquerna/otp/totp"
+	"golang.org/x/crypto/bcrypt"
 	"log"
 	"time"
 )
@@ -92,7 +93,12 @@ func (us *UserService) DeleteUser(userID uuid.UUID) error {
 }
 
 func (us *UserService) ChangePassword(userID uuid.UUID, newPassword string) error {
-	return app.ChangePassword(userID, newPassword)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	return app.ChangePassword(userID, string(hashedPassword))
 }
 
 func (us *UserService) GetUserByUsername(username string) (*models.User, error) {

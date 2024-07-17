@@ -497,3 +497,27 @@ func (h *Handlers) ToggleTwoFA(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Two Factor Authentication Status Updated Successfully"})
 }
+
+func (h *Handlers) ChangePassword(c *gin.Context) {
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "users:create")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	var request struct {
+		Password string `json:"password"`
+	}
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	err = h.UserService.ChangePassword(userID, request.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Password Changed Successfully"})
+}
