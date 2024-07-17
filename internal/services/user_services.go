@@ -13,10 +13,14 @@ import (
 	"time"
 )
 
-type UserService struct{}
+type UserService struct {
+	otp *OTPManager
+}
 
 func NewUserService() *UserService {
-	return &UserService{}
+	return &UserService{
+		otp: NewOTPManager(),
+	}
 }
 
 func (us *UserService) GetUserByID(userID uuid.UUID) (*models.User, error) {
@@ -85,6 +89,10 @@ func (us *UserService) EditUser(userID uuid.UUID, updatedUser *models.User) erro
 
 func (us *UserService) DeleteUser(userID uuid.UUID) error {
 	return app.DeleteUser(userID)
+}
+
+func (us *UserService) ChangePassword(userID uuid.UUID, newPassword string) error {
+	return app.ChangePassword(userID, newPassword)
 }
 
 func (us *UserService) GetUserByUsername(username string) (*models.User, error) {

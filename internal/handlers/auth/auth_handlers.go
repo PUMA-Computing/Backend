@@ -351,3 +351,87 @@ func (h *Handlers) VerifyEmail(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Email Verified Successfully"})
 }
+
+func (h *Handlers) RequestPasswordReset(c *gin.Context) {
+	var request struct {
+		Email string `json:"email"`
+	}
+
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	user, err := h.AuthService.GetUserByUsernameOrEmail(request.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	if user == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"User not found"}})
+		return
+	}
+
+	otpCode, err := h.AuthService.RequestForgotPassword(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	if err := h.MailGunService.SendOTPEmail(user.Email, otpCode); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Password Reset Email Sent"})
+}
+
+func (h *Handlers) ResetPassword(c *gin.Context) {
+	var request struct {
+		Email    string  `json:"email"`
+		OTP      string  `json:"otp"`
+		Password *string `json:"password"`
+	}
+
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	user, err := h.AuthService.GetUserByUsernameOrEmail(request.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	if user == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"User not found"}})
+		return
+	}
+
+	// Check if the OTP is valid
+	valid := h.AuthService.VerifyOTP(user.ID, request.OTP)
+	if !valid {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid OTP"})
+		return
+	}
+
+	// If password is provided, reset it
+	if request.Password != nil {
+		success, err := h.AuthService.ResetPassword(user.ID, request.OTP, *request.Password)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+		if !success {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid OTP"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Password reset successfully"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Valid OTP"})
+}

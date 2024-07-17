@@ -138,3 +138,39 @@ func VerifyEmail(token string) error {
 	}
 	return nil
 }
+
+func GetPasswordResetToken(userID uuid.UUID) (string, error) {
+	var token string
+	query := `
+		SELECT password_reset_token
+		FROM users
+		WHERE id = $1`
+	err := database.DB.QueryRow(
+		context.Background(),
+		query,
+		userID,
+	).Scan(&token)
+	if err != nil {
+		log.Printf("Error during query execution or scanning: %v", err)
+		return "", err
+	}
+	return token, nil
+}
+
+func UpdatePassword(userID uuid.UUID, newPassword string) error {
+	query := `
+		UPDATE users
+		SET password = $1
+		WHERE id = $2`
+	_, err := database.DB.Exec(
+		context.Background(),
+		query,
+		newPassword,
+		userID,
+	)
+	if err != nil {
+		log.Printf("Error during query execution or scanning: %v", err)
+		return err
+	}
+	return nil
+}

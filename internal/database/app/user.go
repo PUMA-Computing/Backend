@@ -8,6 +8,7 @@ import (
 	"errors"
 	"github.com/google/uuid"
 	"log"
+	"time"
 )
 
 func GetUserByUsernameOrEmail(username string) (*models.User, error) {
@@ -171,6 +172,16 @@ func UpdateUser(UserID uuid.UUID, updatedUser *models.User) error {
 		updatedUser.Username, updatedUser.Password, updatedUser.FirstName, updatedUser.MiddleName, updatedUser.LastName,
 		updatedUser.Email, updatedUser.StudentID, updatedUser.Major, updatedUser.Year, updatedUser.RoleID,
 		updatedUser.UpdatedAt, updatedUser.InstitutionName, updatedUser.Gender, updatedUser.DateOfBirth, UserID)
+	return err
+}
+
+func ChangePassword(userID uuid.UUID, newPassword string) error {
+	_, err := database.DB.Exec(context.Background(), "UPDATE users SET password = $1 WHERE id = $2", newPassword, userID)
+	return err
+}
+
+func SavePasswordResetToken(userID uuid.UUID, token string, expires time.Time) error {
+	_, err := database.DB.Exec(context.Background(), "UPDATE users SET password_reset_token = $1, password_reset_expires = $2 WHERE id = $3", token, expires, userID)
 	return err
 }
 

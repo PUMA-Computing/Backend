@@ -74,6 +74,8 @@ func SetupRoutes() *gin.Engine {
 		authRoutes.POST("/logout", authHandlers.Logout)
 		authRoutes.POST("/refresh-token", middleware.TokenMiddleware(), authHandlers.RefreshToken)
 		authRoutes.GET("/verify-email", authHandlers.VerifyEmail)
+		authRoutes.POST("/forgot-password/request", authHandlers.RequestPasswordReset)
+		authRoutes.POST("/forgot-password", authHandlers.ResetPassword)
 	}
 
 	userRoutes := api.Group("/user")
