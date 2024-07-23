@@ -1,3 +1,28 @@
+# [0.10.0](https://github.com/PUFA-Computing/backend/compare/v0.9.0...v0.10.0) (2024-07-23)
+
+
+### Bug Fixes
+
+* admin change status api ([9a6db28](https://github.com/PUFA-Computing/backend/commit/9a6db2824e72914c2a0d6d8d5d212bc3ad2d0cd3))
+* disable twofa ([71f6c9d](https://github.com/PUFA-Computing/backend/commit/71f6c9d843fa6f733b59263f86092734ba5ec14b))
+* get user by id ([f4b8b59](https://github.com/PUFA-Computing/backend/commit/f4b8b59ba8d3fbf89fa960016d5909e4be252b5d))
+* issue on enabled without verify ([7eac636](https://github.com/PUFA-Computing/backend/commit/7eac6369c77107e4a89290b7e4113bd04366e345))
+* return 2fa column ([ce7a2fe](https://github.com/PUFA-Computing/backend/commit/ce7a2feb20d34de5e50dbb7bd7e1dfc090f62e98))
+* return inconsistency ([67b7d58](https://github.com/PUFA-Computing/backend/commit/67b7d58b100d25aae1a6ef98e6e365c844dbca46))
+* service change on upload student id ([d627080](https://github.com/PUFA-Computing/backend/commit/d627080f58a2081e82523078e9d3f84488861586))
+* setup key different behaviour, by make the totp 6 digit not 8 digits anymore ([ffa6de2](https://github.com/PUFA-Computing/backend/commit/ffa6de221df5d05ec446ffa9f75bb4aa1288f5ed))
+* twofa image as qr image ([31c8bd1](https://github.com/PUFA-Computing/backend/commit/31c8bd12e4394fad73be5e077a796a047db638aa))
+* update user ([d1d2c37](https://github.com/PUFA-Computing/backend/commit/d1d2c37aee5c751d7cf209eb68a72a52b7814195))
+* update user for twofa ([a9007c7](https://github.com/PUFA-Computing/backend/commit/a9007c7769293ae89acb8e6efddb2df665679289))
+
+
+### Features
+
+* 2 Factor Authentication ([73a9b21](https://github.com/PUFA-Computing/backend/commit/73a9b216b154987188033edd4ad2b5557ec50ab4))
+* change password for user ([d927fab](https://github.com/PUFA-Computing/backend/commit/d927fab61105b72434ec9129dd68a9df790ef18c))
+* Forgot Password ([3ff52dd](https://github.com/PUFA-Computing/backend/commit/3ff52dd4758e302158b4921b44825de0ca1649b8))
+* upload student id for verify ([6a9d040](https://github.com/PUFA-Computing/backend/commit/6a9d04050f772cb620c134d6247a66d6e3a6ea69))
+
 # [0.9.0](https://github.com/PUFA-Computing/backend/compare/v0.8.1...v0.9.0) (2024-06-30)
 
 
