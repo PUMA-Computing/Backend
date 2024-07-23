@@ -21,13 +21,15 @@ type Handlers struct {
 	AuthService       *services.AuthService
 	PermissionService *services.PermissionService
 	MailGunService    *services.MailgunService
+	UserService       *services.UserService
 }
 
-func NewAuthHandlers(authService *services.AuthService, permissionService *services.PermissionService, MailGunService *services.MailgunService) *Handlers {
+func NewAuthHandlers(authService *services.AuthService, permissionService *services.PermissionService, MailGunService *services.MailgunService, userService *services.UserService) *Handlers {
 	return &Handlers{
 		AuthService:       authService,
 		PermissionService: permissionService,
 		MailGunService:    MailGunService,
+		UserService:       userService,
 	}
 }
 
@@ -135,9 +137,11 @@ func validateEmail(email, suffix string) error {
 }
 
 func (h *Handlers) Login(c *gin.Context) {
-	var loginRequest models.User
-
-	log.Println("before bind json")
+	var loginRequest struct {
+		Username string  `json:"username"`
+		Password string  `json:"password"`
+		Passcode *string `json:"passcode"`
+	}
 
 	if err := c.BindJSON(&loginRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
@@ -151,6 +155,29 @@ func (h *Handlers) Login(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Invalid Credentials"})
 		return
+	}
+
+	// If there is no passcode, but 2FA is enabled, return otp required
+	if loginRequest.Passcode == nil {
+
+		if user.TwoFAEnabled {
+			c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Two Factor Authentication Required"})
+			return
+		}
+	}
+
+	if loginRequest.Passcode != nil {
+		if !user.TwoFAEnabled {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "2FA is not enabled for this account"})
+			return
+		}
+
+		_, err := h.UserService.VerifyTwoFA(user.ID, *loginRequest.Passcode)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid 2FA Code"})
+			return
+		}
+
 	}
 
 	// Check if the usernameOrEmail is an email
@@ -323,4 +350,88 @@ func (h *Handlers) VerifyEmail(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Email Verified Successfully"})
+}
+
+func (h *Handlers) RequestPasswordReset(c *gin.Context) {
+	var request struct {
+		Email string `json:"email"`
+	}
+
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	user, err := h.AuthService.GetUserByUsernameOrEmail(request.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	if user == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"User not found"}})
+		return
+	}
+
+	otpCode, err := h.AuthService.RequestForgotPassword(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	if err := h.MailGunService.SendOTPEmail(user.Email, otpCode); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Password Reset Email Sent"})
+}
+
+func (h *Handlers) ResetPassword(c *gin.Context) {
+	var request struct {
+		Email    string  `json:"email"`
+		OTP      string  `json:"otp"`
+		Password *string `json:"password"`
+	}
+
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	user, err := h.AuthService.GetUserByUsernameOrEmail(request.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	if user == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"User not found"}})
+		return
+	}
+
+	// Check if the OTP is valid
+	valid := h.AuthService.VerifyOTP(user.ID, request.OTP)
+	if !valid {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid OTP"})
+		return
+	}
+
+	// If password is provided, reset it
+	if request.Password != nil {
+		success, err := h.AuthService.ResetPassword(user.ID, request.OTP, *request.Password)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+		if !success {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid OTP"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Password reset successfully"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Valid OTP"})
 }

@@ -355,3 +355,169 @@ func (h *Handlers) UploadProfilePicture(c *gin.Context) {
 		"data":    user.ProfilePicture,
 	})
 }
+
+func (h *Handlers) UploadStudentID(c *gin.Context) {
+	userID, err := utils.GetUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	user, err := h.UserService.GetUserByID(userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	file, _, err := c.Request.FormFile("student_id")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	// Check if file size is greater than 2MB
+	optimizedImage, err := utils.OptimizeImage(file, 2800, 1080)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	optimizedImageBytes, err := io.ReadAll(optimizedImage)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	// Choose storage service to upload image to (AWS or R2)
+	upload := utils.ChooseStorageService()
+
+	// Upload image to storage service
+	if upload == utils.R2Service {
+		err = h.R2Service.UploadFileToR2(context.Background(), "users", "student_id_"+userID.String(), optimizedImageBytes)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		imageUrl, _ := h.R2Service.GetFileR2("users", "student_id_"+userID.String())
+		user.StudentIDVerification = &imageUrl
+	} else {
+		err = h.AWSService.UploadFileToAWS(context.Background(), "users", "student_id_"+userID.String(), optimizedImageBytes)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		imageUrl, _ := h.AWSService.GetFileAWS("users", "student_id_"+userID.String())
+		user.StudentIDVerification = &imageUrl
+	}
+
+	// Update user profile picture
+	if err := h.UserService.UploadStudentID(userID, *user.StudentIDVerification); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Profile Picture Uploaded Successfully",
+		"data":    user.StudentIDVerification,
+	})
+}
+
+func (h *Handlers) EnableTwoFA(c *gin.Context) {
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "users:2fa")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	qr, setupKey, err := h.UserService.EnableTwoFA(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Two Factor Authentication Enabled Successfully",
+		"data": gin.H{
+			"twofa_image":  qr,
+			"twofa_secret": setupKey,
+		},
+	})
+}
+
+func (h *Handlers) VerifyTwoFA(c *gin.Context) {
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "users:2fa")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	var request struct {
+		Code string `json:"code"`
+	}
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	valid, err := h.UserService.VerifyTwoFA(userID, request.Code)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	if !valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Invalid TOTP Code"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "TOTP Verified Successfully"})
+}
+
+func (h *Handlers) ToggleTwoFA(c *gin.Context) {
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "users:2fa")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	var request struct {
+		Enable bool `json:"enable"`
+	}
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	err = h.UserService.ChangeTwoFAStatus(userID, request.Enable)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Two Factor Authentication Status Updated Successfully"})
+}
+
+func (h *Handlers) ChangePassword(c *gin.Context) {
+	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "users:create")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	var request struct {
+		Password string `json:"password"`
+	}
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	err = h.UserService.ChangePassword(userID, request.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Password Changed Successfully"})
+}

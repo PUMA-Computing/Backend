@@ -8,6 +8,7 @@ import (
 	"errors"
 	"github.com/google/uuid"
 	"log"
+	"time"
 )
 
 func GetUserByUsernameOrEmail(username string) (*models.User, error) {
@@ -83,7 +84,7 @@ func GetUserByEmail(email string) (*models.User, error) {
 	err := database.DB.QueryRow(context.Background(), query, email).Scan(
 		&userID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email,
 		&user.StudentID, &user.Major, &user.ProfilePicture, &user.DateOfBirth, &user.RoleID, &user.CreatedAt,
-		&user.UpdatedAt, &user.Year, &user.InstitutionName, &user.Gender)
+		&user.UpdatedAt, &user.Year, &user.InstitutionName, &user.Gender, &user.TwoFAEnabled, &user.TwoFAImage, &user.TwoFASecret)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil // User not found, return nil
@@ -101,13 +102,21 @@ func GetUserByID(userID uuid.UUID) (*models.User, error) {
 	var user models.User
 
 	err := database.DB.QueryRow(context.Background(), `
-		SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, profile_picture, date_of_birth, role_id, created_at, updated_at, year, institution_name, gender
-		FROM users WHERE id = $1`, userID).Scan(
+		SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, profile_picture, date_of_birth, role_id, created_at, updated_at, year, email_verified, email_verification_token, password_reset_token, password_reset_expires, student_id_verified, student_id_verification, institution_name, gender, twofa_enabled, twofa_image, twofa_secret
+		FROM users
+		WHERE id = $1
+	`, userID).Scan(
 		&user.ID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email,
 		&user.StudentID, &user.Major, &user.ProfilePicture, &user.DateOfBirth, &user.RoleID, &user.CreatedAt,
-		&user.UpdatedAt, &user.Year, &user.InstitutionName, &user.Gender)
+		&user.UpdatedAt, &user.Year, &user.EmailVerified, &user.EmailVerificationToken, &user.PasswordResetToken,
+		&user.PasswordResetExpires, &user.StudentIDVerified, &user.StudentIDVerification, &user.InstitutionName,
+		&user.Gender, &user.TwoFAEnabled, &user.TwoFAImage, &user.TwoFASecret,
+	)
 
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -118,9 +127,12 @@ func GetUserByStudentID(studentID string) (*models.User, error) {
 	var user models.User
 	var userID string
 	err := database.DB.QueryRow(context.Background(), "SELECT * FROM users WHERE student_id = $1", studentID).Scan(
-		&userID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email,
+		&user.ID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email,
 		&user.StudentID, &user.Major, &user.ProfilePicture, &user.DateOfBirth, &user.RoleID, &user.CreatedAt,
-		&user.UpdatedAt, &user.Year, &user.InstitutionName, &user.Gender)
+		&user.UpdatedAt, &user.Year, &user.EmailVerified, &user.EmailVerificationToken, &user.PasswordResetToken,
+		&user.PasswordResetExpires, &user.StudentIDVerified, &user.StudentIDVerification, &user.InstitutionName,
+		&user.Gender, &user.TwoFAEnabled, &user.TwoFAImage, &user.TwoFASecret,
+	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -155,11 +167,35 @@ func CheckStudentIDExists(studentID string) (bool, error) {
 func UpdateUser(UserID uuid.UUID, updatedUser *models.User) error {
 	_, err := database.DB.Exec(context.Background(), `
 		UPDATE users SET username = $1, password = $2, first_name = $3, middle_name = $4, last_name = $5, email = $6,
-		student_id = $7, major = $8, year = $9, role_id = $10, updated_at = $11, institution_name= $12, gender = $13
-		WHERE id = $14`,
+		student_id = $7, major = $8, year = $9, role_id = $10, updated_at = $11, institution_name= $12, gender = $13, date_of_birth = $14
+		WHERE id = $15`,
 		updatedUser.Username, updatedUser.Password, updatedUser.FirstName, updatedUser.MiddleName, updatedUser.LastName,
 		updatedUser.Email, updatedUser.StudentID, updatedUser.Major, updatedUser.Year, updatedUser.RoleID,
-		updatedUser.UpdatedAt, updatedUser.InstitutionName, updatedUser.Gender, UserID)
+		updatedUser.UpdatedAt, updatedUser.InstitutionName, updatedUser.Gender, updatedUser.DateOfBirth, UserID)
+	return err
+}
+
+func ChangePassword(userID uuid.UUID, newPassword string) error {
+	_, err := database.DB.Exec(context.Background(), "UPDATE users SET password = $1 WHERE id = $2", newPassword, userID)
+	return err
+}
+
+func SavePasswordResetToken(userID uuid.UUID, token string, expires time.Time) error {
+	_, err := database.DB.Exec(context.Background(), "UPDATE users SET password_reset_token = $1, password_reset_expires = $2 WHERE id = $3", token, expires, userID)
+	return err
+}
+
+func ToggleTwoFA(userID uuid.UUID, enable bool) error {
+	var err error
+	if enable {
+		_, err = database.DB.Exec(context.Background(),
+			"UPDATE users SET twofa_enabled = $1 WHERE id = $2",
+			enable, userID)
+	} else {
+		_, err = database.DB.Exec(context.Background(),
+			"UPDATE users SET twofa_enabled = $1, twofa_image = NULL, twofa_secret = NULL WHERE id = $2",
+			enable, userID)
+	}
 	return err
 }
 
@@ -195,6 +231,7 @@ func ListUsers() ([]models.User, error) {
 			&user.RoleID, &user.CreatedAt, &user.UpdatedAt, &user.Year, &user.EmailVerified,
 			&user.EmailVerificationToken, &user.PasswordResetToken, &user.PasswordResetExpires,
 			&user.StudentIDVerified, &user.StudentIDVerification, &user.InstitutionName, &user.Gender,
+			&user.TwoFAEnabled, &user.TwoFAImage, &user.TwoFASecret,
 		)
 		if err != nil {
 			log.Println("Error scanning row:", err)
@@ -220,5 +257,15 @@ func ListUsers() ([]models.User, error) {
 
 func UploadProfilePicture(userID uuid.UUID, profilePicture string) error {
 	_, err := database.DB.Exec(context.Background(), "UPDATE users SET profile_picture = $1 WHERE id = $2", profilePicture, userID)
+	return err
+}
+
+func UploadStudentID(userID uuid.UUID, studentID string) error {
+	_, err := database.DB.Exec(context.Background(), "UPDATE users SET student_id_verification = $1 WHERE id = $2", studentID, userID)
+	return err
+}
+
+func SaveTwoFAInfo(userID uuid.UUID, secret string, image string) error {
+	_, err := database.DB.Exec(context.Background(), "UPDATE users SET twofa_image = $1, twofa_secret = $2 WHERE id = $3", image, secret, userID)
 	return err
 }

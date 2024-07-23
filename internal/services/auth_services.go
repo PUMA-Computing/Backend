@@ -17,6 +17,7 @@ import (
 )
 
 type AuthService struct {
+	otp *OTPManager
 }
 
 func NewAuthService() *AuthService {
@@ -192,4 +193,56 @@ func (as *AuthService) ValidateEmail(email string) error {
 	default:
 		return errors.New("unexpected status from email verification")
 	}
+}
+
+func (as *AuthService) RequestForgotPassword(userID uuid.UUID) (string, error) {
+	tokenOtp := utils.GenerateRandomTokenOtp()
+	expiresAt := time.Now().Add(5 * time.Minute)
+	otpCode, err := as.otp.GenerateOTP(userID, tokenOtp, time.Minute*5)
+	if err != nil {
+		return "", err
+	}
+
+	// TODO: Send OTP code to email
+	log.Println("OTP code:", otpCode)
+
+	err = app.SavePasswordResetToken(userID, tokenOtp, expiresAt)
+	if err != nil {
+		return "", err
+	}
+
+	return otpCode, nil
+}
+
+func (as *AuthService) VerifyOTP(userID uuid.UUID, otpCode string) bool {
+	tokenOtp, err := app.GetPasswordResetToken(userID)
+	if err != nil {
+		return false
+	}
+
+	return as.otp.VerifyOTP(userID, tokenOtp, otpCode)
+}
+
+func (as *AuthService) ResetPassword(userID uuid.UUID, otpCode, password string) (bool, error) {
+	tokenOtp, err := app.GetPasswordResetToken(userID)
+	if err != nil {
+		return false, err
+	}
+
+	valid := as.otp.VerifyOTP(userID, tokenOtp, otpCode)
+	if !valid {
+		return false, nil
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return false, err
+	}
+
+	err = app.UpdatePassword(userID, string(hashedPassword))
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }

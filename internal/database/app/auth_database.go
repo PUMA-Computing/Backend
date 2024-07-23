@@ -35,7 +35,7 @@ func AuthenticateUser(usernameOrEmail string) (*models.User, error) {
 	var err error
 
 	query = `
-		SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, year, role_id, email_verification_token, institution_name, gender
+		SELECT id, username, password, first_name, middle_name, last_name, email, student_id, major, year, role_id, email_verification_token, institution_name, gender, email_verified, twofa_enabled, twofa_image, twofa_secret
 		FROM users
 		WHERE username = $1 OR email = $1`
 
@@ -46,7 +46,7 @@ func AuthenticateUser(usernameOrEmail string) (*models.User, error) {
 	).Scan(
 		&userID, &user.Username, &user.Password, &user.FirstName, &user.MiddleName, &user.LastName, &user.Email,
 		&user.StudentID, &user.Major, &user.Year, &user.RoleID, &user.EmailVerificationToken, &user.InstitutionName,
-		&user.Gender,
+		&user.Gender, &user.EmailVerified, &user.TwoFAEnabled, &user.TwoFAImage, &user.TwoFASecret,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -131,6 +131,42 @@ func VerifyEmail(token string) error {
 		context.Background(),
 		query,
 		token,
+	)
+	if err != nil {
+		log.Printf("Error during query execution or scanning: %v", err)
+		return err
+	}
+	return nil
+}
+
+func GetPasswordResetToken(userID uuid.UUID) (string, error) {
+	var token string
+	query := `
+		SELECT password_reset_token
+		FROM users
+		WHERE id = $1`
+	err := database.DB.QueryRow(
+		context.Background(),
+		query,
+		userID,
+	).Scan(&token)
+	if err != nil {
+		log.Printf("Error during query execution or scanning: %v", err)
+		return "", err
+	}
+	return token, nil
+}
+
+func UpdatePassword(userID uuid.UUID, newPassword string) error {
+	query := `
+		UPDATE users
+		SET password = $1
+		WHERE id = $2`
+	_, err := database.DB.Exec(
+		context.Background(),
+		query,
+		newPassword,
+		userID,
 	)
 	if err != nil {
 		log.Printf("Error during query execution or scanning: %v", err)

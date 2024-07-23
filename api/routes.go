@@ -56,7 +56,7 @@ func SetupRoutes() *gin.Engine {
 	versionUpdater := services.NewVersionUpdater(VersionService)
 	go versionUpdater.Run()
 
-	authHandlers := auth.NewAuthHandlers(authService, permissionService, MailgunService)
+	authHandlers := auth.NewAuthHandlers(authService, permissionService, MailgunService, userService)
 	userHandlers := user.NewUserHandlers(userService, permissionService, AWSService, R2Service)
 	eventHandlers := event.NewEventHandlers(eventService, permissionService, AWSService, R2Service)
 	newsHandlers := news.NewNewsHandler(newsService, permissionService, AWSService, R2Service)
@@ -74,6 +74,8 @@ func SetupRoutes() *gin.Engine {
 		authRoutes.POST("/logout", authHandlers.Logout)
 		authRoutes.POST("/refresh-token", middleware.TokenMiddleware(), authHandlers.RefreshToken)
 		authRoutes.GET("/verify-email", authHandlers.VerifyEmail)
+		authRoutes.POST("/forgot-password/request", authHandlers.RequestPasswordReset)
+		authRoutes.POST("/forgot-password", authHandlers.ResetPassword)
 	}
 
 	userRoutes := api.Group("/user")
@@ -84,8 +86,13 @@ func SetupRoutes() *gin.Engine {
 		userRoutes.GET("/:userID", userHandlers.GetUserByID)
 		userRoutes.PUT("/edit", userHandlers.EditUser)
 		userRoutes.DELETE("/delete", userHandlers.DeleteUser)
+		userRoutes.PUT("/change-password", userHandlers.ChangePassword)
 		userRoutes.POST("/upload-profile-picture", userHandlers.UploadProfilePicture)
+		userRoutes.POST("/upload-student-id", userHandlers.UploadStudentID)
 		userRoutes.PUT("/:userID/update-user", userHandlers.AdminUpdateRoleAndStudentIDVerified)
+		userRoutes.POST("/2fa/enable", userHandlers.EnableTwoFA)
+		userRoutes.POST("/2fa/verify", userHandlers.VerifyTwoFA)
+		userRoutes.POST("/2fa/toggle", userHandlers.ToggleTwoFA)
 
 		// ListEventsRegisteredByUser
 		userRoutes.GET("/registered-events", eventHandlers.ListEventsRegisteredByUser)
