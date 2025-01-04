@@ -1,3 +1,4 @@
+# Not Actively Maintained
 # PUFA Computing Backend
 
 This is the backend repository for the PUFA Computing Backend project. It provides the server-side logic and API endpoints necessary to support the [front-end application](https://github.com/PUFA-Computing/Frontend).
